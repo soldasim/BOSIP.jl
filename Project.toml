@@ -1,0 +1,7 @@
+name = "BOLFI"
+uuid = "631834c2-07fe-4b6b-876a-15b6a4e37445"
+authors = ["Šimon Soldát"]
+version = "0.1.0"
+
+[compat]
+julia = "1.6.7"
