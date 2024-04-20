@@ -1,6 +1,7 @@
 module BOLFI
 
 export bolfi
+export BolfiProblem
 
 using BOSS
 using Distributions
