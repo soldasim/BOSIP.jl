@@ -1,16 +1,16 @@
 
-function posterior_mean(x_prior, gp_post; var_e)
+function posterior_mean(x_prior, gp_post; var_e, py=1.)
     function mean(x)
         pred = gp_post(x)
         μ_gp, var_gp = pred[1], pred[2]
         y_dim = length(μ_gp)
-        py = pdf(MvNormal(μ_gp, sqrt.(var_e .+ var_gp)), zeros(y_dim))
+        ll = pdf(MvNormal(μ_gp, sqrt.(var_e .+ var_gp)), zeros(y_dim))
         pθ = pdf(x_prior, x)
-        return pθ * py
+        return (pθ / py) * ll
     end
 end
 
-function posterior_variance(x_prior, gp_post; var_e)
+function posterior_variance(x_prior, gp_post; var_e, py=1.)
     function var(x)
         pred = gp_post(x)
         μ_y, var_y = pred[1], pred[2]
@@ -21,7 +21,7 @@ function posterior_variance(x_prior, gp_post; var_e)
         prodA = log.(A_.(var_e, μ_y, var_y)) |> sum |> exp
         prodB = log.(B_.(var_e, μ_y, var_y)) |> sum |> exp
         pθ = pdf(x_prior, x)
-        return pθ^2 * (prodA - prodB) # * (1 / py^2)
+        return (pθ^2 / py^2) * (prodA - prodB)
     end
 end
 
