@@ -190,7 +190,7 @@ version = "0.1.0"
 
 [[deps.BOSS]]
 deps = ["AbstractGPs", "Distributed", "Distributions", "InteractiveUtils", "LatinHypercubeSampling", "Optimization", "Random", "Turing"]
-git-tree-sha1 = "ee704c0d51ee0db05c467d4b1fd02106c7aa87ff"
+git-tree-sha1 = "3ef9da9c3ba5d1b8ffe6b33bffb0a991a19f081e"
 repo-rev = "master"
 repo-url = "https://github.com/soldasim/BOSS.jl"
 uuid = "15052f3f-a82a-4ca3-bbc4-f478a3bd1ae2"

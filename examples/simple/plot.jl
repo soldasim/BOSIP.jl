@@ -35,7 +35,7 @@ function plot_samples(bolfi; display=true, put_in_scale=false, noise_vars_true, 
     ll_gp(a, b) = post_μ([a, b])
 
     # acquisition
-    acq = acquisition(bolfi, BOSS.BossOptions())
+    acq = acquisition(bolfi, BolfiOptions())
     acq_name = split(string(typeof(acquisition)), '.')[end]
 
     # - - - PLOT - - - - -

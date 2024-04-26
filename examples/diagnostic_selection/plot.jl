@@ -1,13 +1,37 @@
 using Plots
+using Printf
 
-function plot_state(problem; display=true, save_plots=false, iters, put_in_scale, noise_vars_true, acquisition)
-    p = plot_sets(problem; display, put_in_scale, noise_vars_true, acquisition)
+
+# - - - Plotting Callback - - - - -
+
+mutable struct PlotCallback<: BolfiCallback
+    iters::Int
+    q::Float64
+    save_plots::Bool
+    put_in_scale::Bool
+end
+PlotCallback(;
+    q,
+    save_plots,
+    put_in_scale,
+) = PlotCallback(0, q, save_plots, put_in_scale)
+
+function (plt::PlotCallback)(problem::BolfiProblem; acquisition, kwargs...)
+    plt.iters += 1
+    plot_state(problem; q=plt.q, save_plots=plt.save_plots, iters=plt.iters, put_in_scale=plt.put_in_scale, noise_vars_true=ToyProblem.σe_true.^2, acquisition=acquisition.acq)
+end
+
+
+# - - - Plotting Scripts - - - - -
+
+function plot_state(problem; q, display=true, save_plots=false, iters, put_in_scale, noise_vars_true, acquisition)
+    p = plot_sets(problem; q, display, put_in_scale, noise_vars_true, acquisition)
     save_plots && savefig(p, "p_$(iters).png")
 end
 
-function plot_sets(bolfi; display=true, put_in_scale=false, noise_vars_true, acquisition, step=0.05)
+function plot_sets(bolfi; q, display=true, put_in_scale=false, noise_vars_true, acquisition, step=0.05)
     @assert acquisition isa SetsPostVariance
-    subset_plots = [plot_samples(get_subset(bolfi, set); display=false, put_in_scale, noise_vars_true=noise_vars_true[set], acquisition=PostVariance(), step, y_set=set) for set in eachcol(bolfi.y_sets)]
+    subset_plots = [plot_samples(get_subset(bolfi, set); q, display=false, put_in_scale, noise_vars_true=noise_vars_true[set], acquisition=PostVariance(), step, y_set=set) for set in eachcol(bolfi.y_sets)]
     acq_plot = plot_acquisition(bolfi; acquisition, step)
     p = plot(subset_plots..., acq_plot; layout=(length(subset_plots)+1, 1), size=(1440, (length(subset_plots)+1)*810))
     display && Plots.display(p)
@@ -22,7 +46,7 @@ function plot_acquisition(bolfi; acquisition, step=0.05)
     lims = bounds[1][1], bounds[2][1]
     X, Y = problem.data.X, problem.data.Y
 
-    acq = acquisition(bolfi, BOSS.BossOptions())
+    acq = acquisition(bolfi, BolfiOptions())
     acq_name = split(string(typeof(acquisition)), '.')[end]
 
     p4 = plot(; title="acquisition " * acq_name, colorbar=false)
@@ -30,7 +54,7 @@ function plot_acquisition(bolfi; acquisition, step=0.05)
     plot_samples!(p4, X; label=nothing)
 end
 
-function plot_samples(bolfi; display=true, put_in_scale=false, noise_vars_true, acquisition, step=0.05, y_set=fill(true, ToyProblem.y_dim), title=nothing)
+function plot_samples(bolfi; q, display=true, put_in_scale=false, noise_vars_true, acquisition, step=0.05, y_set=fill(true, ToyProblem.y_dim), title=nothing)
     problem = bolfi.problem
     gp_post = BOSS.model_posterior(problem)
 
@@ -55,11 +79,11 @@ function plot_samples(bolfi; display=true, put_in_scale=false, noise_vars_true, 
     end
 
     # gp-approximated posterior likelihood
-    post_μ = BOLFI.posterior_mean(x_prior, gp_post; var_e=bolfi.var_e)
+    post_μ, c, V = find_cutoff(gp_post, x_prior, bolfi.var_e, q; samples=10_000) 
     ll_gp(a, b) = post_μ([a, b])
 
     # acquisition
-    acq = acquisition(bolfi, BOSS.BossOptions())
+    acq = acquisition(bolfi, BolfiOptions())
     acq_name = split(string(typeof(acquisition)), '.')[end]
 
     # - - - PLOT - - - - -
@@ -75,7 +99,7 @@ function plot_samples(bolfi; display=true, put_in_scale=false, noise_vars_true, 
     plot_samples!(p1, X; label=nothing)
 
     p2 = plot(; title="(unnormalized) approx. posterior", clims, kwargs...)
-    plot_posterior!(p2, ll_gp; lims, label=nothing, step)
+    plot_posterior!(p2, ll_gp; q, c, V, lims, label=nothing, step)
     plot_samples!(p2, X; label=nothing)
 
     p3 = plot(; title="GP[1] mean", kwargs...)
@@ -93,7 +117,7 @@ function plot_samples(bolfi; display=true, put_in_scale=false, noise_vars_true, 
     return p
 end
 
-function plot_posterior!(p, ll; lims, label="ab=d", step=0.05)
+function plot_posterior!(p, ll; q=nothing, c=nothing, V=nothing, lims, label="ab=d", step=0.05)
     grid = lims[1]:step:lims[2]
     contourf!(p, grid, grid, ll)
     
@@ -101,8 +125,23 @@ function plot_posterior!(p, ll; lims, label="ab=d", step=0.05)
     obs_color = :gold
     plot!(p, a->1/a, grid; y_lims=lims, label, color=obs_color)
     plot!(p, a->0., grid; y_lims=lims, label, color=obs_color)
+
+    # CONFIDENCE SET
+    if !isnothing(c)
+        @assert !isnothing(q)
+        plot_confidence_set!(p, ll, c; lims, step, label="confidence $q", V, color=:red)
+    end
+    return p
 end
 
 function plot_samples!(p, samples; label="(a,b) ~ p(a,b|d)")
     scatter!(p, [θ[1] for θ in eachcol(samples)], [θ[2] for θ in eachcol(samples)]; label, color=:green)
+end
+
+function plot_confidence_set!(p, ll, c; lims, step, label=nothing, V=nothing, color=:red, kwargs...)
+    grid = lims[1]:step:lims[2]
+    area_text = "($(@sprintf("%.4f", V)))"
+    isnothing(V) || (label = isnothing(label) ? area_text : label*' '*area_text)
+    contour!(p, grid, grid, ll; levels=[c], color, kwargs...)
+    isnothing(label) || scatter!(p, [], []; label, color)
 end

@@ -7,11 +7,8 @@ include("plot.jl")
 
 function script_bolfi(;
     init_data=3,
-    save_plots=false,
-    put_in_scale=false,  # puts the approximation in scale with the true posterior
 )
     problem = ToyProblem.bolfi_problem(init_data)
-
     acquisition = SetsPostVariance()
 
     model_fitter = BOSS.SamplingMLE(;
@@ -23,20 +20,21 @@ function script_bolfi(;
         steps = [0.05, 0.05],
         parallel = true,
     )
-    options = BOSS.BossOptions(;
-        info = true,
-        debug = true,
+
+    q = 0.95  # quantile of interest
+    options = BolfiOptions(;
+        callback = PlotCallback(;
+            q,
+            save_plots=false,
+            put_in_scale=false,
+        ),
     )
-
-    noise_vars_true = ToyProblem.σe_true.^2
-
     term_cond = ConfidenceTermCond(;
         samples = 10_000,
-        q = 0.95,
+        q,
         r = 0.95,
     )
-    bolfi!(problem; acquisition, model_fitter, acq_maximizer, term_cond, options)
-    plot_state(problem; save_plots, iters=0, put_in_scale, noise_vars_true, acquisition)
 
+    bolfi!(problem; acquisition, model_fitter, acq_maximizer, term_cond, options)
     return problem
 end

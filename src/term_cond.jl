@@ -1,5 +1,5 @@
 
-abstract type BolfiTermCond <: TermCond end
+abstract type BolfiTermCond end
 
 struct TermCondWrapper{
     T<:BolfiTermCond

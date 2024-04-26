@@ -22,10 +22,7 @@ function script_bolfi(;
         steps = [0.05, 0.05],
         parallel = true,
     )
-    options = BOSS.BossOptions(;
-        info = true,
-        debug = true,
-    )
+    options = BolfiOptions()
 
     ITER_TOTAL = 50
     PLOT_EACH = 10
