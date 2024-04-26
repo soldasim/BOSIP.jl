@@ -22,7 +22,7 @@ function plot_acquisition(bolfi; acquisition, step=0.05)
     lims = bounds[1][1], bounds[2][1]
     X, Y = problem.data.X, problem.data.Y
 
-    acq = acquisition(bolfi)(problem, BOSS.BossOptions())
+    acq = acquisition(bolfi, BOSS.BossOptions())
     acq_name = split(string(typeof(acquisition)), '.')[end]
 
     p4 = plot(; title="acquisition " * acq_name, colorbar=false)
@@ -59,7 +59,7 @@ function plot_samples(bolfi; display=true, put_in_scale=false, noise_vars_true, 
     ll_gp(a, b) = post_μ([a, b])
 
     # acquisition
-    acq = acquisition(bolfi)(problem, BOSS.BossOptions())
+    acq = acquisition(bolfi, BOSS.BossOptions())
     acq_name = split(string(typeof(acquisition)), '.')[end]
 
     # - - - PLOT - - - - -

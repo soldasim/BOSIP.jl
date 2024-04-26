@@ -28,17 +28,15 @@ function script_bolfi(;
         debug = true,
     )
 
-    ITER_TOTAL = 50
-    PLOT_EACH = 10
-
     noise_vars_true = ToyProblem.σe_true.^2
 
-    iters = 0
-    while iters < ITER_TOTAL
-        iters += PLOT_EACH
-        term_cond = BOSS.IterLimit(PLOT_EACH)
-        bolfi!(problem; acquisition, model_fitter, acq_maximizer, term_cond, options)
-        plot_state(problem; save_plots, iters, put_in_scale, noise_vars_true, acquisition)
-    end
+    term_cond = ConfidenceTermCond(;
+        samples = 10_000,
+        q = 0.95,
+        r = 0.95,
+    )
+    bolfi!(problem; acquisition, model_fitter, acq_maximizer, term_cond, options)
+    plot_state(problem; save_plots, iters=0, put_in_scale, noise_vars_true, acquisition)
+
     return problem
 end

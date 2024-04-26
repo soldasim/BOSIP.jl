@@ -1,19 +1,20 @@
 
-function bolfi!(problem::BolfiProblem;
+function bolfi!(bolfi::BolfiProblem;
     acquisition::BolfiAcquisition=PDFVariance(),
     model_fitter::ModelFitter,
     acq_maximizer::AcquisitionMaximizer,
     term_cond::TermCond=IterLimit(1),
     options::BossOptions=BossOptions(),    
 )
-    boss_acq = acquisition(problem)
+    boss_acq = AcqWrapper(acquisition, bolfi)
+    boss_term_cond = TermCondWrapper(term_cond, bolfi)
 
-    bo!(problem.problem;
+    bo!(bolfi.problem;
         acquisition=boss_acq,
         model_fitter,
         acq_maximizer,
-        term_cond,
+        term_cond=boss_term_cond,
         options,
     )
-    return problem
+    return bolfi
 end

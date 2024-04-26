@@ -1,41 +1,75 @@
 
-# E[p(y_obs|θ) p(θ) / p(y_obs)]
-# (p(y_obs) has to be provided as `py`)
+# - - - POSTERIOR MEAN - - - - -
+
+# E[p(y_obs|x) p(x)] <or> E[p(y_obs|x) p(x) / p(y_obs)]
+function posterior_mean(bolfi::BolfiProblem; normalize=false, samples=10_000)
+    problem = bolfi.problem
+    gp_post = BOSS.model_posterior(problem.model, problem.data)
+    
+    if normalize
+        py = evidence(bolfi.x_prior, gp_post; var_e=bolfi.var_e, samples)
+    else
+        py = 1.
+    end
+    return posterior_mean(bolfi.x_prior, gp_post; var_e=bolfi.var_e, py)
+end
+
 function posterior_mean(x_prior, gp_post; var_e, py=1.)
     function mean(x)
         pred = gp_post(x)
         μ_gp, var_gp = pred[1], pred[2]
         y_dim = length(μ_gp)
         ll = pdf(MvNormal(μ_gp, sqrt.(var_e .+ var_gp)), zeros(y_dim))
-        pθ = pdf(x_prior, x)
-        return (pθ / py) * ll
+        px = pdf(x_prior, x)
+        return (px / py) * ll
     end
 end
 
-# V[p(y_obs|θ) p(θ) / p(y_obs)]
-# (p(y_obs) has to be provided as `py`)
+
+# - - - POSTERIOR VARIANCE - - - - -
+
+# V[p(y_obs|x) p(x)] <or> V[p(y_obs|x) p(x) / p(y_obs)]
+function posterior_variance(bolfi::BolfiProblem; normalize=false, samples=10_000)
+    problem = bolfi.problem
+    gp_post = BOSS.model_posterior(problem.model, problem.data)
+    
+    if normalize
+        py = evidence(bolfi.x_prior, gp_post; var_e=bolfi.var_e, samples)
+    else
+        py = 1.
+    end
+    return posterior_variance(bolfi.x_prior, gp_post; var_e=bolfi.var_e, py)
+end
+
 function posterior_variance(x_prior, gp_post; var_e, py=1.)
     function var(x)
         pred = gp_post(x)
         μ_y, var_y = pred[1], pred[2]
         prodA = log.(A_.(var_e, μ_y, var_y)) |> sum |> exp
         prodB = log.(B_.(var_e, μ_y, var_y)) |> sum |> exp
-        pθ = pdf(x_prior, x)
-        return (pθ^2 / py^2) * (prodA - prodB)
+        px = pdf(x_prior, x)
+        return (px^2 / py^2) * (prodA - prodB)
     end
 end
-
 function A_(var_e, μ_y, var_y)
     varA = var_e + 2*var_y
     return sqrt(varA / var_e) * pdf(Normal(0, sqrt(varA)), μ_y)^2
 end
-
 function B_(var_e, μ_y, var_y)
     varB = var_e + var_y
     return pdf(Normal(0, sqrt(varB)), μ_y)^2
 end
 
+
+# - - - EVIDENCE ESTIMATION - - - - -
+
 # Estimate p(y_obs)
+function evidence(bolfi::BolfiProblem; samples=10_000)
+    problem = bolfi.problem
+    gp_post = BOSS.model_posterior(problem.model, problem.data)
+    return evidence(bolfi.x_prior, gp_post; var_e=bolfi.var_e, samples)
+end
+
 function evidence(x_prior, gp_post; var_e, xs=nothing, samples=10_000)
     p = posterior_mean(x_prior, gp_post; var_e, py=1.)
     isnothing(xs) && (xs = rand(x_prior, samples))

@@ -1,4 +1,3 @@
-# Contains useful methods for the user. They are not used within the package.
 
 get_subset(bolfi::BolfiProblem{Matrix{Bool}}, idx::Int) =
     get_subset(bolfi, bolfi.y_sets[:, idx])
