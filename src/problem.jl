@@ -23,23 +23,31 @@ Defines the LFI problem together with most hyperparameters for the BOLFI procedu
 - `var_e::Vector{Float64}`: The variances of the Gaussian noise of the observation `y_obs`
         in individual dimensions.
 - `x_prior::MultivariateDistribution`: The prior `p(x)` on the input parameters.
+- `y_sets::Matrix{Bool}`: Optional parameter intended for advanced usage.
+        The binary columns define subsets `y_1, ..., y_m` of the observation dimensions within `y`.
+        The algorithm then trains multiple posteriors `p(θ|y_1), ..., p(θ|y_m)` simultaneously.
+        The posteriors can be compared after the run is completed to see which observation subsets are most informative.
 """
-struct BolfiProblem
+struct BolfiProblem{
+    S<:Union{Nothing, Matrix{Bool}},
+}
     problem::BossProblem
     var_e::Vector{Float64}
     x_prior::MultivariateDistribution
+    y_sets::S
 end
 
 function BolfiProblem(data;
     f,
     bounds,
-    discrete=fill(false, length(first(bounds))),
-    cons=nothing,
-    kernel=BOSS.Matern32Kernel(),
+    discrete = fill(false, length(first(bounds))),
+    cons = nothing,
+    kernel = BOSS.Matern32Kernel(),
     length_scale_priors,
     noise_var_priors,
     var_e,
     x_prior,
+    y_sets = nothing,
 )
     domain = Domain(;
         bounds,
@@ -64,5 +72,6 @@ function BolfiProblem(data;
         problem,
         var_e,
         x_prior,
+        y_sets,
     )
 end

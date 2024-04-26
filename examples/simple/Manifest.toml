@@ -184,7 +184,7 @@ version = "0.4.7"
 
 [[deps.BOLFI]]
 deps = ["BOSS", "Distributions"]
-path = ".."
+path = "../.."
 uuid = "631834c2-07fe-4b6b-876a-15b6a4e37445"
 version = "0.1.0"
 
