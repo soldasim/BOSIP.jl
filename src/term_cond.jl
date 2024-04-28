@@ -15,16 +15,20 @@ TermCondWrapper(term_cond::TermCond, ::BolfiProblem) = term_cond
 
 # - - - Confidence Intervals - - - - -
 
-struct ConfidenceTermCond <: BolfiTermCond
+struct ConfidenceTermCond{
+    X<:Union{Nothing, <:AbstractMatrix{<:Real}},
+} <: BolfiTermCond
     samples::Int
+    xs::X
     q::Float64
     r::Float64
 end
 ConfidenceTermCond(;
     samples = 10_000,
+    xs = nothing,
     q = 0.95,
     r = 0.95,
-) = ConfidenceTermCond(samples, q, r)
+) = ConfidenceTermCond(samples, xs, q, r)
 
 function (cond::ConfidenceTermCond)(bolfi::BolfiProblem{Nothing})
     (bolfi.problem.data isa ExperimentDataPrior) && return true
@@ -32,7 +36,11 @@ function (cond::ConfidenceTermCond)(bolfi::BolfiProblem{Nothing})
     gp_post = BOSS.model_posterior(bolfi.problem)
     gp_med = gp_quantile(gp_post, 0.5)
 
-    xs = rand(bolfi.x_prior, cond.samples)
+    if isnothing(cond.xs)
+        xs = rand(bolfi.x_prior, cond.samples)
+    else
+        xs = cond.xs
+    end
     _, _, V_mean = find_cutoff(gp_post, bolfi.x_prior, bolfi.var_e, cond.q; xs)
     _, _, V_med = find_cutoff(gp_med, bolfi.x_prior, bolfi.var_e, cond.q; xs)
 

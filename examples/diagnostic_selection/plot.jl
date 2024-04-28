@@ -79,7 +79,14 @@ function plot_samples(bolfi; q, display=true, put_in_scale=false, noise_vars_tru
     end
 
     # gp-approximated posterior likelihood
-    post_μ, c, V = find_cutoff(gp_post, x_prior, bolfi.var_e, q; samples=10_000) 
+    xs = rand(x_prior, 10_000)
+    post_μ, c_μ, V_μ = find_cutoff(gp_post, x_prior, bolfi.var_e, q; xs, normalize=true)
+    post_med, c_med, V_med = find_cutoff(gp_quantile(gp_post, 0.5), x_prior, bolfi.var_e, q; xs, normalize=true)
+    conf_sets = [
+        (post_μ, c_μ, V_μ, "expected q:$q ($(@sprintf("%.4f", V_μ)))", :red),
+        (post_med, c_med, V_med, "median q:$q ($(@sprintf("%.4f", V_med)))", :white),
+    ]
+    
     ll_gp(a, b) = post_μ([a, b])
 
     # acquisition
@@ -98,9 +105,10 @@ function plot_samples(bolfi; q, display=true, put_in_scale=false, noise_vars_tru
     plot_posterior!(p1, ll_post; lims, label=nothing, step)
     plot_samples!(p1, X; label=nothing)
 
-    p2 = plot(; title="(unnormalized) approx. posterior", clims, kwargs...)
-    plot_posterior!(p2, ll_gp; q, c, V, lims, label=nothing, step)
+    p2 = plot(; title="(normalized) approx. posterior", clims, kwargs...)
+    plot_posterior!(p2, ll_gp; conf_sets, lims, label=nothing, step)
     plot_samples!(p2, X; label=nothing)
+    scatter!(p2, [], []; label="med/exp = $(@sprintf("%.4f", V_med / V_μ))", color=nothing)
 
     p3 = plot(; title="GP[1] mean", kwargs...)
     plot_posterior!(p3, (a,b) -> gp_post([a,b])[1][1]; lims, label=nothing, step)
@@ -117,7 +125,7 @@ function plot_samples(bolfi; q, display=true, put_in_scale=false, noise_vars_tru
     return p
 end
 
-function plot_posterior!(p, ll; q=nothing, c=nothing, V=nothing, lims, label="ab=d", step=0.05)
+function plot_posterior!(p, ll; conf_sets=[], lims, label=nothing, step=0.05)
     grid = lims[1]:step:lims[2]
     contourf!(p, grid, grid, ll)
     
@@ -127,9 +135,8 @@ function plot_posterior!(p, ll; q=nothing, c=nothing, V=nothing, lims, label="ab
     plot!(p, a->0., grid; y_lims=lims, label, color=obs_color)
 
     # CONFIDENCE SET
-    if !isnothing(c)
-        @assert !isnothing(q)
-        plot_confidence_set!(p, ll, c; lims, step, label="confidence $q", V, color=:red)
+    for (f, c, V, label, color) in conf_sets
+        plot_confidence_set!(p, (a,b)->f([a,b]), c; lims, step, label, V, color)
     end
     return p
 end
@@ -140,8 +147,6 @@ end
 
 function plot_confidence_set!(p, ll, c; lims, step, label=nothing, V=nothing, color=:red, kwargs...)
     grid = lims[1]:step:lims[2]
-    area_text = "($(@sprintf("%.4f", V)))"
-    isnothing(V) || (label = isnothing(label) ? area_text : label*' '*area_text)
     contour!(p, grid, grid, ll; levels=[c], color, kwargs...)
     isnothing(label) || scatter!(p, [], []; label, color)
 end

@@ -5,28 +5,33 @@ together with cutoff `c` s.t. the ratio `q` of probability mass
 lies within the area given by `{x | post(x) > c}`
 and area `V` relative to the whole support of `post(x)`.
 """
-function find_cutoff(bolfi::BolfiProblem, q; xs=nothing, samples=10_000)
+function find_cutoff(bolfi::BolfiProblem, q; xs=nothing, samples=10_000, normalize=true)
     problem = bolfi.problem
     gp_post = BOSS.model_posterior(problem.model, problem.data)
-    return find_cutoff(gp_post, bolfi.x_prior, bolfi.var_e, q; xs, samples)
+    return find_cutoff(gp_post, bolfi.x_prior, bolfi.var_e, q; xs, samples, normalize)
 end
-function find_cutoff(gp_post, x_prior, var_e, q; xs=nothing, samples=10_000)    
+function find_cutoff(gp_post, x_prior, var_e, q; xs=nothing, samples=10_000, normalize=true)   
     μ = posterior_mean(x_prior, gp_post; var_e)  # μ(x) ≈ p(y_obs|x) p(x)
     ll(x) = μ(x) / pdf(x_prior, x)  # ll(x) ≈ p(y_obs|x)
 
     if isnothing(xs)
         xs = rand(x_prior, samples)
     end
-    # py = mean((ll(x) for x in eachcol(xs)))
-    # post(x) = μ(x) / py  # post(x) ≈ p(x|y_obs)
-    
+    if normalize
+        py = mean((ll(x) for x in eachcol(xs)))
+        post(x) = μ(x) / py  # post(x) ≈ p(x|y_obs)
+        f = post
+    else
+        f = μ
+    end
+
     ws = ll.(eachcol(xs))
-    vals = μ.(eachcol(xs))
+    vals = f.(eachcol(xs))
     c = quantile(vals, Distributions.weights(ws), 1. - q)
     
-    V = approx_cutoff_area(x_prior, μ, c; xs)
+    V = approx_cutoff_area(x_prior, f, c; xs)
 
-    return μ, c, V
+    return f, c, V
 end
 
 """
@@ -35,12 +40,12 @@ which together define a subset `S` of the domain of the relative size `V`
 s.t. `S` contains all points `x` which belong to the `q` confidence interval
 of _any_ of the GP realization within the `conf_int` confidence interval of the GP posterior.
 """
-function find_cutoff_confint(bolfi::BolfiProblem, q; conf_int=0.9, xs=nothing, samples=10_000)
+function find_cutoff_confint(bolfi::BolfiProblem, q; conf_int=0.9, xs=nothing, samples=10_000, normalize=true)
     problem = bolfi.problem
     gp_post = BOSS.model_posterior(problem.model, problem.data)
-    return find_cutoff_confint(gp_post, bolfi.x_prior, bolfi.var_e, q; conf_int, xs, samples)
+    return find_cutoff_confint(gp_post, bolfi.x_prior, bolfi.var_e, q; conf_int, xs, samples, normalize)
 end
-function find_cutoff_confint(gp_post, x_prior, var_e, q; conf_int=0.9, xs=nothing, samples=10_000)
+function find_cutoff_confint(gp_post, x_prior, var_e, q; conf_int=0.9, xs=nothing, samples=10_000, normalize=true)
     gp_lb = gp_quantile(gp_post, 0.5 - (conf_int / 2))
     gp_ub = gp_quantile(gp_post, 0.5 + (conf_int / 2))
 
@@ -56,7 +61,7 @@ function find_cutoff_confint(gp_post, x_prior, var_e, q; conf_int=0.9, xs=nothin
         return m, zeros(length(m))
     end
 
-    return find_cutoff(gp_max, x_prior, var_e, q; xs, samples)
+    return find_cutoff(gp_max, x_prior, var_e, q; xs, samples, normalize)
 end
 
 """
@@ -77,11 +82,11 @@ end
 Approximate the area where `p(x) > c` relative to the whole support of `p(x)`.
 (The prior `x_prior` must support the whole support of `p(x)`.)
 """
-function approx_cutoff_area(x_prior, p, c; xs=nothing, samples=10_000)
+function approx_cutoff_area(x_prior, f, c; xs=nothing, samples=10_000)
     if isnothing(xs)
         xs = rand(x_prior, samples)
     end
-    ps = p.(eachcol(xs))
+    ps = f.(eachcol(xs))
     ws = 1 ./ pdf.(Ref(x_prior), eachcol(xs))
     ws ./= sum(ws)
     V = sum(ws[ps .> c])

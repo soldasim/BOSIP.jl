@@ -2,6 +2,9 @@ using BOLFI
 using BOSS
 using Distributions
 
+using Random
+Random.seed!(555)
+
 include("toy_problem.jl")
 include("plot.jl")
 
@@ -30,7 +33,8 @@ function script_bolfi(;
         ),
     )
     term_cond = ConfidenceTermCond(;
-        samples = 10_000,
+        # samples = 10_000,
+        xs = rand(problem.x_prior, 10_000),
         q,
         r = 0.95,
     )
