@@ -1,11 +1,20 @@
 using Plots
 
+function separate_new_datum(problem)
+    bolfi = deepcopy(problem)
+    new = bolfi.problem.data.X[:,end]
+    bolfi.problem.data.X = bolfi.problem.data.X[:, 1:end-1]
+    bolfi.problem.data.Y = bolfi.problem.data.Y[:, 1:end-1]
+    return bolfi, new
+end
+
 function plot_state(problem; display=true, save_plots=false, iters, put_in_scale, noise_vars_true, acquisition)
-    p = plot_samples(problem; display, put_in_scale, noise_vars_true, acquisition)
+    bolfi, new_datum = separate_new_datum(problem)
+    p = plot_samples(bolfi; new_datum, display, put_in_scale, noise_vars_true, acquisition)
     save_plots && savefig(p, "p_$(iters).png")
 end
 
-function plot_samples(bolfi; display=true, put_in_scale=false, noise_vars_true, acquisition)
+function plot_samples(bolfi; new_datum=nothing, display=true, put_in_scale=false, noise_vars_true, acquisition)
     problem = bolfi.problem
     gp_post = BOSS.model_posterior(problem)
 
@@ -48,19 +57,19 @@ function plot_samples(bolfi; display=true, put_in_scale=false, noise_vars_true, 
 
     p1 = plot(; title="true posterior", clims, kwargs...)
     plot_posterior!(p1, ll_post; ToyProblem.y_obs, lims, label=nothing, step)
-    plot_samples!(p1, X; label=nothing)
+    plot_samples!(p1, X; new_datum, label=nothing)
 
     p2 = plot(; title="approx. posterior", clims, kwargs...)
     plot_posterior!(p2, ll_gp; ToyProblem.y_obs, lims, label=nothing, step)
-    plot_samples!(p2, X; label=nothing)
+    plot_samples!(p2, X; new_datum, label=nothing)
 
     p3 = plot(; title="GP[1] mean", kwargs...)
     plot_posterior!(p3, (a,b) -> gp_post([a,b])[1][1]; ToyProblem.y_obs, lims, label=nothing, step)
-    plot_samples!(p3, X; label=nothing)
+    plot_samples!(p3, X; new_datum, label=nothing)
 
     p4 = plot(; title="acquisition " * acq_name, kwargs...)
     plot_posterior!(p4, (a,b) -> acq([a,b]); ToyProblem.y_obs, lims, label=nothing, step)
-    plot_samples!(p4, X; label=nothing)
+    plot_samples!(p4, X; new_datum, label=nothing)
 
     title = put_in_scale ? "(in scale)" : "(not in scale)"
     t = plot(; title, framestyle=:none, bottom_margin=-80Plots.px)
@@ -78,6 +87,7 @@ function plot_posterior!(p, ll; y_obs, lims, label="ab=d", step=0.05)
     plot!(p, a->y_obs[1]/a, grid; y_lims=lims, label, color=obs_color)
 end
 
-function plot_samples!(p, samples; label="(a,b) ~ p(a,b|d)")
+function plot_samples!(p, samples; new_datum=nothing, label="(a,b) ~ p(a,b|d)")
     scatter!(p, [θ[1] for θ in eachcol(samples)], [θ[2] for θ in eachcol(samples)]; label, color=:green)
+    isnothing(new_datum) || scatter!(p, [new_datum[1]], [new_datum[2]]; label=nothing, color=:red)
 end

@@ -29,21 +29,30 @@ end
 
 # - - - Plotting Scripts - - - - -
 
+function separate_new_datum(problem)
+    bolfi = deepcopy(problem)
+    new = bolfi.problem.data.X[:,end]
+    bolfi.problem.data.X = bolfi.problem.data.X[:, 1:end-1]
+    bolfi.problem.data.Y = bolfi.problem.data.Y[:, 1:end-1]
+    return bolfi, new
+end
+
 function plot_state(problem; term_cond, display=true, save_plots=false, iters, put_in_scale, noise_vars_true, acquisition)
-    p = plot_sets(problem; term_cond, display, put_in_scale, noise_vars_true, acquisition)
+    bolfi, new_datum = separate_new_datum(problem)
+    p = plot_sets(bolfi; new_datum, term_cond, display, put_in_scale, noise_vars_true, acquisition)
     save_plots && savefig(p, "p_$(iters).png")
 end
 
-function plot_sets(bolfi; term_cond, display=true, put_in_scale=false, noise_vars_true, acquisition, step=0.05)
+function plot_sets(bolfi; new_datum=nothing, term_cond, display=true, put_in_scale=false, noise_vars_true, acquisition, step=0.05)
     @assert acquisition isa SetsPostVariance
-    subset_plots = [plot_samples(get_subset(bolfi, set); term_cond, display=false, put_in_scale, noise_vars_true=noise_vars_true[set], acquisition=PostVariance(), step, y_set=set) for set in eachcol(bolfi.y_sets)]
-    acq_plot = plot_acquisition(bolfi; acquisition, step)
+    subset_plots = [plot_samples(get_subset(bolfi, set); new_datum, term_cond, display=false, put_in_scale, noise_vars_true=noise_vars_true[set], acquisition=PostVariance(), step, y_set=set) for set in eachcol(bolfi.y_sets)]
+    acq_plot = plot_acquisition(bolfi; new_datum, acquisition, step)
     p = plot(subset_plots..., acq_plot; layout=(length(subset_plots)+1, 1), size=(1440, (length(subset_plots)+1)*810))
     display && Plots.display(p)
     return p
 end
 
-function plot_acquisition(bolfi; acquisition, step=0.05)
+function plot_acquisition(bolfi; new_datum, acquisition, step=0.05)
     problem = bolfi.problem
     bounds = problem.domain.bounds
     @assert all((lb == bounds[1][1] for lb in bounds[1]))
@@ -56,10 +65,10 @@ function plot_acquisition(bolfi; acquisition, step=0.05)
 
     p4 = plot(; title="acquisition " * acq_name, colorbar=false)
     plot_posterior!(p4, (a,b) -> acq([a,b]); lims, label=nothing, step)
-    plot_samples!(p4, X; label=nothing)
+    plot_samples!(p4, X; new_datum, label=nothing)
 end
 
-function plot_samples(bolfi; term_cond, display=true, put_in_scale=false, noise_vars_true, acquisition, step=0.05, y_set=fill(true, ToyProblem.y_dim), title=nothing)
+function plot_samples(bolfi; new_datum=nothing, term_cond, display=true, put_in_scale=false, noise_vars_true, acquisition, step=0.05, y_set=fill(true, ToyProblem.y_dim), title=nothing)
     problem = bolfi.problem
     gp_post = BOSS.model_posterior(problem)
 
@@ -135,23 +144,23 @@ function plot_samples(bolfi; term_cond, display=true, put_in_scale=false, noise_
 
     p1 = plot(; title="true posterior", clims, kwargs...)
     plot_posterior!(p1, (a,b)->ll_post([a, b]); conf_sets=conf_sets_real, lims, label=nothing, step)
-    plot_samples!(p1, X; label=nothing)
+    plot_samples!(p1, X; new_datum, label=nothing)
     scatter!(p1, [], []; label="mean-real ratio = $(@sprintf("%.4f", mean_real_ratio))", color=nothing)
 
     p2 = plot(; title="approx. posterior", clims, kwargs...)
     plot_posterior!(p2, ll_gp; conf_sets=conf_sets_approx, lims, label=nothing, step)
-    plot_samples!(p2, X; label=nothing)
+    plot_samples!(p2, X; new_datum, label=nothing)
     # scatter!(p2, [], []; label="med/mean = $(@sprintf("%.4f", V_med / V_μ))", color=nothing)
     # scatter!(p2, [], []; label="mean/max = $(@sprintf("%.4f", V_μ / V_max))", color=nothing)
     scatter!(p2, [], []; label="lbub ratio = $(@sprintf("%.4f", BOLFI.calculate(term_cond, bolfi)))", color=nothing)
 
     p3 = plot(; title="GP[1] mean", kwargs...)
     plot_posterior!(p3, (a,b) -> gp_post([a,b])[1][1]; lims, label=nothing, step)
-    plot_samples!(p3, X; label=nothing)
+    plot_samples!(p3, X; new_datum, label=nothing)
 
     p4 = plot(; title="acquisition " * acq_name, kwargs...)
     plot_posterior!(p4, (a,b) -> acq([a,b]); lims, label=nothing, step)
-    plot_samples!(p4, X; label=nothing)
+    plot_samples!(p4, X; new_datum, label=nothing)
 
     isnothing(title) && (title = put_in_scale ? "(in scale)" : "(not in scale)")
     t = plot(; title, framestyle=:none, bottom_margin=-80Plots.px)
@@ -179,8 +188,9 @@ function plot_posterior!(p, ll; conf_sets=[], lims, label=nothing, step=0.05)
     return p
 end
 
-function plot_samples!(p, samples; label="(a,b) ~ p(a,b|d)")
+function plot_samples!(p, samples; new_datum=nothing, label="(a,b) ~ p(a,b|d)")
     scatter!(p, [θ[1] for θ in eachcol(samples)], [θ[2] for θ in eachcol(samples)]; label, color=:green)
+    isnothing(new_datum) || scatter!(p, [new_datum[1]], [new_datum[2]]; label=nothing, color=:red)
 end
 
 function plot_confidence_set!(p, ll, c; target, lims, step, label=nothing, V=nothing, color=:red, kwargs...)
