@@ -31,7 +31,7 @@ function plot_samples(bolfi; display=true, put_in_scale=false, noise_vars_true, 
     end
 
     # gp-approximated posterior likelihood
-    post_μ = BOLFI.posterior_mean(x_prior, gp_post; var_e=bolfi.var_e)
+    post_μ = BOLFI.posterior_mean(x_prior, gp_post, bolfi.var_e; normalize=false)
     ll_gp(a, b) = post_μ([a, b])
 
     # acquisition

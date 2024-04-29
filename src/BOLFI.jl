@@ -5,10 +5,10 @@ export BolfiProblem
 
 export get_subset
 export posterior_mean, posterior_variance, evidence
-export find_cutoff, find_cutoff_confint, gp_quantile
+export find_cutoff, find_cutoff_max, gp_quantile, set_overlap
 
 export BolfiAcquisition, PostVariance, SetsPostVariance
-export BolfiTermCond, ConfidenceTermCond
+export BolfiTermCond, ConfidenceTermCond, UBLBConfidence
 export BolfiCallback
 export BolfiOptions
 

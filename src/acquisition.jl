@@ -27,7 +27,7 @@ function (acq::PostVariance)(bolfi::BolfiProblem{Nothing}, options::BolfiOptions
     problem = bolfi.problem
     @assert problem.data isa BOSS.ExperimentDataMLE
     gp_post = BOSS.model_posterior(problem.model, problem.data)
-    return posterior_variance(bolfi.x_prior, gp_post; var_e=bolfi.var_e)
+    return posterior_variance(bolfi.x_prior, gp_post, bolfi.var_e; normalize=false)
 end
 
 
@@ -52,8 +52,7 @@ function (acq::SetsPostVariance)(bolfi::BolfiProblem{Matrix{Bool}}, options::Bol
         set = bolfi.y_sets[:,i]
         post = combine_gp_posts(gp_posts[set])
         var_e = bolfi.var_e[set]
-        py = evidence(bolfi.x_prior, post; var_e, xs)
-        set_vars[i] = posterior_variance(bolfi.x_prior, post; var_e, py)
+        set_vars[i] = posterior_variance(bolfi.x_prior, post, var_e; normalize=true, xs)
     end
     return (x) -> mean((v(x) for v in set_vars))
 end

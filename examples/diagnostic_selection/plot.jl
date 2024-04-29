@@ -7,7 +7,7 @@ using Printf
 mutable struct PlotCallback<: BolfiCallback
     iters::Int
     plot_each::Int
-    term_cond::BolfiTermCond
+    term_cond::Union{TermCond, BolfiTermCond}
     save_plots::Bool
     put_in_scale::Bool
 end
@@ -70,11 +70,18 @@ function plot_samples(bolfi; term_cond, display=true, put_in_scale=false, noise_
     lims = bounds[1][1], bounds[2][1]
     X, Y = problem.data.X, problem.data.Y
 
-    q = term_cond.q
+    # Confidence
+    conf_int = 0.6827
+    if hasproperty(term_cond, :q)
+        q = term_cond.q
+        @warn "Plotting with hard-coded `conf_int = $conf_int`."
+    else
+        q = 0.95
+        @warn "Plotting with hard-coded `q = $q` and `conf_int = $conf_int`."
+    end
 
-    # unnormalized posterior likelihood `p(d | a, b) * p(a, b) ∝ p(a, b | d)`
-    function ll_post(a, b)
-        x = [a, b]
+    # unnormalized posterior likelihood `p(y | x) * p(x) ∝ p(x | y)`
+    function ll_post(x)
         y = ToyProblem.experiment(x; noise_vars=zeros(ToyProblem.y_dim))[y_set]
         
         # ps = numerical_issues(x) ? 0. : 1.
@@ -85,20 +92,33 @@ function plot_samples(bolfi; term_cond, display=true, put_in_scale=false, noise_
         return pθ * ll
     end
 
-    # gp-approximated posterior likelihood
+    # confidence sets
     xs = rand(x_prior, 10_000)
-    post_μ, c_μ, V_μ = find_cutoff(gp_post, x_prior, bolfi.var_e, q; xs, normalize=true)
-    post_med, c_med, V_med = find_cutoff(gp_quantile(gp_post, 0.5), x_prior, bolfi.var_e, q; xs, normalize=true)
-    # post_lb, c_lb, V_lb = find_cutoff(gp_quantile(gp_post, 0.5 - (term_cond.gp_q / 2)), x_prior, bolfi.var_e, q; xs, normalize=true)
-    # post_ub, c_ub, V_ub = find_cutoff(gp_quantile(gp_post, 0.5 + (term_cond.gp_q / 2)), x_prior, bolfi.var_e, q; xs, normalize=true)
-    
-    conf_sets = [
-        (post_μ, c_μ, V_μ, "mean q:$q ($(@sprintf("%.4f", V_μ)))", :cyan),
-        (post_med, c_med, V_med, "median q:$q ($(@sprintf("%.4f", V_med)))", :orange),
-        # (post_lb, c_lb, V_lb, "GP-LB q:$q ($(@sprintf("%.4f", V_lb)))", :red),
-        # (post_ub, c_ub, V_ub, "GP-UB q:$q ($(@sprintf("%.4f", V_ub)))", :yellow)
+
+    post_real, c_real, V_real = find_cutoff(ll_post, x_prior, q; xs)  # unnormalized
+    post_μ, c_μ, V_μ = find_cutoff(gp_post, bolfi.var_e, x_prior, q; xs, normalize=true)
+    # post_med, c_med, V_med = find_cutoff(gp_quantile(gp_post, 0.5), bolfi.var_e, x_prior, q; xs, normalize=true)
+    post_lb, c_lb, V_lb = find_cutoff(gp_quantile(gp_post, 0.5 - (term_cond.gp_q / 2)), bolfi.var_e, x_prior, q; xs, normalize=true)
+    post_ub, c_ub, V_ub = find_cutoff(gp_quantile(gp_post, 0.5 + (term_cond.gp_q / 2)), bolfi.var_e, x_prior, q; xs, normalize=true)
+    # post_max, c_max, V_max = find_cutoff_max(bolfi, q; conf_int, xs, normalize=true)
+
+    conf_sets_real = [
+        (p=post_real, c=c_real, V=V_real, label="real q:$q ($(@sprintf("%.4f", V_real)))", color=:greenyellow),
+        (p=post_μ, c=c_μ, V=V_μ, label="mean q:$q ($(@sprintf("%.4f", V_μ)))", color=:cyan),
     ]
+    conf_sets_approx = [
+        (p=post_μ, c=c_μ, V=V_μ, label="mean q:$q ($(@sprintf("%.4f", V_μ)))", color=:cyan),
+        # (p=post_med, c=c_med, V=V_med, label="median q:$q ($(@sprintf("%.4f", V_med)))", color=:teal),
+        (p=post_lb, c=c_lb, V=V_lb, label="GP-LB q:$q ($(@sprintf("%.4f", V_lb)))", color=:yellow, linestyle=:dash),
+        (p=post_ub, c=c_ub, V=V_ub, label="GP-UB q:$q ($(@sprintf("%.4f", V_ub)))", color=:yellow, linestyle=:dashdot),
+        # (p=post_max, c=c_max, V=V_max, label="max q:$q ($(@sprintf("%.4f", V_max)))", color=:maroon),
+    ]
+
+    in_real = (post_real.(eachcol(xs)) .> c_real)
+    in_mean = (post_μ.(eachcol(xs)) .> c_μ)
+    mean_real_ratio = set_overlap(in_real, in_mean, x_prior, xs)
     
+    # gp-approximated posterior likelihood
     ll_gp(a, b) = post_μ([a, b])
 
     # acquisition
@@ -108,20 +128,22 @@ function plot_samples(bolfi; term_cond, display=true, put_in_scale=false, noise_
     # - - - PLOT - - - - -
     clims = nothing
     if put_in_scale
-        _, max_ll = maximize_prima((x)->ll_post(x...), x_prior, bounds; multistart=32, rhoend=1e-4)
+        _, max_ll = maximize_prima(ll_post, x_prior, bounds; multistart=32, rhoend=1e-4)
         clims = (0., 1.2*max_ll)
     end
     kwargs = (colorbar=false,)
 
     p1 = plot(; title="true posterior", clims, kwargs...)
-    plot_posterior!(p1, ll_post; lims, label=nothing, step)
+    plot_posterior!(p1, (a,b)->ll_post([a, b]); conf_sets=conf_sets_real, lims, label=nothing, step)
     plot_samples!(p1, X; label=nothing)
+    scatter!(p1, [], []; label="mean-real ratio = $(@sprintf("%.4f", mean_real_ratio))", color=nothing)
 
     p2 = plot(; title="approx. posterior", clims, kwargs...)
-    plot_posterior!(p2, ll_gp; conf_sets, lims, label=nothing, step)
+    plot_posterior!(p2, ll_gp; conf_sets=conf_sets_approx, lims, label=nothing, step)
     plot_samples!(p2, X; label=nothing)
-    scatter!(p2, [], []; label="med/mean = $(@sprintf("%.4f", V_med / V_μ))", color=nothing)
-    # scatter!(p2, [], []; label="confidence = $(@sprintf("%.4f", BOLFI.calculate(term_cond, bolfi)))", color=nothing)
+    # scatter!(p2, [], []; label="med/mean = $(@sprintf("%.4f", V_med / V_μ))", color=nothing)
+    # scatter!(p2, [], []; label="mean/max = $(@sprintf("%.4f", V_μ / V_max))", color=nothing)
+    scatter!(p2, [], []; label="lbub ratio = $(@sprintf("%.4f", BOLFI.calculate(term_cond, bolfi)))", color=nothing)
 
     p3 = plot(; title="GP[1] mean", kwargs...)
     plot_posterior!(p3, (a,b) -> gp_post([a,b])[1][1]; lims, label=nothing, step)
@@ -140,16 +162,19 @@ end
 
 function plot_posterior!(p, ll; conf_sets=[], lims, label=nothing, step=0.05)
     grid = lims[1]:step:lims[2]
-    contourf!(p, grid, grid, ll)
-    
+    vals = ll.(grid', grid)
+    clims = (minimum(vals), maximum(vals))
+    contourf!(p, grid, grid, vals; clims)
+
     # "OBSERVATION-RULES"
     obs_color = :white
     plot!(p, a->1/a, grid; y_lims=lims, label, color=obs_color)
     plot!(p, a->0., grid; y_lims=lims, label, color=obs_color)
 
     # CONFIDENCE SET
-    for (f, c, V, label, color) in conf_sets
-        plot_confidence_set!(p, (a,b)->f([a,b]), c; lims, step, label, V, color)
+    target = mean(vals)
+    for (f, c, V, kwargs...) in conf_sets
+        plot_confidence_set!(p, f, c; target, lims, step, V, linewidth=2, kwargs...)
     end
     return p
 end
@@ -158,8 +183,9 @@ function plot_samples!(p, samples; label="(a,b) ~ p(a,b|d)")
     scatter!(p, [θ[1] for θ in eachcol(samples)], [θ[2] for θ in eachcol(samples)]; label, color=:green)
 end
 
-function plot_confidence_set!(p, ll, c; lims, step, label=nothing, V=nothing, color=:red, kwargs...)
+function plot_confidence_set!(p, ll, c; target, lims, step, label=nothing, V=nothing, color=:red, kwargs...)
     grid = lims[1]:step:lims[2]
-    contour!(p, grid, grid, ll; levels=[c], color, kwargs...)
+    norm = target / c  # s.t. the contour will be within climss
+    contour!(p, grid, grid, (a,b)->norm*ll([a,b]); levels=[norm*c], color, kwargs...)
     isnothing(label) || scatter!(p, [], []; label, color)
 end

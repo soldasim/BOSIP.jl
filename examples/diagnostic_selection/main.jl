@@ -24,11 +24,20 @@ function script_bolfi(;
         parallel = true,
     )
 
-    term_cond = ConfidenceTermCond(;
+    # term_cond = ConfidenceTermCond(;
+    #     # samples = 10_000,
+    #     xs = rand(problem.x_prior, 10_000),
+    #     q = 0.95,
+    #     r = 0.95,
+    #     max_iters = 50,
+    # )
+    term_cond = UBLBConfidence(;
         # samples = 10_000,
         xs = rand(problem.x_prior, 10_000),
+        gp_q = 0.6827,
         q = 0.95,
-        r = 0.95,
+        r = 0.8,
+        max_iters = 30,
     )
 
     options = BolfiOptions(;
