@@ -32,7 +32,19 @@ ConfidenceTermCond(;
 
 function (cond::ConfidenceTermCond)(bolfi::BolfiProblem{Nothing})
     (bolfi.problem.data isa ExperimentDataPrior) && return true
+    ratio = calculate(cond, bolfi)
+    return ratio < cond.r
+end
 
+function (cond::ConfidenceTermCond)(bolfi::BolfiProblem{Matrix{Bool}})
+    return any(
+        cond.(
+            (get_subset(bolfi, set) for set in eachcol(bolfi.y_sets))
+        )
+    )
+end
+
+function calculate(cond::ConfidenceTermCond, bolfi::BolfiProblem)
     gp_post = BOSS.model_posterior(bolfi.problem)
     gp_med = gp_quantile(gp_post, 0.5)
 
@@ -44,14 +56,5 @@ function (cond::ConfidenceTermCond)(bolfi::BolfiProblem{Nothing})
     _, _, V_mean = find_cutoff(gp_post, bolfi.x_prior, bolfi.var_e, cond.q; xs)
     _, _, V_med = find_cutoff(gp_med, bolfi.x_prior, bolfi.var_e, cond.q; xs)
 
-    ratio = V_med / V_mean
-    return ratio < cond.r
-end
-
-function (cond::ConfidenceTermCond)(bolfi::BolfiProblem{Matrix{Bool}})
-    return any(
-        cond.(
-            (get_subset(bolfi, set) for set in eachcol(bolfi.y_sets))
-        )
-    )
+    return V_med / V_mean
 end

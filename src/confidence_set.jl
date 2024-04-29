@@ -86,9 +86,8 @@ function approx_cutoff_area(x_prior, f, c; xs=nothing, samples=10_000)
     if isnothing(xs)
         xs = rand(x_prior, samples)
     end
-    ps = f.(eachcol(xs))
     ws = 1 ./ pdf.(Ref(x_prior), eachcol(xs))
     ws ./= sum(ws)
-    V = sum(ws[ps .> c])
+    V = sum(ws[f.(eachcol(xs)) .> c])
     return V
 end

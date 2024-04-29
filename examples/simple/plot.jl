@@ -46,11 +46,11 @@ function plot_samples(bolfi; display=true, put_in_scale=false, noise_vars_true, 
     end
     kwargs = (colorbar=false,)
 
-    p1 = plot(; title="(unnormalized) true posterior", clims, kwargs...)
+    p1 = plot(; title="true posterior", clims, kwargs...)
     plot_posterior!(p1, ll_post; ToyProblem.y_obs, lims, label=nothing, step)
     plot_samples!(p1, X; label=nothing)
 
-    p2 = plot(; title="(unnormalized) approx. posterior", clims, kwargs...)
+    p2 = plot(; title="approx. posterior", clims, kwargs...)
     plot_posterior!(p2, ll_gp; ToyProblem.y_obs, lims, label=nothing, step)
     plot_samples!(p2, X; label=nothing)
 

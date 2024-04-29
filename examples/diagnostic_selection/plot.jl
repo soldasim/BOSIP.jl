@@ -6,32 +6,37 @@ using Printf
 
 mutable struct PlotCallback<: BolfiCallback
     iters::Int
-    q::Float64
+    plot_each::Int
+    term_cond::BolfiTermCond
     save_plots::Bool
     put_in_scale::Bool
 end
 PlotCallback(;
-    q,
+    plot_each = 1,
+    term_cond,
     save_plots,
     put_in_scale,
-) = PlotCallback(0, q, save_plots, put_in_scale)
+) = PlotCallback(0, plot_each, term_cond, save_plots, put_in_scale)
 
-function (plt::PlotCallback)(problem::BolfiProblem; acquisition, kwargs...)
+function (plt::PlotCallback)(problem::BolfiProblem; acquisition, options, kwargs...)
     plt.iters += 1
-    plot_state(problem; q=plt.q, save_plots=plt.save_plots, iters=plt.iters, put_in_scale=plt.put_in_scale, noise_vars_true=ToyProblem.σe_true.^2, acquisition=acquisition.acq)
+    if plt.iters % plt.plot_each == 0
+        options.info && @info "Plotting ..."
+        plot_state(problem; term_cond=plt.term_cond, save_plots=plt.save_plots, iters=plt.iters, put_in_scale=plt.put_in_scale, noise_vars_true=ToyProblem.σe_true.^2, acquisition=acquisition.acq)
+    end
 end
 
 
 # - - - Plotting Scripts - - - - -
 
-function plot_state(problem; q, display=true, save_plots=false, iters, put_in_scale, noise_vars_true, acquisition)
-    p = plot_sets(problem; q, display, put_in_scale, noise_vars_true, acquisition)
+function plot_state(problem; term_cond, display=true, save_plots=false, iters, put_in_scale, noise_vars_true, acquisition)
+    p = plot_sets(problem; term_cond, display, put_in_scale, noise_vars_true, acquisition)
     save_plots && savefig(p, "p_$(iters).png")
 end
 
-function plot_sets(bolfi; q, display=true, put_in_scale=false, noise_vars_true, acquisition, step=0.05)
+function plot_sets(bolfi; term_cond, display=true, put_in_scale=false, noise_vars_true, acquisition, step=0.05)
     @assert acquisition isa SetsPostVariance
-    subset_plots = [plot_samples(get_subset(bolfi, set); q, display=false, put_in_scale, noise_vars_true=noise_vars_true[set], acquisition=PostVariance(), step, y_set=set) for set in eachcol(bolfi.y_sets)]
+    subset_plots = [plot_samples(get_subset(bolfi, set); term_cond, display=false, put_in_scale, noise_vars_true=noise_vars_true[set], acquisition=PostVariance(), step, y_set=set) for set in eachcol(bolfi.y_sets)]
     acq_plot = plot_acquisition(bolfi; acquisition, step)
     p = plot(subset_plots..., acq_plot; layout=(length(subset_plots)+1, 1), size=(1440, (length(subset_plots)+1)*810))
     display && Plots.display(p)
@@ -54,7 +59,7 @@ function plot_acquisition(bolfi; acquisition, step=0.05)
     plot_samples!(p4, X; label=nothing)
 end
 
-function plot_samples(bolfi; q, display=true, put_in_scale=false, noise_vars_true, acquisition, step=0.05, y_set=fill(true, ToyProblem.y_dim), title=nothing)
+function plot_samples(bolfi; term_cond, display=true, put_in_scale=false, noise_vars_true, acquisition, step=0.05, y_set=fill(true, ToyProblem.y_dim), title=nothing)
     problem = bolfi.problem
     gp_post = BOSS.model_posterior(problem)
 
@@ -64,6 +69,8 @@ function plot_samples(bolfi; q, display=true, put_in_scale=false, noise_vars_tru
     @assert all((ub == bounds[2][1] for ub in bounds[2]))
     lims = bounds[1][1], bounds[2][1]
     X, Y = problem.data.X, problem.data.Y
+
+    q = term_cond.q
 
     # unnormalized posterior likelihood `p(d | a, b) * p(a, b) ∝ p(a, b | d)`
     function ll_post(a, b)
@@ -82,9 +89,14 @@ function plot_samples(bolfi; q, display=true, put_in_scale=false, noise_vars_tru
     xs = rand(x_prior, 10_000)
     post_μ, c_μ, V_μ = find_cutoff(gp_post, x_prior, bolfi.var_e, q; xs, normalize=true)
     post_med, c_med, V_med = find_cutoff(gp_quantile(gp_post, 0.5), x_prior, bolfi.var_e, q; xs, normalize=true)
+    # post_lb, c_lb, V_lb = find_cutoff(gp_quantile(gp_post, 0.5 - (term_cond.gp_q / 2)), x_prior, bolfi.var_e, q; xs, normalize=true)
+    # post_ub, c_ub, V_ub = find_cutoff(gp_quantile(gp_post, 0.5 + (term_cond.gp_q / 2)), x_prior, bolfi.var_e, q; xs, normalize=true)
+    
     conf_sets = [
-        (post_μ, c_μ, V_μ, "expected q:$q ($(@sprintf("%.4f", V_μ)))", :red),
-        (post_med, c_med, V_med, "median q:$q ($(@sprintf("%.4f", V_med)))", :white),
+        (post_μ, c_μ, V_μ, "mean q:$q ($(@sprintf("%.4f", V_μ)))", :cyan),
+        (post_med, c_med, V_med, "median q:$q ($(@sprintf("%.4f", V_med)))", :orange),
+        # (post_lb, c_lb, V_lb, "GP-LB q:$q ($(@sprintf("%.4f", V_lb)))", :red),
+        # (post_ub, c_ub, V_ub, "GP-UB q:$q ($(@sprintf("%.4f", V_ub)))", :yellow)
     ]
     
     ll_gp(a, b) = post_μ([a, b])
@@ -101,14 +113,15 @@ function plot_samples(bolfi; q, display=true, put_in_scale=false, noise_vars_tru
     end
     kwargs = (colorbar=false,)
 
-    p1 = plot(; title="(unnormalized) true posterior", clims, kwargs...)
+    p1 = plot(; title="true posterior", clims, kwargs...)
     plot_posterior!(p1, ll_post; lims, label=nothing, step)
     plot_samples!(p1, X; label=nothing)
 
-    p2 = plot(; title="(normalized) approx. posterior", clims, kwargs...)
+    p2 = plot(; title="approx. posterior", clims, kwargs...)
     plot_posterior!(p2, ll_gp; conf_sets, lims, label=nothing, step)
     plot_samples!(p2, X; label=nothing)
-    scatter!(p2, [], []; label="med/exp = $(@sprintf("%.4f", V_med / V_μ))", color=nothing)
+    scatter!(p2, [], []; label="med/mean = $(@sprintf("%.4f", V_med / V_μ))", color=nothing)
+    # scatter!(p2, [], []; label="confidence = $(@sprintf("%.4f", BOLFI.calculate(term_cond, bolfi)))", color=nothing)
 
     p3 = plot(; title="GP[1] mean", kwargs...)
     plot_posterior!(p3, (a,b) -> gp_post([a,b])[1][1]; lims, label=nothing, step)
@@ -130,7 +143,7 @@ function plot_posterior!(p, ll; conf_sets=[], lims, label=nothing, step=0.05)
     contourf!(p, grid, grid, ll)
     
     # "OBSERVATION-RULES"
-    obs_color = :gold
+    obs_color = :white
     plot!(p, a->1/a, grid; y_lims=lims, label, color=obs_color)
     plot!(p, a->0., grid; y_lims=lims, label, color=obs_color)
 

@@ -24,19 +24,20 @@ function script_bolfi(;
         parallel = true,
     )
 
-    q = 0.95  # quantile of interest
-    options = BolfiOptions(;
-        callback = PlotCallback(;
-            q,
-            save_plots=false,
-            put_in_scale=false,
-        ),
-    )
     term_cond = ConfidenceTermCond(;
         # samples = 10_000,
         xs = rand(problem.x_prior, 10_000),
-        q,
+        q = 0.95,
         r = 0.95,
+    )
+
+    options = BolfiOptions(;
+        callback = PlotCallback(;
+            plot_each = 1,
+            term_cond,
+            save_plots=false,
+            put_in_scale=false,
+        ),
     )
 
     bolfi!(problem; acquisition, model_fitter, acq_maximizer, term_cond, options)
