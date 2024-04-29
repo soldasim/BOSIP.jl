@@ -34,7 +34,7 @@ function script_bolfi(;
     term_cond = UBLBConfidence(;
         # samples = 10_000,
         xs = rand(problem.x_prior, 10_000),
-        gp_q = 0.6827,
+        n = 1.,
         q = 0.95,
         r = 0.8,
         max_iters = 30,

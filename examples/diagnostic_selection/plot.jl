@@ -71,13 +71,13 @@ function plot_samples(bolfi; term_cond, display=true, put_in_scale=false, noise_
     X, Y = problem.data.X, problem.data.Y
 
     # Confidence
-    conf_int = 0.6827
+    n = 1.  # num of std from GP mean
     if hasproperty(term_cond, :q)
         q = term_cond.q
-        @warn "Plotting with hard-coded `conf_int = $conf_int`."
+        @warn "Plotting with hard-coded `n = $n`."
     else
         q = 0.95
-        @warn "Plotting with hard-coded `q = $q` and `conf_int = $conf_int`."
+        @warn "Plotting with hard-coded `q = $q` and `n = $n`."
     end
 
     # unnormalized posterior likelihood `p(y | x) * p(x) ∝ p(x | y)`
@@ -97,10 +97,10 @@ function plot_samples(bolfi; term_cond, display=true, put_in_scale=false, noise_
 
     post_real, c_real, V_real = find_cutoff(ll_post, x_prior, q; xs)  # unnormalized
     post_μ, c_μ, V_μ = find_cutoff(gp_post, bolfi.var_e, x_prior, q; xs, normalize=true)
-    # post_med, c_med, V_med = find_cutoff(gp_quantile(gp_post, 0.5), bolfi.var_e, x_prior, q; xs, normalize=true)
-    post_lb, c_lb, V_lb = find_cutoff(gp_quantile(gp_post, 0.5 - (term_cond.gp_q / 2)), bolfi.var_e, x_prior, q; xs, normalize=true)
-    post_ub, c_ub, V_ub = find_cutoff(gp_quantile(gp_post, 0.5 + (term_cond.gp_q / 2)), bolfi.var_e, x_prior, q; xs, normalize=true)
-    # post_max, c_max, V_max = find_cutoff_max(bolfi, q; conf_int, xs, normalize=true)
+    # post_med, c_med, V_med = find_cutoff(gp_mean(gp_post), bolfi.var_e, x_prior, q; xs, normalize=true)
+    post_lb, c_lb, V_lb = find_cutoff(gp_bound(gp_post, -term_cond.n), bolfi.var_e, x_prior, q; xs, normalize=true)
+    post_ub, c_ub, V_ub = find_cutoff(gp_bound(gp_post, +term_cond.n), bolfi.var_e, x_prior, q; xs, normalize=true)
+    # post_max, c_max, V_max = find_cutoff_max(bolfi, q, n; xs, normalize=true)
 
     conf_sets_real = [
         (p=post_real, c=c_real, V=V_real, label="real q:$q ($(@sprintf("%.4f", V_real)))", color=:greenyellow),
@@ -169,7 +169,7 @@ function plot_posterior!(p, ll; conf_sets=[], lims, label=nothing, step=0.05)
     # "OBSERVATION-RULES"
     obs_color = :white
     plot!(p, a->1/a, grid; y_lims=lims, label, color=obs_color)
-    plot!(p, a->0., grid; y_lims=lims, label, color=obs_color)
+    plot!(p, a->a, grid; y_lims=lims, label, color=obs_color)
 
     # CONFIDENCE SET
     target = mean(vals)

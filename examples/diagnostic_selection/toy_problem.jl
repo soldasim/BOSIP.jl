@@ -17,7 +17,7 @@ const σe =      [1., 1.]  # hyperparameter
 const ω = [0.001 for _ in 1:y_dim]
 
 f_(x) = x[1] * x[2]
-g_(x) = x[2]
+g_(x) = x[2] - x[1]
 
 get_y_sets() = [true; false;; false; true;;]
 
@@ -53,7 +53,8 @@ function get_noise_var_priors()
     return [truncated(Normal(μ_std[i]^2, max_std[i]^2 / 3); lower=0.) for i in 1:y_dim]
 end
 
-get_x_prior() = Product(fill(Uniform(-5., 5.), 2))
+# get_x_prior() = Product(fill(Uniform(-5., 5.), 2))
+get_x_prior() = MvNormal(zeros(2), fill(10/3/2, 2))
 
 
 # - - - INITIALIZATION - - - - -

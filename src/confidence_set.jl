@@ -1,5 +1,45 @@
 
 """
+Return predictive function `(x) -> (m, 0.)`, where `m` is the mean
+of the GP posterior.
+"""
+function gp_mean(gp_post)
+    return function post(x)
+        m, var = gp_post(x)
+        var_ = fill(0., length(m))
+        return m, var_
+    end
+end
+
+"""
+Return predictive function `(x) -> (m, 0.)`, where `m = μ + n * std`,
+where `μ` and `std` are the mean and the standard deviation of the GP posterior.
+"""
+function gp_bound(gp_post, n)
+    return function post(x)
+        m, var = gp_post(x)
+        std = sqrt.(var)
+        m_ = m .+ (n * std)
+        var_ = fill(0., length(m))
+        return m_, var_
+    end
+end
+
+"""
+Return predictive function `(x) -> (m, 0.)`, where `m` is the `q`th quantile
+of the posterior predictive distribution of the GP posterior.
+"""
+function gp_quantile(gp_post, q)
+    return function post(x)
+        m, var = gp_post(x)
+        d = Normal.(m, sqrt.(var))
+        m_ = quantile.(d, Ref(q))
+        var_ = fill(0., length(m))
+        return m_, var_
+    end
+end
+
+"""
 Returns the (approximate) normalized posterior `post(x) = p(y_obs|x) p(x) / p(y_obs)`
 together with cutoff `c` s.t. the ratio `q` of probability mass
 lies within the area given by `{x | post(x) > c}`
@@ -33,14 +73,14 @@ end
 Returns a function `p_max` (not a proper pdf function) and cutoff `c`
 which together define a subset `S` of the domain of the relative size `V`
 s.t. `S` contains all points `x` which belong to the `q` confidence interval
-of _any_ of the GP realization within the `conf_int` confidence interval of the GP posterior.
+of _any_ of the GP realization within `n` standard deviations of the mean GP posterior.
 """
-function find_cutoff_max(bolfi::BolfiProblem, q; conf_int=0.9, xs=nothing, samples=10_000, normalize=true)
+function find_cutoff_max(bolfi::BolfiProblem, q, n; xs=nothing, samples=10_000, normalize=true)
     problem = bolfi.problem
     gp_post = BOSS.model_posterior(problem.model, problem.data)
 
-    gp_lb = gp_quantile(gp_post, 0.5 - (conf_int / 2))
-    gp_ub = gp_quantile(gp_post, 0.5 + (conf_int / 2))
+    gp_lb = gp_bound(gp_post, -n)
+    gp_ub = gp_bound(gp_post, n)
 
     # Posterior predictive function of `x -> (y - y_obs)` which maximizes
     # the likelihood `p(y_obs|x)` within the `conf_int` confidence interval
@@ -55,20 +95,6 @@ function find_cutoff_max(bolfi::BolfiProblem, q; conf_int=0.9, xs=nothing, sampl
     end
 
     return find_cutoff(gp_max, bolfi.var_e, bolfi.x_prior, q; xs, samples, normalize)
-end
-
-"""
-Return predictive function `(x) -> (m, 0.)`, where `m` is the `q`th quantile
-of the posterior predictive distribution of the GP posterior.
-"""
-function gp_quantile(gp_post, q)
-    return function post(x)
-        m, var = gp_post(x)
-        d = Normal.(m, sqrt.(var))
-        m_ = quantile.(d, Ref(q))
-        var_ = fill(0., length(m))
-        return m_, var_
-    end
 end
 
 """
