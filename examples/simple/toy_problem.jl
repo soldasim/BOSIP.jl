@@ -4,8 +4,6 @@ using BOLFI
 using BOSS
 using Distributions
 
-include("toy_problem_utils.jl")
-
 
 # - - - PROBLEM - - - - -
 
@@ -14,8 +12,8 @@ const y_obs = [1.]
 const y_dim = 1
 
 """observation noise std"""
-const σe_true = [0.5]  # true noise
-const σe =      [0.5]  # hyperparameter
+const σe_true = [1.]  # true noise
+const σe =      [1.]  # hyperparameter
 """simulation noise std"""
 const ω = [0.001 for _ in 1:y_dim]
 
@@ -53,7 +51,8 @@ function get_noise_var_priors()
     return [truncated(Normal(μ_std[i]^2, max_std[i]^2 / 3); lower=0.) for i in 1:y_dim]
 end
 
-get_x_prior() = Product(fill(Uniform(-5., 5.), 2))
+# get_x_prior() = Product(fill(Uniform(-5., 5.), 2))
+get_x_prior() = MvNormal(zeros(2), fill(5/3, 2))
 
 
 # - - - INITIALIZATION - - - - -
@@ -76,6 +75,32 @@ function bolfi_problem(data::ExperimentData)
         var_e = σe.^2,
         x_prior = get_x_prior(),
     )
+end
+
+
+# - - - UTILS - - - - -
+
+function random_datapoint()
+    x_prior = get_x_prior()
+    bounds = get_bounds()
+
+    x = rand(x_prior)
+    while !BOSS.in_bounds(x, bounds)
+        x = rand(x_prior)
+    end
+    return x
+end
+
+"""
+Return an _approximate_ Inverse Gamma distribution
+with 0.99 probability mass between `lb` and `ub.`
+"""
+function calc_inverse_gamma(lb, ub)
+    μ = (ub + lb) / 2
+    σ = (ub - lb) / 6
+    a = (μ^2 / σ^2) + 2
+    b = μ * ((μ^2 / σ^2) + 1)
+    return InverseGamma(a, b)
 end
 
 end

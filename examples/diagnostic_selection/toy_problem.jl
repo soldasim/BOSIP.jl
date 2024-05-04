@@ -54,7 +54,7 @@ function get_noise_var_priors()
 end
 
 # get_x_prior() = Product(fill(Uniform(-5., 5.), 2))
-get_x_prior() = MvNormal(zeros(2), fill(10/3/2, 2))
+get_x_prior() = MvNormal(zeros(2), fill(5/3, 2))
 
 
 # - - - INITIALIZATION - - - - -

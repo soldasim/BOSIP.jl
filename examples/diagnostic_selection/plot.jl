@@ -1,6 +1,15 @@
 using Plots
 using Printf
 
+function init_plotting(; save_plots, plot_dir)
+    if save_plots
+        if isdir(plot_dir)
+            rm(plot_dir, recursive=true)
+        end
+        mkdir(plot_dir)
+    end
+end
+
 
 # - - - Plotting Callback - - - - -
 
@@ -9,20 +18,22 @@ mutable struct PlotCallback<: BolfiCallback
     plot_each::Int
     term_cond::Union{TermCond, BolfiTermCond}
     save_plots::Bool
+    plot_dir::String
     put_in_scale::Bool
 end
 PlotCallback(;
     plot_each = 1,
     term_cond,
     save_plots,
+    plot_dir = ".",
     put_in_scale,
-) = PlotCallback(0, plot_each, term_cond, save_plots, put_in_scale)
+) = PlotCallback(0, plot_each, term_cond, save_plots, plot_dir, put_in_scale)
 
 function (plt::PlotCallback)(problem::BolfiProblem; acquisition, options, kwargs...)
     plt.iters += 1
     if plt.iters % plt.plot_each == 0
         options.info && @info "Plotting ..."
-        plot_state(problem; term_cond=plt.term_cond, save_plots=plt.save_plots, iters=plt.iters, put_in_scale=plt.put_in_scale, noise_vars_true=ToyProblem.σe_true.^2, acquisition=acquisition.acq)
+        plot_state(problem; term_cond=plt.term_cond, save_plots=plt.save_plots, plot_dir=plt.plot_dir, plot_name="p_$(plt.iters)", put_in_scale=plt.put_in_scale, noise_vars_true=ToyProblem.σe_true.^2, acquisition=acquisition.acq)
     end
 end
 
@@ -37,10 +48,10 @@ function separate_new_datum(problem)
     return bolfi, new
 end
 
-function plot_state(problem; term_cond, display=true, save_plots=false, iters, put_in_scale, noise_vars_true, acquisition)
+function plot_state(problem; term_cond, display=true, save_plots=false, plot_dir=".", plot_name="p", put_in_scale=false, noise_vars_true, acquisition)
     bolfi, new_datum = separate_new_datum(problem)
     p = plot_sets(bolfi; new_datum, term_cond, display, put_in_scale, noise_vars_true, acquisition)
-    save_plots && savefig(p, "p_$(iters).png")
+    save_plots && savefig(p, plot_dir * '/' * plot_name * ".png")
 end
 
 function plot_sets(bolfi; new_datum=nothing, term_cond, display=true, put_in_scale=false, noise_vars_true, acquisition, step=0.05)
@@ -80,12 +91,13 @@ function plot_samples(bolfi; new_datum=nothing, term_cond, display=true, put_in_
     X, Y = problem.data.X, problem.data.Y
 
     # Confidence
-    n = 1.  # num of std from GP mean
-    if hasproperty(term_cond, :q)
+    if all(hasproperty.(Ref(term_cond), [:n, :q]))
+        n = term_cond.n
         q = term_cond.q
-        @warn "Plotting with hard-coded `n = $n`."
+        @info "Plotting with `q = $q` and `n = $n`."
     else
-        q = 0.95
+        n = 1.  # num of std from GP mean
+        q = 0.95  # confidence of the confidence set
         @warn "Plotting with hard-coded `q = $q` and `n = $n`."
     end
 

@@ -35,20 +35,25 @@ function script_bolfi(;
         # samples = 10_000,
         xs = rand(problem.x_prior, 10_000),
         n = 1.,
-        q = 0.95,
+        q = 0.8,
         r = 0.8,
         max_iters = 30,
     )
 
+    save_plots = true
+    plot_dir = "./examples/diagnostic_selection/plots"
+
     options = BolfiOptions(;
         callback = PlotCallback(;
-            plot_each = 1,
+            plot_each = 5,
             term_cond,
-            save_plots=false,
-            put_in_scale=false,
+            save_plots,
+            plot_dir,
+            put_in_scale = false,
         ),
     )
 
+    init_plotting(; save_plots, plot_dir)
     bolfi!(problem; acquisition, model_fitter, acq_maximizer, term_cond, options)
     return problem
 end

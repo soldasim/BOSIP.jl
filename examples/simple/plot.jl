@@ -1,5 +1,14 @@
 using Plots
 
+function init_plotting(; save_plots, plot_dir)
+    if save_plots
+        if isdir(plot_dir)
+            rm(plot_dir, recursive=true)
+        end
+        mkdir(plot_dir)
+    end
+end
+
 function separate_new_datum(problem)
     bolfi = deepcopy(problem)
     new = bolfi.problem.data.X[:,end]
@@ -8,10 +17,10 @@ function separate_new_datum(problem)
     return bolfi, new
 end
 
-function plot_state(problem; display=true, save_plots=false, iters, put_in_scale, noise_vars_true, acquisition)
+function plot_state(problem; display=true, save_plots=false, plot_dir=".", plot_name="p", put_in_scale, noise_vars_true, acquisition)
     bolfi, new_datum = separate_new_datum(problem)
     p = plot_samples(bolfi; new_datum, display, put_in_scale, noise_vars_true, acquisition)
-    save_plots && savefig(p, "p_$(iters).png")
+    save_plots && savefig(p, plot_dir * '/' * plot_name * ".png")
 end
 
 function plot_samples(bolfi; new_datum=nothing, display=true, put_in_scale=false, noise_vars_true, acquisition)
