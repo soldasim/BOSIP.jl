@@ -48,13 +48,17 @@ function (acq::SetsPostVariance)(bolfi::BolfiProblem{Matrix{Bool}}, options::Bol
     xs = rand(bolfi.x_prior, acq.samples)  # shared samples
     
     set_vars = Vector{Function}(undef, size(bolfi.y_sets)[2])
+    ws = Vector{Float64}(undef, size(bolfi.y_sets)[2])
     for i in eachindex(set_vars)
         set = bolfi.y_sets[:,i]
         post = combine_gp_posts(gp_posts[set])
         var_e = bolfi.var_e[set]
+        μ = posterior_mean(bolfi.x_prior, post, var_e; normalize=true, xs)
+        ws[i]  = 1. / sum(μ.(eachcol(bolfi.problem.data.X)))
         set_vars[i] = posterior_variance(bolfi.x_prior, post, var_e; normalize=true, xs)
     end
-    return (x) -> mean((v(x) for v in set_vars))
+    
+    return (x) -> mean((w * v(x) for (w, v) in zip(ws, set_vars)))
 end
 
 function combine_gp_posts(gp_posts)
