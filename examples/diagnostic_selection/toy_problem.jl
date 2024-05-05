@@ -47,6 +47,10 @@ const λ_MIN = 0.01
 const λ_MAX = 10.
 get_length_scale_priors() = fill(Product(fill(calc_inverse_gamma(λ_MIN, λ_MAX), 2)), y_dim)
 
+function get_amplitude_priors()
+    return fill(truncated(Normal(0., 5.); lower=0.), y_dim)
+end
+
 function get_noise_var_priors()
     μ_std = ω
     max_std = 10 * ω
@@ -73,6 +77,7 @@ function bolfi_problem(data::ExperimentData)
         bounds = get_bounds(),
         kernel = get_kernel(),
         length_scale_priors = get_length_scale_priors(),
+        amp_priors = get_amplitude_priors(),
         noise_var_priors = get_noise_var_priors(),
         var_e = σe.^2,
         x_prior = get_x_prior(),

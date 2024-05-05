@@ -88,8 +88,8 @@ UBLBConfidence(;
     samples = 10_000,
     xs = nothing,
     n = 1.,
-    q = 0.95,
-    r = 0.95,
+    q = 0.8,
+    r = 0.8,
 ) = UBLBConfidence(IterLimit(max_iters), samples, xs, n, q, r)
 
 function (cond::UBLBConfidence)(bolfi::BolfiProblem{Nothing})

@@ -44,6 +44,7 @@ function BolfiProblem(data;
     cons = nothing,
     kernel = BOSS.Matern32Kernel(),
     length_scale_priors,
+    amp_priors,
     noise_var_priors,
     var_e,
     x_prior,
@@ -57,6 +58,7 @@ function BolfiProblem(data;
 
     model = GaussianProcess(;
         kernel,
+        amp_priors,
         length_scale_priors,
     )
 

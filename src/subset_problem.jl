@@ -28,6 +28,7 @@ function get_subset(model::GaussianProcess, y_set::AbstractVector{<:Bool})
     return GaussianProcess(
         isnothing(model.mean) ? nothing : (x) -> model.mean(x)[y_set],
         model.kernel,
+        model.amp_priors[y_set],
         model.length_scale_priors[y_set],
     )
 end
@@ -42,17 +43,18 @@ function get_subset(data::ExperimentDataMLE, y_set::AbstractVector{<:Bool})
     return ExperimentDataMLE(
         data.X,
         data.Y[y_set, :],
-        data.θ,
+        data.θ[y_set],
         data.length_scales[:, y_set],
         data.noise_vars[y_set],
     )
 end
 function get_subset(data::ExperimentDataBI, y_set::AbstractVector{<:Bool})
-    return ExperimentDataBI(
-        data.X,
-        data.Y[y_set, :],
-        data.θ,
-        [ls[:, y_set] for ls in data.length_scales],
-        data.noise_vars[y_set, :],
-    )
+    throw(ErrorException("unimplemented"))  # See https://github.com/soldasim/BOSS.jl/issues/32
+    # return ExperimentDataBI(
+    #     data.X,
+    #     data.Y[y_set, :],
+    #     data.θ,
+    #     [ls[:, y_set] for ls in data.length_scales],
+    #     data.noise_vars[y_set, :],
+    # )
 end

@@ -24,6 +24,7 @@ function script_bolfi(;
         parallel = true,
     )
 
+    # EXPERIMENTAL TERMINATION CONDITIONS
     # term_cond = ConfidenceTermCond(;
     #     # samples = 10_000,
     #     xs = rand(problem.x_prior, 10_000),
@@ -31,14 +32,16 @@ function script_bolfi(;
     #     r = 0.95,
     #     max_iters = 50,
     # )
-    term_cond = UBLBConfidence(;
-        # samples = 10_000,
-        xs = rand(problem.x_prior, 10_000),
-        n = 1.,
-        q = 0.8,
-        r = 0.8,
-        max_iters = 30,
-    )
+    # term_cond = UBLBConfidence(;
+    #     # samples = 10_000,
+    #     xs = rand(problem.x_prior, 10_000),
+    #     n = 1.,
+    #     q = 0.8,
+    #     r = 0.8,
+    #     max_iters = 30,
+    # )
+
+    term_cond = IterLimit(25);
 
     save_plots = true
     plot_dir = "./examples/diagnostic_selection/plots"

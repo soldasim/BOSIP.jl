@@ -97,7 +97,7 @@ function plot_samples(bolfi; new_datum=nothing, term_cond, display=true, put_in_
         @info "Plotting with `q = $q` and `n = $n`."
     else
         n = 1.  # num of std from GP mean
-        q = 0.95  # confidence of the confidence set
+        q = 0.8  # confidence of the confidence set
         @warn "Plotting with hard-coded `q = $q` and `n = $n`."
     end
 
@@ -119,8 +119,8 @@ function plot_samples(bolfi; new_datum=nothing, term_cond, display=true, put_in_
     post_real, c_real, V_real = find_cutoff(ll_post, x_prior, q; xs)  # unnormalized
     post_μ, c_μ, V_μ = find_cutoff(gp_post, bolfi.var_e, x_prior, q; xs, normalize=true)
     # post_med, c_med, V_med = find_cutoff(gp_mean(gp_post), bolfi.var_e, x_prior, q; xs, normalize=true)
-    post_lb, c_lb, V_lb = find_cutoff(gp_bound(gp_post, -term_cond.n), bolfi.var_e, x_prior, q; xs, normalize=true)
-    post_ub, c_ub, V_ub = find_cutoff(gp_bound(gp_post, +term_cond.n), bolfi.var_e, x_prior, q; xs, normalize=true)
+    post_lb, c_lb, V_lb = find_cutoff(gp_bound(gp_post, -n), bolfi.var_e, x_prior, q; xs, normalize=true)
+    post_ub, c_ub, V_ub = find_cutoff(gp_bound(gp_post, +n), bolfi.var_e, x_prior, q; xs, normalize=true)
     # post_max, c_max, V_max = find_cutoff_max(bolfi, q, n; xs, normalize=true)
 
     conf_sets_real = [
@@ -164,10 +164,11 @@ function plot_samples(bolfi; new_datum=nothing, term_cond, display=true, put_in_
     plot_samples!(p2, X; new_datum, label=nothing)
     # scatter!(p2, [], []; label="med/mean = $(@sprintf("%.4f", V_med / V_μ))", color=nothing)
     # scatter!(p2, [], []; label="mean/max = $(@sprintf("%.4f", V_μ / V_max))", color=nothing)
-    scatter!(p2, [], []; label="lbub ratio = $(@sprintf("%.4f", BOLFI.calculate(term_cond, bolfi)))", color=nothing)
+    # TODO uncomment below
+    # scatter!(p2, [], []; label="lbub ratio = $(@sprintf("%.4f", BOLFI.calculate(term_cond, bolfi)))", color=nothing)
 
-    p3 = plot(; title="GP[1] mean", kwargs...)
-    plot_posterior!(p3, (a,b) -> gp_post([a,b])[1][1]; lims, label=nothing, step)
+    p3 = plot(; title="abs(GP[1] mean)", kwargs...)
+    plot_posterior!(p3, (a,b) -> abs(gp_post([a,b])[1][1]); lims, label=nothing, step)
     plot_samples!(p3, X; new_datum, label=nothing)
 
     p4 = plot(; title="acquisition " * acq_name, kwargs...)

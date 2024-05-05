@@ -72,8 +72,8 @@ function plot_samples(bolfi; new_datum=nothing, display=true, put_in_scale=false
     plot_posterior!(p2, ll_gp; ToyProblem.y_obs, lims, label=nothing, step)
     plot_samples!(p2, X; new_datum, label=nothing)
 
-    p3 = plot(; title="GP[1] mean", kwargs...)
-    plot_posterior!(p3, (a,b) -> gp_post([a,b])[1][1]; ToyProblem.y_obs, lims, label=nothing, step)
+    p3 = plot(; title="abs(GP[1] mean)", kwargs...)
+    plot_posterior!(p3, (a,b) -> abs(gp_post([a,b])[1][1]); ToyProblem.y_obs, lims, label=nothing, step)
     plot_samples!(p3, X; new_datum, label=nothing)
 
     p4 = plot(; title="acquisition " * acq_name, kwargs...)
