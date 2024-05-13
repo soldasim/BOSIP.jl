@@ -71,8 +71,9 @@ function evidence(bolfi::BolfiProblem; xs=nothing, samples=10_000)
 end
 
 function evidence(x_prior, gp_post, var_e; xs=nothing, samples=10_000)
-    p = posterior_mean(x_prior, gp_post, var_e; normalize=false)
+    μ = posterior_mean(x_prior, gp_post, var_e; normalize=false)
+    ll(x) = μ(x) / pdf(x_prior, x)
     isnothing(xs) && (xs = rand(x_prior, samples))
-    py = mean((p(x) for x in eachcol(xs)))
+    py = mean((ll(x) for x in eachcol(xs)))
     return py
 end
