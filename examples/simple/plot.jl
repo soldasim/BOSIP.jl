@@ -17,13 +17,13 @@ function separate_new_datum(problem)
     return bolfi, new
 end
 
-function plot_state(problem; display=true, save_plots=false, plot_dir=".", plot_name="p", put_in_scale, noise_vars_true, acquisition)
+function plot_state(problem; display=true, save_plots=false, plot_dir=".", plot_name="p", noise_vars_true, acquisition)
     bolfi, new_datum = separate_new_datum(problem)
-    p = plot_samples(bolfi; new_datum, display, put_in_scale, noise_vars_true, acquisition)
+    p = plot_samples(bolfi; new_datum, display, noise_vars_true, acquisition)
     save_plots && savefig(p, plot_dir * '/' * plot_name * ".png")
 end
 
-function plot_samples(bolfi; new_datum=nothing, display=true, put_in_scale=false, noise_vars_true, acquisition)
+function plot_samples(bolfi; new_datum=nothing, display=true, noise_vars_true, acquisition)
     problem = bolfi.problem
     gp_post = BOSS.model_posterior(problem)
 
@@ -49,38 +49,32 @@ function plot_samples(bolfi; new_datum=nothing, display=true, put_in_scale=false
     end
 
     # gp-approximated posterior likelihood
-    post_μ = BOLFI.posterior_mean(x_prior, gp_post, bolfi.var_e; normalize=false)
+    post_μ = BOLFI.posterior_mean(gp_post, x_prior, bolfi.var_e; normalize=false)
     ll_gp(a, b) = post_μ([a, b])
 
     # acquisition
     acq = acquisition(bolfi, BolfiOptions())
-    acq_name = split(string(typeof(acquisition)), '.')[end]
 
     # - - - PLOT - - - - -
-    clims = nothing
-    if put_in_scale
-        _, max_ll = maximize_prima((x)->ll_post(x...), x_prior, bounds; multistart=32, rhoend=1e-4)
-        clims = (0., 1.2*max_ll)
-    end
     kwargs = (colorbar=false,)
 
-    p1 = plot(; title="true posterior", clims, kwargs...)
+    p1 = plot(; title="true posterior", kwargs...)
     plot_posterior!(p1, ll_post; ToyProblem.y_obs, lims, label=nothing, step)
     plot_samples!(p1, X; new_datum, label=nothing)
 
-    p2 = plot(; title="approx. posterior", clims, kwargs...)
+    p2 = plot(; title="posterior mean", kwargs...)
     plot_posterior!(p2, ll_gp; ToyProblem.y_obs, lims, label=nothing, step)
     plot_samples!(p2, X; new_datum, label=nothing)
 
-    p3 = plot(; title="abs(GP[1] mean)", kwargs...)
+    p3 = plot(; title="abs. value of GP mean", kwargs...)
     plot_posterior!(p3, (a,b) -> abs(gp_post([a,b])[1][1]); ToyProblem.y_obs, lims, label=nothing, step)
     plot_samples!(p3, X; new_datum, label=nothing)
 
-    p4 = plot(; title="acquisition " * acq_name, kwargs...)
+    p4 = plot(; title="posterior variance", kwargs...)
     plot_posterior!(p4, (a,b) -> acq([a,b]); ToyProblem.y_obs, lims, label=nothing, step)
     plot_samples!(p4, X; new_datum, label=nothing)
 
-    title = put_in_scale ? "(in scale)" : "(not in scale)"
+    title = ""
     t = plot(; title, framestyle=:none, bottom_margin=-80Plots.px)
     p = plot(t, p1, p2, p3, p4; layout=@layout([°{0.05h}; [° °; ° °;]]), size=(1440, 810))
     display && Plots.display(p)
