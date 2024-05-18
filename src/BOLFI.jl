@@ -3,13 +3,14 @@ module BOLFI
 export bolfi!
 export BolfiProblem
 
-export get_subset
-export posterior_mean, posterior_variance, evidence
+export approx_posterior, posterior_mean, posterior_variance, evidence
 export gp_mean, gp_bound, gp_quantile
-export find_cutoff, find_cutoff_max, set_overlap
+export find_cutoff, approx_cutoff_area
+export get_subset
+export set_iou
 
 export BolfiAcquisition, PostVariance, SetsPostVariance
-export BolfiTermCond, ConfidenceTermCond, UBLBConfidence
+export BolfiTermCond, AEConfidence, UBLBConfidence
 export BolfiCallback
 export BolfiOptions
 

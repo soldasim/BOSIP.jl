@@ -1,27 +1,42 @@
 
+# - - - APPROX. POSTERIOR - - - - -
+
+function approx_posterior(bolfi::BolfiProblem; normalize=false, xs=nothing, samples=10_000)
+    problem = bolfi.problem
+    gp_post = BOSS.model_posterior(problem.model, problem.data)
+    return approx_posterior(gp_post, bolfi.x_prior, bolfi.var_e; normalize, xs, samples)
+end
+
+function approx_posterior(gp_post, x_prior, var_e; normalize=false, xs=nothing, samples=10_000)
+    gp_μ = gp_mean(gp_post)
+    return posterior_mean(gp_μ, x_prior, var_e; normalize, xs, samples)
+end
+
+
 # - - - POSTERIOR MEAN - - - - -
 
 # E[p(y_obs|x) p(x)] <or> E[p(y_obs|x) p(x) / p(y_obs)]
 function posterior_mean(bolfi::BolfiProblem; normalize=false, xs=nothing, samples=10_000)
     problem = bolfi.problem
     gp_post = BOSS.model_posterior(problem.model, problem.data)
-    return posterior_mean(bolfi.x_prior, gp_post, bolfi.var_e; normalize, xs, samples)
+    return posterior_mean(gp_post, bolfi.x_prior, bolfi.var_e; normalize, xs, samples)
 end
 
-function posterior_mean(x_prior, gp_post, var_e; normalize=false, xs=nothing, samples=10_000)
-    if normalize
-        py = evidence(x_prior, gp_post, var_e; xs, samples)
-    else
-        py = 1.
-    end
-    
+function posterior_mean(gp_post, x_prior, var_e; normalize=false, xs=nothing, samples=10_000)
     function mean(x)
         pred = gp_post(x)
         μ_gp, var_gp = pred[1], pred[2]
         y_dim = length(μ_gp)
         ll = pdf(MvNormal(μ_gp, sqrt.(var_e .+ var_gp)), zeros(y_dim))
         px = pdf(x_prior, x)
-        return (px / py) * ll
+        return ll * px # / py
+    end
+
+    if normalize
+        py = evidence(mean, x_prior; xs, samples)
+        return (x) -> mean(x) / py
+    else
+        return mean
     end
 end
 
@@ -32,12 +47,14 @@ end
 function posterior_variance(bolfi::BolfiProblem; normalize=false, xs=nothing, samples=10_000)
     problem = bolfi.problem
     gp_post = BOSS.model_posterior(problem.model, problem.data)
-    return posterior_variance(bolfi.x_prior, gp_post, bolfi.var_e; normalize, xs, samples)
+    return posterior_variance(gp_post, bolfi.x_prior, bolfi.var_e; normalize, xs, samples)
 end
 
-function posterior_variance(x_prior, gp_post, var_e; normalize=false, xs=nothing, samples=10_000)
+function posterior_variance(gp_post, x_prior, var_e; normalize=false, xs=nothing, samples=10_000)
     if normalize
-        py = evidence(x_prior, gp_post, var_e; xs, samples)
+        isnothing(xs) && (xs = rand(x_prior, samples))
+        mean = posterior_mean(gp_post, x_prior, var_e; normalize=false, xs)
+        py = evidence(mean, x_prior; xs)
     else
         py = 1.
     end
@@ -63,16 +80,13 @@ end
 
 # - - - EVIDENCE ESTIMATION - - - - -
 
-# Estimate p(y_obs)
-function evidence(bolfi::BolfiProblem; xs=nothing, samples=10_000)
-    problem = bolfi.problem
-    gp_post = BOSS.model_posterior(problem.model, problem.data)
-    return evidence(bolfi.x_prior, gp_post, bolfi.var_e; xs, samples)
-end
+"""
+Estimate p(y_obs).
 
-function evidence(x_prior, gp_post, var_e; xs=nothing, samples=10_000)
-    μ = posterior_mean(x_prior, gp_post, var_e; normalize=false)
-    ll(x) = μ(x) / pdf(x_prior, x)
+`samples` have to be drawn from `x_prior`.
+"""
+function evidence(post, x_prior; xs=nothing, samples=10_000)
+    ll(x) = post(x) / pdf(x_prior, x)
     isnothing(xs) && (xs = rand(x_prior, samples))
     py = mean((ll(x) for x in eachcol(xs)))
     return py

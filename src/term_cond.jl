@@ -20,9 +20,13 @@ BOSS.IterLimit(::Nothing) = NoLimit()
 (::NoLimit)(::BossProblem) = true
 
 
-# - - - Confidence Intervals - - - - -
+# - - - Approximation - Expectation Confidence - - - - -
 
-struct ConfidenceTermCond{
+"""
+Calculates the `q`-confidence region of the expected and the approximate posteriors.
+Terminates after the IoU of the two confidence regions surpasses `r`.
+"""
+struct AEConfidence{
     I<:Union{IterLimit, NoLimit},
     X<:Union{Nothing, <:AbstractMatrix{<:Real}},
 } <: BolfiTermCond
@@ -32,46 +36,55 @@ struct ConfidenceTermCond{
     q::Float64
     r::Float64
 end
-ConfidenceTermCond(;
+AEConfidence(;
     max_iters = nothing,
     samples = 10_000,
     xs = nothing,
     q = 0.95,
     r = 0.95,
-) = ConfidenceTermCond(IterLimit(max_iters), samples, xs, q, r)
+) = AEConfidence(IterLimit(max_iters), samples, xs, q, r)
 
-function (cond::ConfidenceTermCond)(bolfi::BolfiProblem{Nothing})
+function (cond::AEConfidence)(bolfi::BolfiProblem{Nothing})
     cond.iter_limit(bolfi.problem) || return false
     (bolfi.problem.data isa ExperimentDataPrior) && return true
     ratio = calculate(cond, bolfi)
     return ratio < cond.r
 end
 
-function (cond::ConfidenceTermCond)(bolfi::BolfiProblem{Matrix{Bool}})
+function (cond::AEConfidence)(bolfi::BolfiProblem{Matrix{Bool}})
     cond.iter_limit(bolfi.problem) || return false
     (bolfi.problem.data isa ExperimentDataPrior) && return true
     ratios = calculate.(Ref(cond), get_subset.(Ref(bolfi), eachcol(bolfi.y_sets)))
     return any(ratios .< cond.r)
 end
 
-function calculate(cond::ConfidenceTermCond, bolfi::BolfiProblem)
-    gp_post = BOSS.model_posterior(bolfi.problem)
-    gp_med = gp_mean(gp_post)
-
+function calculate(cond::AEConfidence, bolfi::BolfiProblem)
     if isnothing(cond.xs)
         xs = rand(bolfi.x_prior, cond.samples)
     else
         xs = cond.xs
     end
-    _, _, V_mean = find_cutoff(gp_post, bolfi.var_e, bolfi.x_prior, cond.q; xs)  # with GP uncertainty
-    _, _, V_med = find_cutoff(gp_med, bolfi.var_e, bolfi.x_prior, cond.q; xs)  # without GP uncertainty
 
-    return V_med / V_mean
+    gp_post = BOSS.model_posterior(bolfi.problem)
+
+    f_approx = approx_posterior(gp_post, bolfi.x_prior, bolfi.var_e; xs,)
+    f_expect = posterior_mean(gp_post, bolfi.x_prior, bolfi.var_e; xs,)
+    f_approx, c_approx = find_cutoff(f_approx, bolfi.x_prior, cond.q; xs)
+    f_expect, c_expect = find_cutoff(f_expect, bolfi.x_prior, cond.q; xs)
+
+    in_approx = (f_approx.(eachcol(xs)) .> c_approx)
+    in_expect = (f_expect.(eachcol(xs)) .> c_expect)
+    return set_iou(in_approx, in_expect, bolfi.x_prior, xs)
 end
 
 
 # - - - UB-LB Confidence - - - - -
 
+"""
+Calculates the `q`-confidence region of the UB and LB approximate posterior.
+Terminates after the IoU of the two confidence intervals surpasses `r`.
+The UB and LB confidence intervals are calculated using the GP mean +- `n` GP stds.
+"""
 struct UBLBConfidence{
     I<:Union{IterLimit, NoLimit},
     X<:Union{Nothing, <:AbstractMatrix{<:Real}},
@@ -107,19 +120,22 @@ function (cond::UBLBConfidence)(bolfi::BolfiProblem{Matrix{Bool}})
 end
 
 function calculate(cond::UBLBConfidence, bolfi::BolfiProblem)
-    gp_post = BOSS.model_posterior(bolfi.problem)
-    gp_lb = gp_bound(gp_post, -cond.n)
-    gp_ub = gp_bound(gp_post, +cond.n)
-
     if isnothing(cond.xs)
         xs = rand(bolfi.x_prior, cond.samples)
     else
         xs = cond.xs
     end
-    f_lb, c_lb, V_lb = find_cutoff(gp_lb, bolfi.var_e, bolfi.x_prior, cond.q; xs)
-    f_ub, c_ub, V_ub = find_cutoff(gp_ub, bolfi.var_e, bolfi.x_prior, cond.q; xs)
+
+    gp_post = BOSS.model_posterior(bolfi.problem)
+    gp_lb = gp_bound(gp_post, -cond.n)
+    gp_ub = gp_bound(gp_post, +cond.n)
+
+    f_lb = approx_posterior(gp_lb, bolfi.x_prior, bolfi.var_e; xs)
+    f_ub = approx_posterior(gp_ub, bolfi.x_prior, bolfi.var_e; xs)
+    f_lb, c_lb = find_cutoff(f_lb, bolfi.x_prior, cond.q; xs)
+    f_ub, c_ub = find_cutoff(f_ub, bolfi.x_prior, cond.q; xs)
 
     in_lb = (f_lb.(eachcol(xs)) .> c_lb)
     in_ub = (f_ub.(eachcol(xs)) .> c_ub)
-    return set_overlap(in_lb, in_ub, bolfi.x_prior, xs)
+    return set_iou(in_lb, in_ub, bolfi.x_prior, xs)
 end
