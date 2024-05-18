@@ -10,7 +10,6 @@ include("plot.jl")
 
 function script_bolfi(;
     init_data=3,
-    put_in_scale=false,  # puts the approximation in scale with the true posterior
 )
     problem = ToyProblem.bolfi_problem(init_data)
     acquisition = PostVariance()
@@ -29,7 +28,7 @@ function script_bolfi(;
     plot_dir = "./examples/simple/plots"
     options = BolfiOptions()
 
-    ITER_TOTAL = 30
+    ITER_TOTAL = 25
     PLOT_EACH = 5
 
     noise_vars_true = ToyProblem.σe_true.^2
@@ -40,7 +39,7 @@ function script_bolfi(;
         iters += PLOT_EACH
         term_cond = BOSS.IterLimit(PLOT_EACH)
         bolfi!(problem; acquisition, model_fitter, acq_maximizer, term_cond, options)
-        plot_state(problem; save_plots, plot_dir, plot_name="p_$iters", put_in_scale, noise_vars_true, acquisition)
+        plot_state(problem; save_plots, plot_dir, plot_name="p_$iters", noise_vars_true, acquisition)
     end
     return problem
 end

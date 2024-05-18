@@ -12,7 +12,12 @@ function script_bolfi(;
     init_data=3,
 )
     problem = ToyProblem.bolfi_problem(init_data)
-    acquisition = SetsPostVariance()
+    
+    if ToyProblem.mode == Val(:T1)
+        acquisition = PostVariance()
+    else
+        acquisition = SetsPostVariance()
+    end
 
     model_fitter = BOSS.SamplingMLE(;
         samples = 200,
@@ -25,30 +30,30 @@ function script_bolfi(;
     )
 
     # EXPERIMENTAL TERMINATION CONDITIONS
-    # term_cond = ConfidenceTermCond(;
-    #     # samples = 10_000,
-    #     xs = rand(problem.x_prior, 10_000),
-    #     q = 0.95,
-    #     r = 0.95,
-    #     max_iters = 50,
-    # )
+    xs = rand(problem.x_prior, 10_000)
+    max_iters = 50  # TODO
+
+    term_cond = AEConfidence(;
+        xs,
+        q = 0.8,
+        r = 0.95,
+        max_iters,
+    )
     # term_cond = UBLBConfidence(;
-    #     # samples = 10_000,
-    #     xs = rand(problem.x_prior, 10_000),
+    #     xs = rand(problem.x_prior, samples),
     #     n = 1.,
     #     q = 0.8,
     #     r = 0.8,
-    #     max_iters = 30,
+    #     max_iters
     # )
-
-    term_cond = IterLimit(25);
+    # term_cond = IterLimit(25);
 
     save_plots = true
     plot_dir = "./examples/diagnostic_selection/plots"
 
     options = BolfiOptions(;
-        callback = PlotCallback(;
-            plot_each = 5,
+        callback = Plot.PlotCallback(;
+            plot_each = 5,  # TODO
             term_cond,
             save_plots,
             plot_dir,
@@ -56,7 +61,11 @@ function script_bolfi(;
         ),
     )
 
-    init_plotting(; save_plots, plot_dir)
+    Plot.init_plotting(; save_plots, plot_dir)
     bolfi!(problem; acquisition, model_fitter, acq_maximizer, term_cond, options)
+
+    # final state
+    Plot.plot_state(problem; term_cond, iter=options.callback.iters, save_plots, plot_dir, plot_name="p_final", acquisition)
+    
     return problem
 end
