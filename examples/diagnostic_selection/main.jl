@@ -8,6 +8,8 @@ Random.seed!(555)
 include("toy_problem.jl")
 include("plot.jl")
 
+# MAIN SCRIPT
+# Change the experiment by changing the `const mode` in `toy_problem.jl`.
 function script_bolfi(;
     init_data=3,
 )
@@ -64,7 +66,7 @@ function script_bolfi(;
     Plot.init_plotting(; save_plots, plot_dir)
     bolfi!(problem; acquisition, model_fitter, acq_maximizer, term_cond, options)
 
-    # final state
+    # final state  # TODO
     Plot.plot_state(problem; term_cond, iter=options.callback.iters, save_plots, plot_dir, plot_name="p_final", acquisition)
     
     return problem

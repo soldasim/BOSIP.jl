@@ -19,7 +19,7 @@ end
 
 # - - - Plotting Callback - - - - -
 
-mutable struct PlotCallback<: BolfiCallback
+mutable struct PlotCallback <: BolfiCallback
     iters::Int
     plot_each::Int
     term_cond::Union{TermCond, BolfiTermCond}
@@ -109,6 +109,10 @@ LO(::Val{:T2}) = [
     -0.3 +0.5  # xlabel
     +0.7 -0.2  # ylabel
 ]
+LO(::Val{:TruePost}) = [
+    -0.3 +0.4  # xlabel
+    +0.6 -0.2  # ylabel
+]
 
 # write the iou value
 annotate_iou!(p, t) = annotate!(p, 4.5, -4.5, (t, text_size, :white, :right))
@@ -172,6 +176,49 @@ function plot_sbfs(bolfi; new_datum=nothing, iter=nothing, term_cond, put_in_sca
     s = plot(; framestyle=:none, bottom_margin=-100Plots.px)
     p = plot(p_subsets, s, acq_plot; layout=grid(3, 1; heights=[0.79, 0.02, 0.19]), size=(1080, 2916))
     return p
+end
+
+function plot_true_posteriors(; save=false)
+    mode = :T2
+    y_sets = ToyProblem.get_y_sets(Val(mode))
+    x_prior = ToyProblem.get_x_prior()
+    noise_vars_true = ToyProblem.σe_true(Val(mode)).^2
+
+    step = 0.05 # TODO
+
+    samples = 10_000
+    @warn "Sampling new $samples samples."
+    xs = rand(x_prior, samples)
+    q = 0.8
+    @warn "Hard-coded `q ← $q`!"
+
+    function ll_post(x, y_set)
+        y = ToyProblem.experiment(Val(mode), x; noise_vars=zeros(ToyProblem.y_dim(Val(mode))))[y_set]
+        
+        # ps = numerical_issues(x) ? 0. : 1.
+        isnothing(y) && return 0.
+
+        ll = pdf(MvNormal(y, sqrt.(noise_vars_true[y_set])), ToyProblem.y_obs(Val(mode))[y_set])
+        pθ = pdf(x_prior, x)
+        return pθ * ll
+    end
+
+    ps = [plot_post((x)->ll_post(x, y_set), x_prior, step, xs, q) for y_set in eachcol(y_sets)]
+    display.(ps)
+    save && (savefig.(ps, "true_post_" .* ["1", "2"] .* ".pdf"))
+    return ps
+end
+
+function plot_post(ll, x_prior, step, xs, q)
+    bounds = ToyProblem.get_bounds()
+    lims = bounds[1][1], bounds[2][1]
+    
+    post_real, c_real = find_cutoff(ll, x_prior, q; xs)
+    conf_sets = [(p=post_real, c=c_real, label=nothing, color=conf_reg_real)]
+
+    p1 = plot(; size=(621,621), colorbar=false)
+    plot_posterior!(p1, (a,b)->ll([a,b]); mode=:TruePost, conf_sets, lims, label=nothing, step)
+    return p1
 end
 
 function plot_acquisition(bolfi; mode, title_prefix="", new_datum, acquisition, step=0.05)
@@ -272,7 +319,8 @@ function plot_subset(bolfi; mode, title_prefixes=fill("", 4), new_datum=nothing,
     ublb_ratio = set_iou(in_ub, in_lb, x_prior, xs)
     
     # gp-approximated posterior likelihood
-    ll_gp(a, b) = post_approx([a, b])
+    ll_expect(a, b) = post_expect([a, b])
+    ll_approx(a, b) = post_approx([a, b])
 
     # acquisition
     acq = acquisition(bolfi, BolfiOptions())
@@ -285,13 +333,13 @@ function plot_subset(bolfi; mode, title_prefixes=fill("", 4), new_datum=nothing,
     end
     kwargs = (colorbar=false,)
 
-    p1 = plot(; title=title_prefixes[1]*"True Posterior", clims, kwargs...)
-    plot_posterior!(p1, (a,b)->ll_post([a, b]); mode, conf_sets=conf_sets_real, lims, label=nothing, step)
+    p1 = plot(; title=title_prefixes[1]*"Expected Posterior", clims, kwargs...)
+    plot_posterior!(p1, ll_expect; mode, conf_sets=conf_sets_real, lims, label=nothing, step)
     plot_samples!(p1, X; mode, new_datum, label=nothing)
     annotate_iou!(p1, "A-E IoU: $(@sprintf("%.4f", ae_ratio))")
 
     p2 = plot(; title=title_prefixes[2]*"Approx. Posterior", clims, kwargs...)
-    plot_posterior!(p2, ll_gp; mode, conf_sets=conf_sets_approx, lims, label=nothing, step)
+    plot_posterior!(p2, ll_approx; mode, conf_sets=conf_sets_approx, lims, label=nothing, step)
     plot_samples!(p2, X; mode, new_datum, label=nothing)
     annotate_iou!(p2, "UB-LB IoU: $(@sprintf("%.4f", ublb_ratio))")
 
@@ -318,6 +366,7 @@ function plot_posterior!(p, ll; mode, conf_sets=[], lims, label=nothing, step=0.
     # margins & axis ticks
     ytick_offset(::Val{:T2}) = 8
     ytick_offset(::Val{:T1}) = 5
+    ytick_offset(::Val{:TruePost}) = 0
 
     other = (
         left_margin = (mode == :T1) ? 0Plots.px : -5Plots.px,
@@ -328,8 +377,8 @@ function plot_posterior!(p, ll; mode, conf_sets=[], lims, label=nothing, step=0.
         aspect_ratio = :equal,
         widen = 1.02,
 
-        xtickfontvalign = :bottom,
-        ytickfonthalign = :left,
+        xtickfontvalign = (mode == :TruePost) ? :center : :bottom,
+        ytickfonthalign = (mode == :TruePost) ? :center : :left,
         yticks = (ticks, " "^ytick_offset(Val(mode)) .* string.(ticks)),
         xticks = (ticks, string.(ticks)),
 

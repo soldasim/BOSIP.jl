@@ -8,6 +8,7 @@ Random.seed!(555)
 include("toy_problem.jl")
 include("plot.jl")
 
+# MAIN SCRIPT
 function script_bolfi(;
     init_data=3,
 )

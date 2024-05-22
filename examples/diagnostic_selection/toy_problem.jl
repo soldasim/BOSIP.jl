@@ -6,7 +6,7 @@ using Distributions
 
 # - - - PROBLEM - - - - -
 
-# TODO
+# CHANGE THE EXPERIMENT HERE
 const mode = Val(:T1)
 # const mode = Val(:T2)
 
