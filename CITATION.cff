@@ -1,0 +1,28 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: BOLFI.jl (Bayesian Optimization Likelihood-Free Inference)
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Šimon
+    family-names: Soldát
+    email: soldasim@fel.cvut.cz
+repository-code: 'https://github.com/soldasim/BOLFI.jl'
+abstract: >-
+  The BOLFI method performs Likelihood-Free Inference by
+  approximating the likelihood function with a Gaussian
+  Process and greatly reduces the number of required
+  evaluations by employing the Bayesian Optimization
+  procedure to select new evaluation points.
+keywords:
+  - simulation-based inference
+  - likelihood-free inference
+  - indirect inference
+  - Bayesian optimization
+  - active learning
+  - Gaussian process
+license: MIT
