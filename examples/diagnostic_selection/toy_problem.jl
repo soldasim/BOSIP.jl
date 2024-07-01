@@ -6,21 +6,34 @@ using Distributions
 
 # - - - PROBLEM - - - - -
 
-# CHANGE THE EXPERIMENT HERE
-const mode = Val(:T1)
-# const mode = Val(:T2)
+# TODO: CHANGE THE EXPERIMENT HERE
+# Mode `:T1` is SBI problem.
+# Mode `:T2` is SBFI problem.
+# const mode = Val(:T1)
+const mode = Val(:T2)
+
+"""acquisition function"""
+# `PostVariance` for SBI problems
+# `SetsPostVariance` for SBFI problems
+acquisition(::Val{:T1}) = PostVariance()
+acquisition(::Val{:T2}) = SetsPostVariance()
+acquisition() = acquisition(mode)
 
 """observation"""
 y_obs(::Val{:T1}) = [1.]
 y_dim(::Val{:T1}) = 1
 y_obs(::Val{:T2}) = [1., 0.]
 y_dim(::Val{:T2}) = 2
+y_obs() = y_obs(mode)
+y_dim() = y_dim(mode)
 
 """observation noise std"""
 σe_true(::Val{:T1}) = [0.5]  # true noise
 σe(::Val{:T1}) =      [0.5]  # hyperparameter
 σe_true(::Val{:T2}) = [0.5, 0.5]  # true noise
 σe(::Val{:T2}) =      [0.5, 0.5]  # hyperparameter
+σe_true() = σe_true(mode)
+σe() = σe(mode)
 """simulation noise std"""
 const ω = [0.01 for _ in 1:y_dim(mode)]
 
@@ -30,6 +43,7 @@ g_(x) = (x[2] - x[1])
 
 get_y_sets(::Val{:T1}) = nothing
 get_y_sets(::Val{:T2}) = [true;false;; false;true;;]
+get_y_sets() = get_y_sets(mode)
 
 # The "real experiment". (for plotting only)
 function experiment(m::Val{:T1}, x; noise_vars=σe_true(m).^2)
@@ -40,6 +54,7 @@ function experiment(m::Val{:T2}, x; noise_vars=σe_true(m).^2)
     y = [f_(x), g_(x)] + rand(MvNormal(zeros(y_dim(m)), sqrt.(noise_vars)))
     return y
 end
+experiment(x; noise_vars=σe_true(mode).^2) = experiment(mode, x; noise_vars)
 
 # The "simulation". (approximates the "experiment")
 function simulation(m::Val{:T1}, x; noise_vars=ω.^2)
@@ -50,9 +65,12 @@ function simulation(m::Val{:T2}, x; noise_vars=ω.^2)
     y = [f_(x), g_(x)] + rand(MvNormal(zeros(y_dim(m)), sqrt.(noise_vars)))
     return y
 end
+simulation(x; noise_vars=ω.^2) = simulation(mode, x; noise_vars)
 
 # The objective for the GP.
+# TODO: Try adding/removing abs value of the simulation-experiment discrepancy.
 obj(m, x) = simulation(m, x) .- y_obs(m)
+# obj(m, x) = abs.(simulation(m, x) .- y_obs(m))
 
 get_bounds() = ([-5., -5.], [5., 5.])
 

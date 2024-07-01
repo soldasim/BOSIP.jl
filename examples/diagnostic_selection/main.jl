@@ -14,12 +14,7 @@ function script_bolfi(;
     init_data=3,
 )
     problem = ToyProblem.bolfi_problem(init_data)
-    
-    if ToyProblem.mode == Val(:T1)
-        acquisition = PostVariance()
-    else
-        acquisition = SetsPostVariance()
-    end
+    acquisition = ToyProblem.acquisition()
 
     model_fitter = BOSS.SamplingMLE(;
         samples = 200,
@@ -51,23 +46,26 @@ function script_bolfi(;
     # term_cond = IterLimit(25);
 
     save_plots = true
-    plot_dir = "./examples/diagnostic_selection/plots"
+    plot_dir = "./examples/diagnostic_selection/plots/_new_"
 
     options = BolfiOptions(;
         callback = Plot.PlotCallback(;
-            plot_each = 5,  # TODO
+            plot_each = 5,          # todo: integer
             term_cond,
             save_plots,
             plot_dir,
             put_in_scale = false,
+            square_layout = false,   # todo: `true`, `false`
+            ftype = "png",          # todo: `png`, `pdf`
         ),
     )
 
     Plot.init_plotting(; save_plots, plot_dir)
     bolfi!(problem; acquisition, model_fitter, acq_maximizer, term_cond, options)
 
-    # final state  # TODO
-    Plot.plot_state(problem; term_cond, iter=options.callback.iters, save_plots, plot_dir, plot_name="p_final", acquisition)
+    # final state                   # todo: comment / uncomment
+    plt = options.callback
+    Plot.plot_state(problem; ftype=plt.ftype, square_layout=plt.square_layout, term_cond, iter=plt.iters, save_plots, plot_dir, plot_name="p_final", acquisition)
     
     return problem
 end
