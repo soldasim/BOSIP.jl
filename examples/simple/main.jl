@@ -26,10 +26,10 @@ function script_bolfi(;
     )
 
     save_plots = true
-    plot_dir = "./examples/simple/plots"
+    plot_dir = "./examples/simple/plots/_new_"
     options = BolfiOptions()
 
-    ITER_TOTAL = 25
+    ITER_TOTAL = 25  # TODO
     PLOT_EACH = 5
 
     noise_vars_true = ToyProblem.σe_true.^2
