@@ -16,7 +16,7 @@ function script_bolfi(;
     problem = ToyProblem.bolfi_problem(init_data)
     acquisition = ToyProblem.acquisition()
 
-    model_fitter = BOSS.SamplingMLE(;
+    model_fitter = BOSS.SamplingMAP(;
         samples = 200,
         parallel = true,
     )

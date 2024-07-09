@@ -39,8 +39,8 @@ function get_subset(data::ExperimentDataPrior, y_set::AbstractVector{<:Bool})
         data.Y[y_set, :],
     )
 end
-function get_subset(data::ExperimentDataMLE, y_set::AbstractVector{<:Bool})
-    return ExperimentDataMLE(
+function get_subset(data::ExperimentDataMAP, y_set::AbstractVector{<:Bool})
+    return ExperimentDataMAP(
         data.X,
         data.Y[y_set, :],
         data.θ[y_set],
