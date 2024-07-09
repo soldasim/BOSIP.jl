@@ -25,7 +25,7 @@ struct PostVariance <: BolfiAcquisition end
 
 function (acq::PostVariance)(bolfi::BolfiProblem{Nothing}, options::BolfiOptions)
     problem = bolfi.problem
-    @assert problem.data isa BOSS.ExperimentDataMLE
+    @assert problem.data isa BOSS.ExperimentDataMAP
     gp_post = BOSS.model_posterior(problem.model, problem.data)
     return posterior_variance(gp_post, bolfi.x_prior, bolfi.var_e; normalize=false)
 end
@@ -42,7 +42,7 @@ SetsPostVariance(;
 
 function (acq::SetsPostVariance)(bolfi::BolfiProblem{Matrix{Bool}}, options::BolfiOptions)
     problem = bolfi.problem
-    @assert problem.data isa BOSS.ExperimentDataMLE
+    @assert problem.data isa BOSS.ExperimentDataMAP
 
     gp_posts = BOSS.model_posterior(problem.model, problem.data; split=true)
     xs = rand(bolfi.x_prior, acq.samples)  # shared samples
