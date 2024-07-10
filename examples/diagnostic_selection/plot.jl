@@ -11,6 +11,10 @@ include("toy_problem.jl")
 #
 const TRUE_POST = true
 
+# Number of samples for area and IoU approximations.
+const SAMPLES = 10_000  # todo
+
+
 function init_plotting(; save_plots, plot_dir)
     if save_plots
         if isdir(plot_dir)
@@ -25,6 +29,7 @@ end
 
 mutable struct PlotCallback <: BolfiCallback
     iters::Int
+    prev_state::Union{Nothing, BolfiProblem}
     plot_each::Int
     term_cond::Union{TermCond, BolfiTermCond}
     save_plots::Bool
@@ -41,14 +46,25 @@ PlotCallback(;
     put_in_scale,
     square_layout = true,
     ftype = "png",
-) = PlotCallback(0, plot_each, term_cond, save_plots, plot_dir, put_in_scale, square_layout, ftype)
+) = PlotCallback(0, nothing, plot_each, term_cond, save_plots, plot_dir, put_in_scale, square_layout, ftype)
 
-function (plt::PlotCallback)(problem::BolfiProblem; acquisition, options, kwargs...)
-    if plt.iters % plt.plot_each == 0
-        options.info && @info "Plotting ..."
-        title = "Iteration $(plt.iters)"
-        plot_state(problem; ftype=plt.ftype, square_layout=plt.square_layout, term_cond=plt.term_cond, iter=plt.iters, save_plots=plt.save_plots, plot_dir=plt.plot_dir, plot_name="p_$(plt.iters)", put_in_scale=plt.put_in_scale, acquisition=acquisition.acq, title, separate=true)
+function (plt::PlotCallback)(bolfi::BolfiProblem; acquisition, options, first, kwargs...)
+    if first
+        plt.prev_state = deepcopy(bolfi)
+        plt.iters += 1
+        return
     end
+    
+    # `iters - 1` because the plot is "one iter behind"
+    plot_iter = plt.iters - 1
+    if plot_iter % plt.plot_each == 0
+        options.info && @info "Plotting ..."
+        title = "Iteration $plot_iter"
+        new_datum = bolfi.problem.data.X[:,end]
+        plot_state(plt.prev_state, new_datum; ftype=plt.ftype, square_layout=plt.square_layout, term_cond=plt.term_cond, iter=plot_iter, save_plots=plt.save_plots, plot_dir=plt.plot_dir, plot_name="p_$plot_iter", put_in_scale=plt.put_in_scale, acquisition=acquisition.acq, title)
+    end
+    
+    plt.prev_state = deepcopy(bolfi)
     plt.iters += 1
 end
 
@@ -141,15 +157,10 @@ function separate_new_datum(problem)
     return bolfi, new
 end
 
-function plot_state(problem; ftype="png", square_layout=true, term_cond, iter, display=true, save_plots=false, plot_dir=".", plot_name="p", put_in_scale=false, acquisition, title=nothing, separate=false)
-    if separate
-        bolfi, new_datum = separate_new_datum(problem)
-    else
-        bolfi, new_datum = problem, nothing
-    end
-    step = 0.05 # TODO 0.05
+function plot_state(bolfi, new_datum; ftype="png", square_layout=true, term_cond, iter, display=true, save_plots=false, plot_dir=".", plot_name="p", put_in_scale=false, acquisition, title=nothing)
+    step = 0.05
     
-    if problem isa BolfiProblem{Nothing}
+    if bolfi isa BolfiProblem{Nothing}
         p = plot_sbi(bolfi; square_layout, new_datum, iter, term_cond, put_in_scale, acquisition, step)
     else
         p = plot_sbfs(bolfi; square_layout, new_datum, iter, term_cond, put_in_scale, acquisition, step)
@@ -161,9 +172,9 @@ function plot_state(problem; ftype="png", square_layout=true, term_cond, iter, d
 end
 
 function plot_sbi(bolfi; square_layout=true, new_datum=nothing, iter=nothing, term_cond, put_in_scale=false, acquisition, step=0.05)
-    # @assert acquisition isa PostVariance  # TODO
+    # @assert acquisition isa PostVarAcq
     mode = square_layout ? :T1Square : :T1Column
-    noise_vars_true = ToyProblem.σe_true() .^ 2
+    noise_std_true = ToyProblem.σe_true()
     y_dim = ToyProblem.y_dim()
 
     title = "ITERATION $iter"
@@ -171,7 +182,7 @@ function plot_sbi(bolfi; square_layout=true, new_datum=nothing, iter=nothing, te
         ["(a) ", "(b) ", "(c) ", "(d) "] :
         ["(a$iter) ", "(b$iter) ", "(c$iter) ", "(d$iter) "]
 
-    p_ = plot_subset(bolfi; mode, title_prefixes=prefixes, new_datum, term_cond, display=false, put_in_scale, noise_vars_true, acquisition=PostVariance(), step, y_set=fill(true, y_dim), title)
+    p_ = plot_subset(bolfi; mode, title_prefixes=prefixes, new_datum, term_cond, display=false, put_in_scale, noise_std_true, acquisition=PostVarAcq(), step, y_set=fill(true, y_dim), title)
     if square_layout
         p = plot(p_; size=(1080, 1080))
     else
@@ -181,9 +192,9 @@ function plot_sbi(bolfi; square_layout=true, new_datum=nothing, iter=nothing, te
 end
 
 function plot_sbfs(bolfi; square_layout=false, new_datum=nothing, iter=nothing, term_cond, put_in_scale=false, acquisition, step)
-    @assert acquisition isa SetsPostVariance
+    @assert acquisition isa MWMVAcq
     mode = square_layout ? :T2Square : :T2Column
-    noise_vars_true = ToyProblem.σe_true() .^ 2
+    noise_std_true = ToyProblem.σe_true()
 
     prefixes = square_layout ?
         [
@@ -196,7 +207,7 @@ function plot_sbfs(bolfi; square_layout=false, new_datum=nothing, iter=nothing, 
         ]
     acq_prefix = "(i) "
 
-    subset_plots = [plot_subset(get_subset(bolfi, bolfi.y_sets[:,i]); mode, title_prefixes=prefixes[i], new_datum, term_cond, display=false, put_in_scale, noise_vars_true=noise_vars_true[bolfi.y_sets[:,i]], acquisition=PostVariance(), step, y_set=bolfi.y_sets[:,i], title=set_titles[i]) for i in 1:size(bolfi.y_sets)[2]]
+    subset_plots = [plot_subset(get_subset(bolfi, bolfi.y_sets[:,i]); mode, title_prefixes=prefixes[i], new_datum, term_cond, display=false, put_in_scale, noise_std_true=noise_std_true[bolfi.y_sets[:,i]], acquisition=PostVarAcq(), step, y_set=bolfi.y_sets[:,i], title=set_titles[i]) for i in 1:size(bolfi.y_sets)[2]]
     acq_plot = plot_acquisition(bolfi; mode, title_prefix=acq_prefix, new_datum, acquisition, step)
     
     if square_layout
@@ -215,23 +226,22 @@ end
 function plot_true_posteriors(; save=false, ftype="png")
     y_sets = ToyProblem.get_y_sets()
     x_prior = ToyProblem.get_x_prior()
-    noise_vars_true = ToyProblem.σe_true().^2
+    noise_std_true = ToyProblem.σe_true()
 
-    step = 0.05 # TODO
+    step = 0.05 # todo
 
-    samples = 10_000
-    @warn "Sampling new $samples samples."
-    xs = rand(x_prior, samples)
+    @warn "Sampling new $SAMPLES samples."
+    xs = rand(x_prior, SAMPLES)
     q = 0.8
     @warn "Hard-coded `q ← $q`!"
 
     function ll_post(x, y_set)
-        y = ToyProblem.experiment(x; noise_vars=zeros(ToyProblem.y_dim()))[y_set]
+        y = ToyProblem.experiment(x; noise_std=zeros(ToyProblem.y_dim()))[y_set]
         
         # ps = numerical_issues(x) ? 0. : 1.
         isnothing(y) && return 0.
 
-        ll = pdf(MvNormal(y, sqrt.(noise_vars_true[y_set])), ToyProblem.y_obs()[y_set])
+        ll = pdf(MvNormal(y, noise_std_true[y_set]), ToyProblem.y_obs()[y_set])
         pθ = pdf(x_prior, x)
         return pθ * ll
     end
@@ -280,7 +290,7 @@ function plot_acquisition(bolfi; mode, title_prefix="", new_datum, acquisition, 
     end
 end
 
-function plot_subset(bolfi; mode, title_prefixes=fill("", 4), new_datum=nothing, term_cond, display=true, put_in_scale=false, noise_vars_true, acquisition, step=0.05, y_set=fill(true, ToyProblem.y_dim), title=nothing)
+function plot_subset(bolfi; mode, title_prefixes=fill("", 4), new_datum=nothing, term_cond, display=true, put_in_scale=false, noise_std_true, acquisition, step=0.05, y_set=fill(true, ToyProblem.y_dim), title=nothing)
     problem = bolfi.problem
     gp_post = BOSS.model_posterior(problem)
 
@@ -293,12 +303,12 @@ function plot_subset(bolfi; mode, title_prefixes=fill("", 4), new_datum=nothing,
 
     # unnormalized posterior likelihood `p(y | x) * p(x) ∝ p(x | y)`
     function ll_post(x)
-        y = ToyProblem.experiment(x; noise_vars=zeros(ToyProblem.y_dim()))[y_set]
+        y = ToyProblem.experiment(x; noise_std=zeros(ToyProblem.y_dim()))[y_set]
         
         # ps = numerical_issues(x) ? 0. : 1.
         isnothing(y) && return 0.
 
-        ll = pdf(MvNormal(y, sqrt.(noise_vars_true)), ToyProblem.y_obs()[y_set])
+        ll = pdf(MvNormal(y, noise_std_true), ToyProblem.y_obs()[y_set])
         pθ = pdf(x_prior, x)
         return pθ * ll
     end
@@ -308,9 +318,8 @@ function plot_subset(bolfi; mode, title_prefixes=fill("", 4), new_datum=nothing,
         xs = term_cond.xs
         @info "Loaded $(size(xs)[2]) samples."
     else
-        samples = 10_000
-        @info "Sampling $samples samples."
-        xs = rand(x_prior, samples)
+        @info "Sampling $SAMPLES samples."
+        xs = rand(x_prior, SAMPLES)
     end
 
     n = hasproperty(term_cond, :n) ? term_cond.n : 1.
@@ -324,17 +333,17 @@ function plot_subset(bolfi; mode, title_prefixes=fill("", 4), new_datum=nothing,
     end
 
     # helper func
-    function post_and_cutoff(gp_post, x_prior, var_e, q; xs)
-        post = posterior_mean(gp_post, x_prior, var_e; xs, normalize=true)
+    function post_and_cutoff(gp_post, x_prior, std_obs, q; xs)
+        post = posterior_mean(gp_post, x_prior, std_obs; xs, normalize=true)
         post, c = find_cutoff(post, x_prior, q; xs)
         return post, c
     end
 
     post_real, c_real = find_cutoff(ll_post, x_prior, q; xs)  # unnormalized
-    post_expect, c_expect = post_and_cutoff(gp_post, x_prior, bolfi.var_e, q; xs)
-    post_approx, c_approx = post_and_cutoff(gp_bound(gp_post, 0.), x_prior, bolfi.var_e, q; xs)
-    post_lb, c_lb = post_and_cutoff(gp_bound(gp_post, -n), x_prior, bolfi.var_e, q; xs)
-    post_ub, c_ub = post_and_cutoff(gp_bound(gp_post, +n), x_prior, bolfi.var_e, q; xs)
+    post_expect, c_expect = post_and_cutoff(gp_post, x_prior, bolfi.std_obs, q; xs)
+    post_approx, c_approx = post_and_cutoff(gp_bound(gp_post, 0.), x_prior, bolfi.std_obs, q; xs)
+    post_lb, c_lb = post_and_cutoff(gp_bound(gp_post, -n), x_prior, bolfi.std_obs, q; xs)
+    post_ub, c_ub = post_and_cutoff(gp_bound(gp_post, +n), x_prior, bolfi.std_obs, q; xs)
 
     conf_sets_real = [
         (p=post_real, c=c_real, label="true posterior", color=conf_reg_real),
@@ -466,7 +475,7 @@ function plot_posterior!(p, ll; mode, conf_sets=[], lims, label=nothing, step=0.
 
     # "OBSERVATION-RULES"
     plot!(p, a->1/a, grid; y_lims=lims, label, rule_kwargs...)
-    # plot!(p, a->a, grid; y_lims=lims, label, rule_kwargs...)  # TODO
+    # plot!(p, a->a, grid; y_lims=lims, label, rule_kwargs...)  # todo
 
     # CONFIDENCE SET
     target = mean(vals)

@@ -9,7 +9,7 @@ export find_cutoff, approx_cutoff_area
 export get_subset
 export set_iou
 
-export BolfiAcquisition, PostVariance, SetsPostVariance
+export BolfiAcquisition, PostVarAcq, MWMVAcq
 export BolfiTermCond, AEConfidence, UBLBConfidence
 export BolfiCallback
 export BolfiOptions

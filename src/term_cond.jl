@@ -1,4 +1,11 @@
 
+"""
+An abstract type for BOLFI termination conditions.
+
+# Implementing custom termination condition:
+- Create struct `CustomTermCond <: BolfiTermCond`
+- Implement method `(::CustomTermCond)(::BolfiProblem) -> ::Bool`
+"""
 abstract type BolfiTermCond end
 
 struct TermCondWrapper{
@@ -15,6 +22,11 @@ TermCondWrapper(term_cond::TermCond, ::BolfiProblem) = term_cond
 
 # - - - Common Utils - - - - -
 
+"""
+    NoLimit()
+
+Termination conditions which never terminates.
+"""
 struct NoLimit <: TermCond end
 BOSS.IterLimit(::Nothing) = NoLimit()
 (::NoLimit)(::BossProblem) = true
@@ -23,6 +35,8 @@ BOSS.IterLimit(::Nothing) = NoLimit()
 # - - - Approximation - Expectation Confidence - - - - -
 
 """
+    AEConfidence(; kwargs...)
+
 Calculates the `q`-confidence region of the expected and the approximate posteriors.
 Terminates after the IoU of the two confidence regions surpasses `r`.
 """
@@ -67,8 +81,8 @@ function calculate(cond::AEConfidence, bolfi::BolfiProblem)
 
     gp_post = BOSS.model_posterior(bolfi.problem)
 
-    f_approx = approx_posterior(gp_post, bolfi.x_prior, bolfi.var_e; xs,)
-    f_expect = posterior_mean(gp_post, bolfi.x_prior, bolfi.var_e; xs,)
+    f_approx = approx_posterior(gp_post, bolfi.x_prior, bolfi.std_obs; xs,)
+    f_expect = posterior_mean(gp_post, bolfi.x_prior, bolfi.std_obs; xs,)
     f_approx, c_approx = find_cutoff(f_approx, bolfi.x_prior, cond.q; xs)
     f_expect, c_expect = find_cutoff(f_expect, bolfi.x_prior, cond.q; xs)
 
@@ -81,6 +95,8 @@ end
 # - - - UB-LB Confidence - - - - -
 
 """
+    UBLBConfidence(; kwargs...)
+
 Calculates the `q`-confidence region of the UB and LB approximate posterior.
 Terminates after the IoU of the two confidence intervals surpasses `r`.
 The UB and LB confidence intervals are calculated using the GP mean +- `n` GP stds.
@@ -130,8 +146,8 @@ function calculate(cond::UBLBConfidence, bolfi::BolfiProblem)
     gp_lb = gp_bound(gp_post, -cond.n)
     gp_ub = gp_bound(gp_post, +cond.n)
 
-    f_lb = approx_posterior(gp_lb, bolfi.x_prior, bolfi.var_e; xs)
-    f_ub = approx_posterior(gp_ub, bolfi.x_prior, bolfi.var_e; xs)
+    f_lb = approx_posterior(gp_lb, bolfi.x_prior, bolfi.std_obs; xs)
+    f_ub = approx_posterior(gp_ub, bolfi.x_prior, bolfi.std_obs; xs)
     f_lb, c_lb = find_cutoff(f_lb, bolfi.x_prior, cond.q; xs)
     f_ub, c_ub = find_cutoff(f_ub, bolfi.x_prior, cond.q; xs)
 

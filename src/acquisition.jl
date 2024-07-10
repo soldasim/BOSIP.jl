@@ -2,12 +2,15 @@
 """
 An abstract type for BOLFI acquisition functions.
 
-# Creating custom acquisition function for BOLFI:
-- Create type `CustomAcq <: BolfiAcquisition`
+# Implementing custom acquisition function for BOLFI:
+- Create struct `CustomAcq <: BolfiAcquisition`
 - Implement method `(::CustomAcq)(::BolfiProblem, ::BolfiOptions) -> (x -> ::Real)`
 """
 abstract type BolfiAcquisition end
 
+"""
+A wrapper around any `BolfiAcquisition` function converting it to the BOSS.jl `AcquisitionFunction`.
+"""
 struct AcqWrapper{
     A<:BolfiAcquisition
 } <: AcquisitionFunction
@@ -21,26 +24,34 @@ end
 
 # - - - Posterior Variance - - - - -
 
-struct PostVariance <: BolfiAcquisition end
+"""
+Selects the new evaluation point by maximizing the variance of the posterior approximation.
+"""
+struct PostVarAcq <: BolfiAcquisition end
 
-function (acq::PostVariance)(bolfi::BolfiProblem{Nothing}, options::BolfiOptions)
-    problem = bolfi.problem
-    @assert problem.data isa BOSS.ExperimentDataMAP
-    gp_post = BOSS.model_posterior(problem.model, problem.data)
-    return posterior_variance(gp_post, bolfi.x_prior, bolfi.var_e; normalize=false)
+function (acq::PostVarAcq)(bolfi::BolfiProblem{Nothing}, options::BolfiOptions)
+    return posterior_variance(bolfi; normalize=false)
 end
 
 
 # - - - Posterior Variance for Observation Sets - - - - -
 
-struct SetsPostVariance <: BolfiAcquisition
+"""
+The Mass-Weighted Mean Variance acquisition function.
+
+Selects the next evaluation point by maximizing a weighted average of the variances
+of the individual posterior approximations given by different feature sets.
+The weights are determined as the total probability mass of the current data
+w.r.t. each approximate posterior.
+"""
+struct MWMVAcq <: BolfiAcquisition
     samples::Int
 end
-SetsPostVariance(;
+MWMVAcq(;
     samples = 10_000,
-) = SetsPostVariance(samples)
+) = MWMVAcq(samples)
 
-function (acq::SetsPostVariance)(bolfi::BolfiProblem{Matrix{Bool}}, options::BolfiOptions)
+function (acq::MWMVAcq)(bolfi::BolfiProblem{Matrix{Bool}}, options::BolfiOptions)
     problem = bolfi.problem
     @assert problem.data isa BOSS.ExperimentDataMAP
 
@@ -52,10 +63,10 @@ function (acq::SetsPostVariance)(bolfi::BolfiProblem{Matrix{Bool}}, options::Bol
     for i in eachindex(set_vars)
         set = bolfi.y_sets[:,i]
         post = combine_gp_posts(gp_posts[set])
-        var_e = bolfi.var_e[set]
-        μ = posterior_mean(post, bolfi.x_prior, var_e; normalize=true, xs)
+        std_obs = bolfi.std_obs[set]
+        μ = posterior_mean(post, bolfi.x_prior, std_obs; normalize=true, xs)
         ws[i]  = 1. / sum(μ.(eachcol(bolfi.problem.data.X)))
-        set_vars[i] = posterior_variance(post, bolfi.x_prior, var_e; normalize=true, xs)
+        set_vars[i] = posterior_variance(post, bolfi.x_prior, std_obs; normalize=true, xs)
     end
     
     return (x) -> mean((w * v(x) for (w, v) in zip(ws, set_vars)))

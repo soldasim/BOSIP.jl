@@ -18,9 +18,9 @@ Defines the LFI problem together with most hyperparameters for the BOLFI procedu
         for the length scales of the GP. The `length_scale_priors` should be a vector
         of `y_dim` `x_dim`-variate distributions where `x_dim` and `y_dim` are
         the dimensions of the input and output of the model respectively.
-- `noise_var_priors::AbstractVector{<:UnivariateDistribution}`: The prior distributions
-        of the noise variances of each `y` dimension.
-- `var_e::Vector{Float64}`: The variances of the Gaussian noise of the observation `y_obs`
+- `noise_std_priors::AbstractVector{<:UnivariateDistribution}`: The prior distributions
+        of the noise standard deviations of each dimension of the simulation output `y`.
+- `std_obs::Vector{Float64}`: The std of the Gaussian noise on the observation `y_obs`
         in individual dimensions.
 - `x_prior::MultivariateDistribution`: The prior `p(x)` on the input parameters.
 - `y_sets::Matrix{Bool}`: Optional parameter intended for advanced usage.
@@ -32,7 +32,7 @@ struct BolfiProblem{
     S<:Union{Nothing, Matrix{Bool}},
 }
     problem::BossProblem
-    var_e::Vector{Float64}
+    std_obs::Vector{Float64}
     x_prior::MultivariateDistribution
     y_sets::S
 end
@@ -45,8 +45,8 @@ function BolfiProblem(data;
     kernel = BOSS.Matern32Kernel(),
     length_scale_priors,
     amp_priors,
-    noise_var_priors,
-    var_e,
+    noise_std_priors,
+    std_obs,
     x_prior,
     y_sets = nothing,
 )
@@ -66,13 +66,13 @@ function BolfiProblem(data;
         f,
         domain,
         model,
-        noise_var_priors,
+        noise_std_priors,
         data,
     )
 
     return BolfiProblem(
         problem,
-        var_e,
+        std_obs,
         x_prior,
         y_sets,
     )
