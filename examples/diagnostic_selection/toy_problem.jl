@@ -13,10 +13,10 @@ using Distributions
 const mode = Val(:T2)
 
 """acquisition function"""
-# `PostVariance` for SBI problems
-# `SetsPostVariance` for SBFI problems
-acquisition(::Val{:T1}) = PostVariance()
-acquisition(::Val{:T2}) = SetsPostVariance()
+# `PostVarAcq` for SBI problems
+# `MWMVAcq` for SBFI problems
+acquisition(::Val{:T1}) = PostVarAcq()
+acquisition(::Val{:T2}) = MWMVAcq()
 acquisition() = acquisition(mode)
 
 """observation"""
@@ -46,26 +46,26 @@ get_y_sets(::Val{:T2}) = [true;false;; false;true;;]
 get_y_sets() = get_y_sets(mode)
 
 # The "real experiment". (for plotting only)
-function experiment(m::Val{:T1}, x; noise_vars=σe_true(m).^2)
-    y = [f_(x)] + rand(MvNormal(zeros(y_dim(m)), sqrt.(noise_vars)))
+function experiment(m::Val{:T1}, x; noise_std=σe_true(m))
+    y = [f_(x)] + rand(MvNormal(zeros(y_dim(m)), noise_std))
     return y
 end
-function experiment(m::Val{:T2}, x; noise_vars=σe_true(m).^2)
-    y = [f_(x), g_(x)] + rand(MvNormal(zeros(y_dim(m)), sqrt.(noise_vars)))
+function experiment(m::Val{:T2}, x; noise_std=σe_true(m))
+    y = [f_(x), g_(x)] + rand(MvNormal(zeros(y_dim(m)), noise_std))
     return y
 end
-experiment(x; noise_vars=σe_true(mode).^2) = experiment(mode, x; noise_vars)
+experiment(x; noise_std=σe_true(mode)) = experiment(mode, x; noise_std)
 
 # The "simulation". (approximates the "experiment")
-function simulation(m::Val{:T1}, x; noise_vars=ω.^2)
-    y = [f_(x)] + rand(MvNormal(zeros(y_dim(m)), sqrt.(noise_vars)))
+function simulation(m::Val{:T1}, x; noise_std=ω)
+    y = [f_(x)] + rand(MvNormal(zeros(y_dim(m)), noise_std))
     return y
 end
-function simulation(m::Val{:T2}, x; noise_vars=ω.^2)
-    y = [f_(x), g_(x)] + rand(MvNormal(zeros(y_dim(m)), sqrt.(noise_vars)))
+function simulation(m::Val{:T2}, x; noise_std=ω)
+    y = [f_(x), g_(x)] + rand(MvNormal(zeros(y_dim(m)), noise_std))
     return y
 end
-simulation(x; noise_vars=ω.^2) = simulation(mode, x; noise_vars)
+simulation(x; noise_std=ω) = simulation(mode, x; noise_std)
 
 # The objective for the GP.
 # TODO: Try adding/removing abs value of the simulation-experiment discrepancy.
@@ -87,8 +87,8 @@ function get_amplitude_priors(m)
     return fill(truncated(Normal(0., 5.); lower=0.), y_dim(m))
 end
 
-function get_noise_var_priors(m)
-    return [truncated(Normal(0., (10 * ω[i])^2); lower=0.) for i in 1:y_dim(m)]
+function get_noise_std_priors(m)
+    return [truncated(Normal(0., 10 * ω[i]); lower=0.) for i in 1:y_dim(m)]
 end
 
 # get_x_prior() = Product(fill(Uniform(-5., 5.), 2))
@@ -113,8 +113,8 @@ function bolfi_problem(data::ExperimentData)
         kernel = get_kernel(),
         length_scale_priors = get_length_scale_priors(m),
         amp_priors = get_amplitude_priors(m),
-        noise_var_priors = get_noise_var_priors(m),
-        var_e = σe(m).^2,
+        noise_std_priors = get_noise_std_priors(m),
+        std_obs = σe(m),
         x_prior = get_x_prior(),
         y_sets = get_y_sets(m),
     )

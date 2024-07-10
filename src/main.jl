@@ -1,6 +1,6 @@
 
 function bolfi!(bolfi::BolfiProblem;
-    acquisition::BolfiAcquisition = PDFVariance(),
+    acquisition::BolfiAcquisition = PostVarAcq(),
     model_fitter::ModelFitter,
     acq_maximizer::AcquisitionMaximizer,
     term_cond::Union{<:TermCond, <:BolfiTermCond} = IterLimit(1),
@@ -8,7 +8,7 @@ function bolfi!(bolfi::BolfiProblem;
 )
     boss_acq = AcqWrapper(acquisition, bolfi, options)
     boss_term_cond = TermCondWrapper(term_cond, bolfi)
-    boss_options = BossOptions(options, bolfi)
+    boss_options = create_boss_options(options, bolfi)
 
     bo!(bolfi.problem;
         acquisition = boss_acq,

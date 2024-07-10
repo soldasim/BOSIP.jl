@@ -20,14 +20,14 @@ const ω = [0.001 for _ in 1:y_dim]
 f_(x) = x[1] * x[2]
 
 # The "real experiment". (for plotting only)
-function experiment(x; noise_vars=σe_true.^2)
-    y1 = f_(x) + rand(Normal(0., sqrt(noise_vars[1])))
+function experiment(x; noise_std=σe_true)
+    y1 = f_(x) + rand(Normal(0., noise_std[1]))
     return [y1]
 end
 
 # The "simulation". (approximates the "experiment")
-function simulation(x; noise_vars=ω.^2)
-    y1 = f_(x) + rand(Normal(0., sqrt(noise_vars[1])))
+function simulation(x; noise_std=ω)
+    y1 = f_(x) + rand(Normal(0., noise_std[1]))
     return [y1]
 end
 
@@ -49,10 +49,10 @@ function get_amplitude_priors()
     return fill(truncated(Normal(0., 5.); lower=0.), y_dim)
 end
 
-function get_noise_var_priors()
+function get_noise_std_priors()
     μ_std = ω
     max_std = 10 * ω
-    return [truncated(Normal(μ_std[i]^2, max_std[i]^2 / 3); lower=0.) for i in 1:y_dim]
+    return [truncated(Normal(μ_std[i], max_std[i] / 3); lower=0.) for i in 1:y_dim]
 end
 
 # get_x_prior() = Product(fill(Uniform(-5., 5.), 2))
@@ -76,8 +76,8 @@ function bolfi_problem(data::ExperimentData)
         kernel = get_kernel(),
         length_scale_priors = get_length_scale_priors(),
         amp_priors = get_amplitude_priors(),
-        noise_var_priors = get_noise_var_priors(),
-        var_e = σe.^2,
+        noise_std_priors = get_noise_std_priors(),
+        std_obs = σe,
         x_prior = get_x_prior(),
     )
 end

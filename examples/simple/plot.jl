@@ -17,13 +17,14 @@ function separate_new_datum(problem)
     return bolfi, new
 end
 
-function plot_state(problem; display=true, save_plots=false, plot_dir=".", plot_name="p", noise_vars_true, acquisition)
+function plot_state(problem; display=true, save_plots=false, plot_dir=".", plot_name="p", noise_std_true, acquisition)
+    # Plots with hyperparams fitted using *all* data! (Does not really matter.)
     bolfi, new_datum = separate_new_datum(problem)
-    p = plot_samples(bolfi; new_datum, display, noise_vars_true, acquisition)
+    p = plot_samples(bolfi; new_datum, display, noise_std_true, acquisition)
     save_plots && savefig(p, plot_dir * '/' * plot_name * ".png")
 end
 
-function plot_samples(bolfi; new_datum=nothing, display=true, noise_vars_true, acquisition)
+function plot_samples(bolfi; new_datum=nothing, display=true, noise_std_true, acquisition)
     problem = bolfi.problem
     gp_post = BOSS.model_posterior(problem)
 
@@ -38,18 +39,18 @@ function plot_samples(bolfi; new_datum=nothing, display=true, noise_vars_true, a
     # unnormalized posterior likelihood `p(d | a, b) * p(a, b) ∝ p(a, b | d)`
     function ll_post(a, b)
         x = [a, b]
-        y = ToyProblem.experiment(x; noise_vars=zeros(ToyProblem.y_dim))
+        y = ToyProblem.experiment(x; noise_std=zeros(ToyProblem.y_dim))
         
         # ps = numerical_issues(x) ? 0. : 1.
         isnothing(y) && return 0.
 
-        ll = pdf(MvNormal(y, sqrt.(noise_vars_true)), ToyProblem.y_obs)
+        ll = pdf(MvNormal(y, noise_std_true), ToyProblem.y_obs)
         pθ = pdf(x_prior, x)
         return pθ * ll
     end
 
     # gp-approximated posterior likelihood
-    post_μ = BOLFI.posterior_mean(gp_post, x_prior, bolfi.var_e; normalize=false)
+    post_μ = BOLFI.posterior_mean(gp_post, x_prior, bolfi.std_obs; normalize=false)
     ll_gp(a, b) = post_μ([a, b])
 
     # acquisition

@@ -28,7 +28,7 @@ function script_bolfi(;
 
     # EXPERIMENTAL TERMINATION CONDITIONS
     xs = rand(problem.x_prior, 10_000)
-    max_iters = 50  # TODO
+    max_iters = 50
 
     term_cond = AEConfidence(;
         xs,
@@ -65,7 +65,7 @@ function script_bolfi(;
 
     # final state                   # todo: comment / uncomment
     plt = options.callback
-    Plot.plot_state(problem; ftype=plt.ftype, square_layout=plt.square_layout, term_cond, iter=plt.iters, save_plots, plot_dir, plot_name="p_final", acquisition)
+    Plot.plot_state(problem, nothing; ftype=plt.ftype, square_layout=plt.square_layout, term_cond, iter=plt.iters, save_plots, plot_dir, plot_name="p_final", acquisition)
     
     return problem
 end
