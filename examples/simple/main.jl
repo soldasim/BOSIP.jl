@@ -41,5 +41,8 @@ function script_bolfi(;
     Plot.init_plotting(plt)
     bolfi!(problem; acquisition, model_fitter, acq_maximizer, term_cond, options)
     Plot.plot_final(plt; acquisition, model_fitter, acq_maximizer, term_cond, options)
+    
+    Plot.plot_param_slices(plt; samples=2000)
+
     return problem
 end

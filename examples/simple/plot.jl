@@ -28,6 +28,9 @@ PlotCallback(;
     noise_std_true::Vector{Float64},
 ) = PlotCallback(nothing, 0, plot_each, display, save_plots, plot_dir, plot_name, noise_std_true)
 
+"""
+Plots the state in the current iteration.
+"""
 function (plt::PlotCallback)(bolfi::BolfiProblem; acquisition, options, first, kwargs...)
     if first
         plt.prev_state = deepcopy(bolfi)
@@ -48,10 +51,27 @@ function (plt::PlotCallback)(bolfi::BolfiProblem; acquisition, options, first, k
     plt.iters += 1
 end
 
+"""
+Plot the final state after the BO procedure concludes.
+"""
 function plot_final(plt::PlotCallback; acquisition, options, kwargs...)
     plot_iter = plt.iters - 1
     options.info && @info "Plotting ..."
     plot_state(plt.prev_state, nothing; display=plt.display, save_plots=plt.save_plots, plot_dir=plt.plot_dir, plot_name=plt.plot_name*"_$plot_iter", noise_std_true=plt.noise_std_true, acquisition)
+end
+
+"""
+Plot real and approximate posteriors of each individual parameter.
+"""
+function plot_param_slices(plt::PlotCallback; samples=20_000, display=true, step=0.05)
+    # implented for independent priors only (for now)
+    bolfi = plt.prev_state
+    x_prior = bolfi.x_prior
+    
+    @assert x_prior isa Product  # individual priors must be independent
+    param_samples = rand(x_prior, samples)
+
+    return [plot_param_post(bolfi, i, param_samples; display, step) for i in 1:BOLFI.x_dim(bolfi)]
 end
 
 
@@ -70,7 +90,7 @@ function init_plotting(; save_plots, plot_dir)
 end
 
 
-# - - - Plotting Scripts
+# - - - Plot State - - - - -
 
 function plot_state(bolfi, new_datum; display=true, save_plots=false, plot_dir=".", plot_name="p", noise_std_true, acquisition)
     # Plots with hyperparams fitted using *all* data! (Does not really matter.)
@@ -94,9 +114,6 @@ function plot_samples(bolfi; new_datum=nothing, display=true, noise_std_true, ac
     function ll_post(a, b)
         x = [a, b]
         y = ToyProblem.experiment(x; noise_std=zeros(ToyProblem.y_dim))
-        
-        # ps = numerical_issues(x) ? 0. : 1.
-        isnothing(y) && return 0.
 
         ll = pdf(MvNormal(y, noise_std_true), ToyProblem.y_obs)
         pθ = pdf(x_prior, x)
@@ -149,5 +166,44 @@ function plot_samples!(p, samples; new_datum=nothing, label="(a,b) ~ p(a,b|d)")
     scatter!(p, [θ[1] for θ in eachcol(samples)], [θ[2] for θ in eachcol(samples)]; label, color=:green)
     isnothing(new_datum) || scatter!(p, [new_datum[1]], [new_datum[2]]; label=nothing, color=:red)
 end
+
+
+# - - - Plot Parameter Slices - - - - -
+
+function plot_param_post(bolfi, param_idx, param_samples; display, step=0.05)
+    bounds = bolfi.problem.domain.bounds
+    x_prior = bolfi.x_prior
+    param_range = bounds[1][param_idx]:step:bounds[2][param_idx]
+    param_samples_ = deepcopy(param_samples)
+    title = "Param $param_idx posterior"
+
+    # true posterior
+    function true_post(x)
+        y = ToyProblem.experiment(x; noise_std=zeros(ToyProblem.y_dim))
+        ll = pdf(MvNormal(y, ToyProblem.σe_true), ToyProblem.y_obs)
+        pθ = pdf(x_prior, x)
+        return pθ * ll
+    end
+    py = evidence(true_post, x_prior; xs=param_samples)
+    function true_post_slice(xi)
+        param_samples_[param_idx, :] .= xi
+        return mean(true_post.(eachcol(param_samples_))) / py
+    end
+
+    # expected posterior
+    exp_post = BOLFI.posterior_mean(bolfi; normalize=true)
+    function exp_post_slice(xi)
+        param_samples_[param_idx, :] .= xi
+        return exp_post.(eachcol(param_samples_)) |> mean
+    end
+
+    # plot
+    p = plot(; title)
+    plot!(p, true_post_slice, param_range; label="true posterior")
+    plot!(p, exp_post_slice, param_range; label="expected posterior")
+    display && Plots.display(p)
+    return p
+end
+
 
 end # module Plot
