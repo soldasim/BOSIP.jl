@@ -24,23 +24,22 @@ function script_bolfi(;
         steps = [0.05, 0.05],
         parallel = true,
     )
+    term_cond = BOSS.IterLimit(25)
 
-    save_plots = true
-    plot_dir = "./examples/simple/plots/_new_"
-    options = BolfiOptions()
+    plt = Plot.PlotCallback(;
+        plot_each = 5,
+        display = true,
+        save_plots = true,
+        plot_dir = "./examples/simple/plots/_new_",
+        plot_name = "p",
+        noise_std_true = ToyProblem.σe_true,
+    )
+    options = BolfiOptions(;
+        callback = plt,
+    )
 
-    ITER_TOTAL = 25
-    PLOT_EACH = 5
-
-    noise_std_true = ToyProblem.σe_true
-
-    init_plotting(; save_plots, plot_dir)
-    iters = 0
-    while iters < ITER_TOTAL
-        iters += PLOT_EACH
-        term_cond = BOSS.IterLimit(PLOT_EACH)
-        bolfi!(problem; acquisition, model_fitter, acq_maximizer, term_cond, options)
-        plot_state(problem; save_plots, plot_dir, plot_name="p_$iters", noise_std_true, acquisition)
-    end
+    Plot.init_plotting(plt)
+    bolfi!(problem; acquisition, model_fitter, acq_maximizer, term_cond, options)
+    Plot.plot_final(plt; acquisition, model_fitter, acq_maximizer, term_cond, options)
     return problem
 end

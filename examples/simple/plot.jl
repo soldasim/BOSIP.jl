@@ -1,4 +1,64 @@
+module Plot
+
 using Plots
+using Distributions
+using BOSS, BOLFI
+
+include("toy_problem.jl")
+
+
+# - - - Plotting Callback - - - - -
+
+mutable struct PlotCallback <: BolfiCallback
+    prev_state::Union{Nothing, BolfiProblem}
+    iters::Int
+    plot_each::Int
+    display::Bool
+    save_plots::Bool
+    plot_dir::String
+    plot_name::String
+    noise_std_true::Vector{Float64}
+end
+PlotCallback(;
+    plot_each::Int = 1,
+    display::Bool = true,
+    save_plots::Bool = false,
+    plot_dir::String = ".",
+    plot_name::String = "p",
+    noise_std_true::Vector{Float64},
+) = PlotCallback(nothing, 0, plot_each, display, save_plots, plot_dir, plot_name, noise_std_true)
+
+function (plt::PlotCallback)(bolfi::BolfiProblem; acquisition, options, first, kwargs...)
+    if first
+        plt.prev_state = deepcopy(bolfi)
+        plt.iters += 1
+        return
+    end
+    
+    # `iters - 1` because the plot is "one iter behind"
+    plot_iter = plt.iters - 1
+
+    if plot_iter % plt.plot_each == 0
+        options.info && @info "Plotting ..."
+        new_datum = bolfi.problem.data.X[:,end]
+        plot_state(plt.prev_state, new_datum; display=plt.display, save_plots=plt.save_plots, plot_dir=plt.plot_dir, plot_name=plt.plot_name*"_$plot_iter", noise_std_true=plt.noise_std_true, acquisition=acquisition.acq)
+    end
+    
+    plt.prev_state = deepcopy(bolfi)
+    plt.iters += 1
+end
+
+function plot_final(plt::PlotCallback; acquisition, options, kwargs...)
+    plot_iter = plt.iters - 1
+    options.info && @info "Plotting ..."
+    plot_state(plt.prev_state, nothing; display=plt.display, save_plots=plt.save_plots, plot_dir=plt.plot_dir, plot_name=plt.plot_name*"_$plot_iter", noise_std_true=plt.noise_std_true, acquisition)
+end
+
+
+# - - - Initialization - - - - -
+
+init_plotting(plt::PlotCallback) =
+    init_plotting(; save_plots=plt.save_plots, plot_dir=plt.plot_dir)
 
 function init_plotting(; save_plots, plot_dir)
     if save_plots
@@ -9,17 +69,11 @@ function init_plotting(; save_plots, plot_dir)
     end
 end
 
-function separate_new_datum(problem)
-    bolfi = deepcopy(problem)
-    new = bolfi.problem.data.X[:,end]
-    bolfi.problem.data.X = bolfi.problem.data.X[:, 1:end-1]
-    bolfi.problem.data.Y = bolfi.problem.data.Y[:, 1:end-1]
-    return bolfi, new
-end
 
-function plot_state(problem; display=true, save_plots=false, plot_dir=".", plot_name="p", noise_std_true, acquisition)
+# - - - Plotting Scripts
+
+function plot_state(bolfi, new_datum; display=true, save_plots=false, plot_dir=".", plot_name="p", noise_std_true, acquisition)
     # Plots with hyperparams fitted using *all* data! (Does not really matter.)
-    bolfi, new_datum = separate_new_datum(problem)
     p = plot_samples(bolfi; new_datum, display, noise_std_true, acquisition)
     save_plots && savefig(p, plot_dir * '/' * plot_name * ".png")
 end
@@ -95,3 +149,5 @@ function plot_samples!(p, samples; new_datum=nothing, label="(a,b) ~ p(a,b|d)")
     scatter!(p, [θ[1] for θ in eachcol(samples)], [θ[2] for θ in eachcol(samples)]; label, color=:green)
     isnothing(new_datum) || scatter!(p, [new_datum[1]], [new_datum[2]]; label=nothing, color=:red)
 end
+
+end # module Plot
