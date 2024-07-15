@@ -12,8 +12,8 @@ const y_obs = [1.]
 const y_dim = 1
 
 """observation noise std"""
-const σe_true = [1.]  # true noise
-const σe =      [1.]  # hyperparameter
+const σe_true = [0.5]  # true noise
+const σe =      [0.5]  # hyperparameter
 """simulation noise std"""
 const ω = [0.001 for _ in 1:y_dim]
 
@@ -56,7 +56,7 @@ function get_noise_std_priors()
 end
 
 # get_x_prior() = Product(fill(Uniform(-5., 5.), 2))
-get_x_prior() = MvNormal(zeros(2), fill(5/3, 2))
+get_x_prior() = Product(fill(Normal(0., 5/3), 2))
 
 
 # - - - INITIALIZATION - - - - -
