@@ -2,7 +2,7 @@
 
 julia_version = "1.10.4"
 manifest_format = "2.0"
-project_hash = "42b6914e83e1ec30840bf884dd37136a2e9865ce"
+project_hash = "5d88bc46a5aa751206baf233614e26df2b7163a2"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "7a6b285f217ba92b5b474b783b4c2e8cf8218aaa"
@@ -1565,6 +1565,12 @@ git-tree-sha1 = "43870d726f883a47d158beebb1fc3c9fab1da9d6"
 uuid = "36348300-93cb-4f02-beb5-3c3902f8871e"
 version = "0.3.2"
 
+[[deps.OptimizationPRIMA]]
+deps = ["Optimization", "PRIMA", "Reexport"]
+git-tree-sha1 = "cf0a8ed80701b7e076d2c04bb66206874588fb67"
+uuid = "72f8369c-a2ea-4298-9126-56167ce9cbc2"
+version = "0.2.0"
+
 [[deps.Opus_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "51a08fb14ec28da2ec7a927c4337e4332c2a4720"
@@ -1586,6 +1592,18 @@ deps = ["LinearAlgebra", "SparseArrays", "SuiteSparse"]
 git-tree-sha1 = "949347156c25054de2db3b166c52ac4728cbad65"
 uuid = "90014a1f-27ba-587c-ab20-58faa44d9150"
 version = "0.11.31"
+
+[[deps.PRIMA]]
+deps = ["LinearAlgebra", "PRIMA_jll", "TypeUtils"]
+git-tree-sha1 = "1293fbede8665647d7fb98f421d72cf38e13854e"
+uuid = "0a7d04aa-8ac2-47b3-b7a7-9dbd6ad661ed"
+version = "0.2.0"
+
+[[deps.PRIMA_jll]]
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "f7bbf8d5dda12f3f417b350baf82ebf0d190a623"
+uuid = "eead6e0c-2d5b-5641-a95c-b722de96d551"
+version = "0.7.1+0"
 
 [[deps.Parameters]]
 deps = ["OrderedCollections", "UnPack"]
@@ -2232,6 +2250,11 @@ version = "0.33.1"
     [deps.Turing.weakdeps]
     DynamicHMC = "bbc10e6e-7c05-544b-b16e-64fede858acb"
     Optim = "429524aa-4258-5aef-a3af-852621145aeb"
+
+[[deps.TypeUtils]]
+git-tree-sha1 = "34288f1625eb551ef63de60a1a52b8484e266dbf"
+uuid = "c3b1956e-8857-4d84-9b79-890df85b1e67"
+version = "0.3.8"
 
 [[deps.URIs]]
 git-tree-sha1 = "67db6cc7b3821e19ebe75791a9dd19c9b1188f2b"

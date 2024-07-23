@@ -1,6 +1,7 @@
 using BOLFI
 using BOSS
 using Distributions
+using OptimizationPRIMA
 
 using Random
 Random.seed!(555)
@@ -15,13 +16,13 @@ function script_bolfi(;
     problem = ToyProblem.bolfi_problem(init_data)
     acquisition = PostVarAcq()
 
-    model_fitter = BOSS.SamplingMAP(;
+    model_fitter = SamplingMAP(;
         samples = 200,
         parallel = true,
     )
-    acq_maximizer = BOSS.GridAM(;
+    acq_maximizer = GridAM(;
         problem.problem,
-        steps = [0.05, 0.05],
+        steps = fill(0.05, ToyProblem.x_dim()),
         parallel = true,
     )
     term_cond = BOSS.IterLimit(25)
@@ -42,7 +43,6 @@ function script_bolfi(;
     bolfi!(problem; acquisition, model_fitter, acq_maximizer, term_cond, options)
     Plot.plot_final(plt; acquisition, model_fitter, acq_maximizer, term_cond, options)
     
-    Plot.plot_param_slices(plt; samples=2000)
-
-    return problem
+    Plot.plot_param_slices(problem; options, samples=2_000, step=0.05)
+    return problem, options
 end
