@@ -59,26 +59,14 @@ function plot_final(plt::PlotCallback; acquisition, options, kwargs...)
     options.info && @info "Plotting ..."
     plot_state(plt.prev_state, nothing; display=plt.display, save_plots=plt.save_plots, plot_dir=plt.plot_dir, plot_name=plt.plot_name*"_$plot_iter", noise_std_true=plt.noise_std_true, acquisition)
 end
-
-"""
-Plot real and approximate posteriors of each individual parameter.
-"""
-function plot_param_slices(plt::PlotCallback; samples=20_000, display=true, step=0.05)
-    # implented for independent priors only (for now)
-    bolfi = plt.prev_state
-    x_prior = bolfi.x_prior
-    
-    @assert x_prior isa Product  # individual priors must be independent
-    param_samples = rand(x_prior, samples)
-
-    return [plot_param_post(bolfi, i, param_samples; display, step) for i in 1:BOLFI.x_dim(bolfi)]
-end
+plot_final(::Any; kwargs...) = nothing
 
 
 # - - - Initialization - - - - -
 
 init_plotting(plt::PlotCallback) =
     init_plotting(; save_plots=plt.save_plots, plot_dir=plt.plot_dir)
+init_plotting(::Any) = nothing
 
 function init_plotting(; save_plots, plot_dir)
     if save_plots
@@ -169,6 +157,16 @@ end
 
 
 # - - - Plot Parameter Slices - - - - -
+
+function plot_param_slices(bolfi::BolfiProblem; options, samples=20_000, display=true, step=0.05)
+    options.info && @info "Plotting ..."
+    x_prior = bolfi.x_prior
+    
+    @assert x_prior isa Product  # individual priors must be independent
+    param_samples = rand(x_prior, samples)
+
+    return [plot_param_post(bolfi, i, param_samples; display, step) for i in 1:BOLFI.x_dim(bolfi)]
+end
 
 function plot_param_post(bolfi, param_idx, param_samples; display, step=0.05)
     bounds = bolfi.problem.domain.bounds

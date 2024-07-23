@@ -5,7 +5,13 @@ using BOSS
 using Distributions
 
 
-# - - - PROBLEM - - - - -
+# - - - PARAMETER DOMAIN - - - - -
+
+x_dim() = 2
+get_bounds() = (fill(-5., x_dim()), fill(5., x_dim()))
+
+
+# - - - OBSERVATION - - - - -
 
 """observation"""
 const y_obs = [1.]
@@ -17,7 +23,10 @@ const σe =      [0.5]  # hyperparameter
 """simulation noise std"""
 const ω = [0.001 for _ in 1:y_dim]
 
-f_(x) = x[1] * x[2]
+
+# - - - EXPERIMENT - - - - -
+
+f_(x) = prod(x)
 
 # The "real experiment". (for plotting only)
 function experiment(x; noise_std=σe_true)
@@ -34,16 +43,17 @@ end
 # The objective for the GP.
 obj(x) = simulation(x) .- y_obs
 
-get_bounds() = ([-5., -5.], [5., 5.])
-
 
 # - - - HYPERPARAMETERS - - - - -
+
+# get_x_prior() = Product(fill(Uniform(-5., 5.), x_dim()))
+get_x_prior() = Product(fill(Normal(0., 5/3), x_dim()))
 
 get_kernel() = BOSS.Matern32Kernel()
 
 const λ_MIN = 0.01
 const λ_MAX = 10.
-get_length_scale_priors() = fill(Product(fill(calc_inverse_gamma(λ_MIN, λ_MAX), 2)), y_dim)
+get_length_scale_priors() = fill(Product(fill(calc_inverse_gamma(λ_MIN, λ_MAX), x_dim())), y_dim)
 
 function get_amplitude_priors()
     return fill(truncated(Normal(0., 5.); lower=0.), y_dim)
@@ -54,9 +64,6 @@ function get_noise_std_priors()
     max_std = 10 * ω
     return [truncated(Normal(μ_std[i], max_std[i] / 3); lower=0.) for i in 1:y_dim]
 end
-
-# get_x_prior() = Product(fill(Uniform(-5., 5.), 2))
-get_x_prior() = Product(fill(Normal(0., 5/3), 2))
 
 
 # - - - INITIALIZATION - - - - -
