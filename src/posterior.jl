@@ -46,7 +46,7 @@ end
 function posterior_mean(gp_post, x_prior, std_obs; normalize=false, xs=nothing, samples=10_000)
     function mean(x)
         pred = gp_post(x)
-        μ_δ, std_δ = pred[1], pred[2]
+        μ_δ, std_δ = pred
         y_dim = length(μ_δ)
         ll = pdf(MvNormal(zeros(y_dim), sqrt.(std_obs.^2 .+ std_δ.^2)), μ_δ)
         px = pdf(x_prior, x)
@@ -93,7 +93,7 @@ function posterior_variance(gp_post, x_prior, std_obs; normalize=false, xs=nothi
 
     function var(x)
         pred = gp_post(x)
-        μ_δ, std_δ = pred[1], pred[2]
+        μ_δ, std_δ = pred
         var_δ = std_δ .^ 2
         prodA = log.(A_.(var_obs, μ_δ, var_δ)) |> sum |> exp
         prodB = log.(B_.(var_obs, μ_δ, var_δ)) |> sum |> exp

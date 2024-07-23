@@ -19,6 +19,7 @@ using Distributions
 
 include("problem.jl")
 include("subset_problem.jl")
+include("utils.jl")
 include("options.jl")
 include("posterior.jl")
 include("confidence_set.jl")
