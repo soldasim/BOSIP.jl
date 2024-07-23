@@ -216,9 +216,7 @@ version = "0.1.0"
 
 [[deps.BOSS]]
 deps = ["AbstractGPs", "Distributed", "Distributions", "InteractiveUtils", "LatinHypercubeSampling", "Optimization", "Random", "Turing"]
-git-tree-sha1 = "b095d639361a73861c46c3b3f52a785ca6b37894"
-repo-rev = "master"
-repo-url = "https://github.com/soldasim/BOSS.jl"
+git-tree-sha1 = "0473af05d19187080f0e0fc9a582290df265c80a"
 uuid = "15052f3f-a82a-4ca3-bbc4-f478a3bd1ae2"
 version = "0.1.0"
 
@@ -589,9 +587,9 @@ version = "0.6.8"
 
 [[deps.DynamicPPL]]
 deps = ["ADTypes", "AbstractMCMC", "AbstractPPL", "Accessors", "BangBang", "Bijectors", "Compat", "ConstructionBase", "Distributions", "DocStringExtensions", "LinearAlgebra", "LogDensityProblems", "LogDensityProblemsAD", "MacroTools", "OrderedCollections", "Random", "Requires", "Test"]
-git-tree-sha1 = "04514e6db6d2169dd63862be54599f52d1c4040e"
+git-tree-sha1 = "4d861d55406aae2235e922bab82d3cee1307471a"
 uuid = "366bfd00-2699-11ea-058f-f148b4cae6d8"
-version = "0.28.0"
+version = "0.28.1"
 
     [deps.DynamicPPL.extensions]
     DynamicPPLChainRulesCoreExt = ["ChainRulesCore"]
@@ -978,9 +976,9 @@ version = "0.6.9"
 
 [[deps.KernelFunctions]]
 deps = ["ChainRulesCore", "Compat", "CompositionsBase", "Distances", "FillArrays", "Functors", "IrrationalConstants", "LinearAlgebra", "LogExpFunctions", "Random", "Requires", "SpecialFunctions", "Statistics", "StatsBase", "TensorCore", "Test", "ZygoteRules"]
-git-tree-sha1 = "654dead9bd3313311b61087ab7a0cf2b7a935cb1"
+git-tree-sha1 = "4a38fbd48503f2839b1d6033e0f7ffaec90dda33"
 uuid = "ec8451be-7e33-11e9-00cf-bbf324bd1392"
-version = "0.10.63"
+version = "0.10.64"
 
 [[deps.Kronecker]]
 deps = ["LinearAlgebra", "NamedDims", "SparseArrays", "StatsBase"]
@@ -1408,9 +1406,9 @@ version = "7.8.3"
 
 [[deps.NNlib]]
 deps = ["Adapt", "Atomix", "ChainRulesCore", "GPUArraysCore", "KernelAbstractions", "LinearAlgebra", "Pkg", "Random", "Requires", "Statistics"]
-git-tree-sha1 = "1288e6db94d98f7d194454452176b82edb25b32c"
+git-tree-sha1 = "190dcada8cf9520198058c4544862b1f88c6c577"
 uuid = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
-version = "0.9.19"
+version = "0.9.21"
 
     [deps.NNlib.extensions]
     NNlibAMDGPUExt = "AMDGPU"
@@ -1866,9 +1864,9 @@ version = "0.4.2+0"
 
 [[deps.Roots]]
 deps = ["Accessors", "ChainRulesCore", "CommonSolve", "Printf"]
-git-tree-sha1 = "1ab580704784260ee5f45bffac810b152922747b"
+git-tree-sha1 = "3484138c9fa4296a0cf46a74ca3f97b59d12b1d0"
 uuid = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"
-version = "2.1.5"
+version = "2.1.6"
 
     [deps.Roots.extensions]
     RootsForwardDiffExt = "ForwardDiff"
@@ -2239,9 +2237,9 @@ version = "0.4.82"
 
 [[deps.Turing]]
 deps = ["ADTypes", "AbstractMCMC", "Accessors", "AdvancedHMC", "AdvancedMH", "AdvancedPS", "AdvancedVI", "BangBang", "Bijectors", "Compat", "DataStructures", "Distributions", "DistributionsAD", "DocStringExtensions", "DynamicPPL", "EllipticalSliceSampling", "ForwardDiff", "Libtask", "LinearAlgebra", "LogDensityProblems", "LogDensityProblemsAD", "MCMCChains", "NamedArrays", "Optimization", "OptimizationOptimJL", "OrderedCollections", "Printf", "Random", "Reexport", "Requires", "SciMLBase", "SpecialFunctions", "Statistics", "StatsAPI", "StatsBase", "StatsFuns"]
-git-tree-sha1 = "51d0262e5d6b6bd5466c6ea27d78bd8edbb3e84e"
+git-tree-sha1 = "f57075c1f93922e804b71770da572ae68f0f75bc"
 uuid = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
-version = "0.33.1"
+version = "0.33.2"
 
     [deps.Turing.extensions]
     TuringDynamicHMCExt = "DynamicHMC"
