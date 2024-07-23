@@ -17,14 +17,13 @@ export BolfiOptions
 using BOSS
 using Distributions
 
-include("problem.jl")
-include("subset_problem.jl")
+include("problem/include.jl")
 include("utils.jl")
 include("options.jl")
 include("posterior.jl")
 include("confidence_set.jl")
-include("acquisition.jl")
-include("term_cond.jl")
+include("acquisition/include.jl")
+include("term_cond/include.jl")
 include("main.jl")
 
 end
