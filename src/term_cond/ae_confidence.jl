@@ -28,7 +28,6 @@ end
 
 function (cond::AEConfidence)(bolfi::BolfiProblem{Nothing})
     cond.iter_limit(bolfi.problem) || return false
-    (bolfi.problem.data isa ExperimentDataPrior) && return true
     ratio = calculate(cond, bolfi)
     return ratio < cond.r
 end
