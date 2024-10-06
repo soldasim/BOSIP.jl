@@ -19,7 +19,6 @@ function get_subset(prob::BossProblem, y_set::AbstractVector{<:Bool})
         prob.domain,
         prob.y_max[y_set],
         get_subset(prob.model, y_set),
-        prob.noise_std_priors[y_set],
         get_subset(prob.data, y_set),
     )
 end
@@ -30,6 +29,7 @@ function get_subset(model::GaussianProcess, y_set::AbstractVector{<:Bool})
         model.kernel,
         model.amp_priors[y_set],
         model.length_scale_priors[y_set],
+        model.noise_std_priors[y_set],
     )
 end
 
@@ -40,26 +40,28 @@ function get_subset(data::ExperimentDataPrior, y_set::AbstractVector{<:Bool})
     )
 end
 function get_subset(data::ExperimentDataMAP, y_set::AbstractVector{<:Bool})
-    @assert isempty(data.θ)
     return ExperimentDataMAP(
         data.X,
         data.Y[y_set, :],
-        data.θ,
-        data.length_scales[:, y_set],
-        data.amplitudes[y_set],
-        data.noise_std[y_set],
+        get_subset(data.params, y_set),
         data.consistent,
     )
 end
 function get_subset(data::ExperimentDataBI, y_set::AbstractVector{<:Bool})
-    @assert isempty(data.θ)
     return ExperimentDataBI(
         data.X,
         data.Y[y_set, :],
-        data.θ,
-        [λ[:, y_set] for λ in data.length_scales],
-        [α[y_set] for α in data.amplitudes],
-        [d[y_set] for d in data.noise_std],
+        get_subset.(data.params, Ref(y_set)),
         data.consistent,
+    )
+end
+
+function get_subset(params::BOSS.ModelParams, y_set::AbstractVector{<:Bool})
+    θ, λ, α, noise = params
+    return (
+        θ,
+        λ[:, y_set],
+        α[y_set],
+        noise[y_set],
     )
 end
