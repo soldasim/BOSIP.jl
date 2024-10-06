@@ -32,7 +32,7 @@ function (acq::MWMVAcq)(bolfi::BolfiProblem{Matrix{Bool}}, options::BolfiOptions
     problem = bolfi.problem
     @assert problem.data isa BOSS.ExperimentDataMAP
 
-    gp_posts = BOSS.model_posterior(problem.model, problem.data; split=true)
+    gp_posts = BOSS.model_posterior_slice.(Ref(problem), 1:BOSS.y_dim(problem))
     xs = rand(bolfi.x_prior, acq.samples)  # shared samples
     
     set_vars = Vector{Function}(undef, size(bolfi.y_sets)[2])

@@ -60,13 +60,13 @@ function BolfiProblem(data;
         kernel,
         amp_priors,
         length_scale_priors,
+        noise_std_priors,
     )
 
     problem = BossProblem(;
         f,
         domain,
         model,
-        noise_std_priors,
         data,
     )
 
