@@ -9,13 +9,15 @@ export find_cutoff, approx_cutoff_area
 export get_subset
 export set_iou
 
-export BolfiAcquisition, PostVarAcq, MWMVAcq
+export BolfiAcquisition, PostVarAcq, MWMVAcq, InfoGain
 export BolfiTermCond, AEConfidence, UBLBConfidence
 export BolfiCallback
 export BolfiOptions
 
 using BOSS
 using Distributions
+using LinearAlgebra
+using Random
 
 include("problem/include.jl")
 include("utils.jl")
