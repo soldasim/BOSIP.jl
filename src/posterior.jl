@@ -6,12 +6,26 @@
 
 Return the approximate posterior ``\\hat{p}(x|y_o)`` as a function of ``x``.
 
-The posterior is approximated by directly substituting the mean of the GP as the discrepancy
-(and ignoring the variance of the GP).
+The posterior is approximated by directly substituting the predictive means of the GPs
+as the discrepancies (and ignoring the variance of the GPs).
 
 The unnormalized approximate posterior ``\\hat{p}(y_o|x) p(x)`` is returned by default.
-If the kwarg `normalize` is set to `true`, the evidence ``\\hat{p}(y_o)``` is estimated by sampling
-and the normalized approximate posterior ``\\hat{p}(y_o|x) p(x) / \\hat{p}(y_o)`` is returned instead.
+
+# Keywords
+
+- `normalize::Bool`: If `normalize` is set to `true`, the evidence ``\\hat{p}(y_o)```
+        is estimated by sampling and the normalized approximate posterior ``\\hat{p}(y_o|x) p(x) / \\hat{p}(y_o)``
+        is returned instead of the unnormalized one.
+- `xs::Union{Nothing, <:AbstractMatrix{<:Real}}`: Can be used to provide a pre-sampled
+        set of samples from the parameter prior ``p(x)`` as a column-wise matrix.
+        Only has an effect if `normalize == true`.
+- `samples::Int`: Controls the number of samples used to estimate the evidence.
+        Only has an effect if `normalize == true` and `isnothing(xs)`.
+
+# See Also
+
+[`posterior_mean`](@ref),
+[`posterior_variance`](@ref)
 """
 function approx_posterior(bolfi::BolfiProblem; normalize=false, xs=nothing, samples=10_000)
     problem = bolfi.problem
@@ -30,11 +44,23 @@ end
 """
     posterior_mean(::BolfiProblem; kwargs...)
 
-Return the expected posterior approximation ``\\mathbb{E}[\\hat{p}(x|y_o)]`` as a function of ``x``.
+Return the expectation of the posterior approximation ``\\mathbb{E}[\\hat{p}(x|y_o)]`` as a function of ``x``.
 
-The unnormalized expected posterior ``\\mathbb{E}[\\hat{p}(y_o|x) p(x)]`` is returned by default.
-If the kwarg `normalize` is set to `true`, the evidence ``\\hat{p}(y_o)`` is estimated by sampling
-and the normalized expected posterior ``\\mathbb{E}[\\hat{p}(y_o|x) p(x) / \\hat{p}(y_o)]`` is returned instead.
+# Keywords
+
+- `normalize::Bool`: If `normalize` is set to `true`, the evidence ``\\hat{p}(y_o)```
+        is estimated by sampling and the normalized expected posterior ``\\mathbb{E}[\\hat{p}(y_o|x) p(x)]``
+        is returned instead of the unnormalized one.
+- `xs::Union{Nothing, <:AbstractMatrix{<:Real}}`: Can be used to provide a pre-sampled
+        set of samples from the parameter prior ``p(x)`` as a column-wise matrix.
+        Only has an effect if `normalize == true`.
+- `samples::Int`: Controls the number of samples used to estimate the evidence.
+        Only has an effect if `normalize == true` and `isnothing(xs)`.
+
+# See Also
+
+[`approx_posterior`](@ref),
+[`posterior_variance`](@ref)
 """
 function posterior_mean(bolfi::BolfiProblem; normalize=false, xs=nothing, samples=10_000)
     problem = bolfi.problem
@@ -70,8 +96,22 @@ end
 Return the variance of the posterior approximation ``\\mathbb{V}[\\hat{p}(x|y_o)]`` as a function of ``x``.
 
 The variance of the unnormalized posterior ``\\mathbb{V}[\\hat{p}(y_o|x) p(x)]`` is returned by default.
-If the kwarg `normalize` is set to `true`, the evidence ``\\hat{p}(y_o)`` is estimated by sampling
-and the variance of the normalized posterior ``\\mathbb{V}[\\hat{p}(y_o|x) p(x) / \\hat{p}(y_o)]`` is returned instead.
+
+# Keywords
+
+- `normalize::Bool`: If `normalize` is set to `true`, the evidence ``\\hat{p}(y_o)```
+        is estimated by sampling and the normalized posterior variance ``\\mathbb{V}[\\hat{p}(y_o|x) p(x) / \\hat{p}(y_o)]``
+        is returned instead of the unnormalized one.
+- `xs::Union{Nothing, <:AbstractMatrix{<:Real}}`: Can be used to provide a pre-sampled
+        set of samples from the parameter prior ``p(x)`` as a column-wise matrix.
+        Only has an effect if `normalize == true`.
+- `samples::Int`: Controls the number of samples used to estimate the evidence.
+        Only has an effect if `normalize == true` and `isnothing(xs)`.
+
+# See Also
+
+[`approx_posterior`](@ref),
+[`posterior_mean`](@ref)
 """
 function posterior_variance(bolfi::BolfiProblem; normalize=false, xs=nothing, samples=10_000)
     problem = bolfi.problem
@@ -114,9 +154,24 @@ end
 # - - - EVIDENCE ESTIMATION - - - - -
 
 """
+    evidence(post, x_prior; kwargs...)
+
 Return the estimated evidence ``\\hat{p}(y_o)``.
 
-The samples provided by the kwarg `xs` (if used) have to be sampled from `x_prior`.
+# Arguments
+
+- `post`: A function `::AbstractVector{<:Real} -> ::Real`
+        representing the posterior ``p(x|y_o)``.
+- `x_prior`: A multivariate distribution
+        representing the prior ``p(x)``.
+
+# Keywords
+
+- `xs::Union{Nothing, <:AbstractMatrix{<:Real}}`: Can be used to provide a pre-sampled
+        set of samples from the `x_prior` as a column-wise matrix.
+- `samples::Int`: Controls the number of samples used to estimate the evidence.
+        Only has an effect if `isnothing(xs)`.
+
 """
 function evidence(post, x_prior; xs=nothing, samples=10_000)
     ll(x) = post(x) / pdf(x_prior, x)

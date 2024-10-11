@@ -6,6 +6,8 @@ The BOLFI method performs Likelihood-Free Inference by approximating the likelih
 
 The BOLFI method has been introduced in [1]. Similar approaches have been discussed in [2], [3].
 
+See the [documentation](https://soldasim.github.io/BOLFI.jl/) for more information.
+
 # References
 
 [1] Michael U Gutmann, Jukka Cor, et al. “Bayesian optimization for likelihood-free

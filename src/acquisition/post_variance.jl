@@ -2,6 +2,8 @@
 # - - - Posterior Variance - - - - -
 
 """
+    PostVarAcq()
+
 Selects the new evaluation point by maximizing the variance of the posterior approximation.
 """
 struct PostVarAcq <: BolfiAcquisition end
@@ -14,12 +16,18 @@ end
 # - - - Posterior Variance for Observation Sets - - - - -
 
 """
+    MWMVAcq(; kwargs...)
+
 The Mass-Weighted Mean Variance acquisition function.
 
 Selects the next evaluation point by maximizing a weighted average of the variances
-of the individual posterior approximations given by different feature sets.
+of the individual posterior approximations given by different sensor sets.
 The weights are determined as the total probability mass of the current data
 w.r.t. each approximate posterior.
+
+# Keywords
+
+- `samples::Int`: The number of samples used to estimate the evidence.
 """
 struct MWMVAcq <: BolfiAcquisition
     samples::Int

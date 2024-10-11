@@ -4,6 +4,18 @@
 
 Calculates the `q`-confidence region of the expected and the approximate posteriors.
 Terminates after the IoU of the two confidence regions surpasses `r`.
+
+# Keywords
+
+- `max_iters::Union{Nothing, <:Int}`: The maximum number of iterations.
+- `samples::Int`: The number of samples used to approximate the confidence regions
+        and their IoU ratio. Only has an effect if `isnothing(xs)`.
+- `xs::Union{Nothing, <:AbstractMatrix{<:Real}}`: Can be used to provide a pre-sampled
+        set of parameter samples from the `x_prior` defined in `BolfiProblem`.
+- `q::Float64`: The confidence value of the confidence regions.
+        Defaults to `q = 0.95`.
+- `r::Float64`: The algorithm terminates once the IoU ratio surpasses `r`.
+        Defaults to `r = 0.95`.
 """
 struct AEConfidence{
     I<:Union{IterLimit, NoLimit},
