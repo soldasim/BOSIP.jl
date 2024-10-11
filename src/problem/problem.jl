@@ -13,7 +13,7 @@ Defines the LFI problem together with most hyperparameters for the BOLFI procedu
 - `cons::Union{Nothing, Function}`: Used to define arbitrary nonlinear constraints on `x`.
         Feasible points `x` must satisfy `all(cons(x) .> 0.)`. An appropriate acquisition
         maximizer which can handle nonlinear constraints must be used if `cons` is provided.
-        (See [`BOSS.AcquisitionMaximizer`](@ref).)
+        (See `BOSS.AcquisitionMaximizer`.)
 - `kernel::Kernel`: The kernel used in the GP. Defaults to the `Matern32Kernel()`.
 - `length_scale_priors::AbstractVector{<:MultivariateDistribution}`: The prior distributions
         for the length scales of the GP. The `length_scale_priors` should be a vector

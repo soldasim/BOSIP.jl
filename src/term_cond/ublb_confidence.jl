@@ -5,6 +5,20 @@
 Calculates the `q`-confidence region of the UB and LB approximate posterior.
 Terminates after the IoU of the two confidence intervals surpasses `r`.
 The UB and LB confidence intervals are calculated using the GP mean +- `n` GP stds.
+
+# Keywords
+
+- `max_iters::Union{Nothing, <:Int}`: The maximum number of iterations.
+- `samples::Int`: The number of samples used to approximate the confidence regions
+        and their IoU ratio. Only has an effect if `isnothing(xs)`.
+- `xs::Union{Nothing, <:AbstractMatrix{<:Real}}`: Can be used to provide a pre-sampled
+        set of parameter samples from the `x_prior` defined in `BolfiProblem`.
+- `n::Float64`: The number of predictive deviations added/substracted from the GP mean
+        to get the two posterior approximations. Defaults to `n = 1.`.
+- `q::Float64`: The confidence value of the confidence regions.
+        Defaults to `q = 0.8`.
+- `r::Float64`: The algorithm terminates once the IoU ratio surpasses `r`.
+        Defaults to `r = 0.8`.
 """
 struct UBLBConfidence{
     I<:Union{IterLimit, NoLimit},
