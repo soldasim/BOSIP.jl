@@ -19,13 +19,6 @@ using Distributions
 using LinearAlgebra
 using Random
 
-include("problem/include.jl")
-include("utils.jl")
-include("options.jl")
-include("posterior.jl")
-include("confidence_set.jl")
-include("acquisition/include.jl")
-include("term_cond/include.jl")
-include("main.jl")
+include("include.jl")
 
 end
