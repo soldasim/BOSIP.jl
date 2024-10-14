@@ -1,5 +1,6 @@
 
 """
+    BolfiProblem(X, Y; kwargs...)
     BolfiProblem(data::ExperimentData; kwargs...)
 
 Defines the LFI problem together with most hyperparameters for the BOLFI procedure.
@@ -36,6 +37,9 @@ struct BolfiProblem{
     x_prior::MultivariateDistribution
     y_sets::S
 end
+
+BolfiProblem(X, Y; kwargs...) =
+    BolfiProblem(ExperimentData(X, Y); kwargs...)
 
 function BolfiProblem(data;
     f,
