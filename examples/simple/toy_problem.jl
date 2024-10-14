@@ -51,18 +51,21 @@ get_x_prior() = Product(fill(Normal(0., 5/3), x_dim()))
 
 get_kernel() = BOSS.Matern32Kernel()
 
-const λ_MIN = 0.01
+const λ_MIN = 0.05
 const λ_MAX = 10.
+# get_length_scale_priors() = fill(Product(fill(truncated(Normal(1., 10/3)), x_dim())), y_dim)
 get_length_scale_priors() = fill(Product(fill(calc_inverse_gamma(λ_MIN, λ_MAX), x_dim())), y_dim)
 
 function get_amplitude_priors()
-    return fill(truncated(Normal(0., 5.); lower=0.), y_dim)
+    # return fill(truncated(Normal(0., 5.); lower=0.), y_dim)
+    return fill(calc_inverse_gamma(0.1, 20.), y_dim)
 end
 
 function get_noise_std_priors()
-    μ_std = ω
-    max_std = 10 * ω
-    return [truncated(Normal(μ_std[i], max_std[i] / 3); lower=0.) for i in 1:y_dim]
+    # μ_std = ω
+    # max_std = 10 * ω
+    # return [truncated(Normal(μ_std[i], max_std[i] / 3); lower=0.) for i in 1:y_dim]
+    return [calc_inverse_gamma(ω[i]/10, ω[i]*100) for i in 1:y_dim]
 end
 
 

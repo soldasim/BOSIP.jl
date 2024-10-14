@@ -7,7 +7,7 @@ using Random
 Random.seed!(555)
 
 include("toy_problem.jl")
-include("plot.jl")
+include("makie/makie.jl")
 
 # MAIN SCRIPT
 function script_bolfi(;
@@ -27,22 +27,23 @@ function script_bolfi(;
     )
     term_cond = BOSS.IterLimit(25)
 
-    plt = Plot.PlotCallback(;
+    plt = MakiePlots.PlotCallback(;
+        title = "",
         plot_each = 5,
         display = true,
         save_plots = true,
         plot_dir = "./examples/simple/plots/_new_",
         plot_name = "p",
-        noise_std_true = ToyProblem.σe_true,
+        step = 0.05,  # TODO
     )
     options = BolfiOptions(;
         callback = plt,
     )
 
-    Plot.init_plotting(plt)
+    MakiePlots.init_plotting(plt)
     bolfi!(problem; acquisition, model_fitter, acq_maximizer, term_cond, options)
-    Plot.plot_final(plt; acquisition, model_fitter, acq_maximizer, term_cond, options)
+    MakiePlots.plot_final(plt; acquisition, model_fitter, acq_maximizer, term_cond, options)
     
-    Plot.plot_param_slices(problem; options, samples=2_000, step=0.05)
-    return problem, options
+    # MakiePlots.plot_param_slices(plt, problem; options, samples=2_000)
+    return problem
 end
