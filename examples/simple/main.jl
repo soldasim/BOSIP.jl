@@ -25,7 +25,7 @@ function script_bolfi(;
         steps = fill(0.05, ToyProblem.x_dim()),
         parallel = true,
     )
-    term_cond = BOSS.IterLimit(25)
+    term_cond = IterLimit(25)
 
     plt = MakiePlots.PlotCallback(;
         title = "",
