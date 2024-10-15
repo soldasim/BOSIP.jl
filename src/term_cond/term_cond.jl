@@ -18,11 +18,3 @@ end
 TermCondWrapper(term_cond::TermCond, ::BolfiProblem) = term_cond
 
 (wrap::TermCondWrapper)(::BossProblem) = wrap.term_cond(wrap.bolfi)
-
-"""
-    NoLimit()
-
-Termination conditions which never terminates.
-"""
-struct NoLimit <: TermCond end
-(::NoLimit)(::BossProblem) = true
