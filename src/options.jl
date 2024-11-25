@@ -1,37 +1,4 @@
 
-# - - - Callbacks - - - - -
-
-"""
-If a callback `cb` of type `BolfiCallback` is defined in `BolfiOptions`,
-the method `cb(::BolfiProblem; kwargs...)` will be called in every iteration.
-
-```
-cb(problem::BolfiProblem;
-    model_fitter::BOSS.ModelFitter,
-    acq_maximizer::BOSS.AcquisitionMaximizer,
-    acquisition::AcqWrapper,                # `BolfiAcquisition` wrapped into `AcqWrapper`
-    term_cond::TermCond,                    # either `BOSS.TermCond` or a `BolfiTermCond` wrapped into `TermCondWrapper`
-    options::BossOptions,
-    first::Bool,
-)
-```
-"""
-abstract type BolfiCallback end
-
-struct CallbackWrapper{
-    CB<:BolfiCallback
-} <: BossCallback
-    callback::CB
-    bolfi::BolfiProblem
-end
-
-CallbackWrapper(callback::BossCallback, ::BolfiProblem) = callback
-
-(wrap::CallbackWrapper)(::BossProblem; kwargs...) = wrap.callback(wrap.bolfi; kwargs...)
-
-
-# - - - Bolfi Options - - - - -
-
 """
     BolfiOptions(; kwargs...)
 

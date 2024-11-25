@@ -1,5 +1,6 @@
 
 include("problem/include.jl")
+include("callback.jl")
 include("options.jl")
 include("utils/include.jl")
 include("posterior.jl")

@@ -10,7 +10,7 @@ export get_subset
 
 export BolfiAcquisition, PostVarAcq, MWMVAcq, InfoGain
 export BolfiTermCond, AEConfidence, UBLBConfidence
-export BolfiCallback
+export BolfiCallback, CombinedCallback
 export BolfiOptions
 
 using BOSS
