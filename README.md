@@ -1,6 +1,6 @@
-# BOLFI (Bayesian Optimization Likelihood-Free Inference)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://soldasim.github.io/BOLFI.jl/stable/)
 
-[![Build Status](https://github.com/soldasim/BOLFI.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/soldasim/BOLFI.jl/actions/workflows/CI.yml?query=branch%3Amaster)
+# BOLFI (Bayesian Optimization Likelihood-Free Inference)
 
 The BOLFI method performs Likelihood-Free Inference by approximating the likelihood function with a Gaussian Process and greatly reduces the number of required evaluations by employing the Bayesian Optimization procedure to select new evaluation points.
 
