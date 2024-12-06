@@ -19,6 +19,9 @@ Defines the LFI problem together with most hyperparameters for the BOLFI procedu
         for the length scales of the GP. The `length_scale_priors` should be a vector
         of `y_dim` `x_dim`-variate distributions where `x_dim` and `y_dim` are
         the dimensions of the input and output of the model respectively.
+- `amp_priors::AbstractVector{<:UnivariateDistribution}`: The prior distributions
+        for the amplitude hyperparameters of the GP. The `amp_priors` should be a vector
+        of `y_dim` univariate distributions.
 - `noise_std_priors::AbstractVector{<:UnivariateDistribution}`: The prior distributions
         of the noise standard deviations of each dimension of the simulation output `y`.
 - `std_obs::Vector{Float64}`: The std of the Gaussian noise on the observation `y_obs`
