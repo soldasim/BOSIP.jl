@@ -76,8 +76,7 @@ function construct_hsic_acquisition(
     boss = bolfi.problem
     post = BOSS.model_posterior(boss)
     
-    pθ = pdf.(Ref(bolfi.x_prior), eachcol(acq.θ_grid))
-    py = 1. # TODO
+    log_pθ = logpdf.(Ref(bolfi.x_prior), eachcol(acq.θ_grid))
 
     function acq_(θ_)
         # sample δs at the new θ_
@@ -101,7 +100,7 @@ function construct_hsic_acquisition(
         Δs = sample_Δ.(μs_samples, Ref(ΣLs), Es)
         
         # calculate Ss (functional values of the posterior) from the Δ samples
-        Ss = get_S.(Δs, Ref(bolfi.std_obs), Ref(pθ), Ref(py))
+        Ss = get_S.(Δs, Ref(bolfi.std_obs), Ref(log_pθ))
 
         # # calculate MMD
         # δs_shuffled = δs[rand_perm]
@@ -119,15 +118,22 @@ end
 function get_S(
     Δ::AbstractMatrix{<:Real},
     std_obs::AbstractVector{<:Real},
-    pθ::AbstractVector{<:Real},
-    py::Real,
+    log_pθ::AbstractVector{<:Real},
 )
     y_dim = length(std_obs)
-    Z = inv(sqrt(2π)^y_dim * prod(std_obs))
+    # Z = inv( sqrt(2π)^y_dim * prod(std_obs) )
+    log_Z = (-1) * ( (y_dim * log(sqrt(2π))) + sum(log.(std_obs)) )
     
+    # d_k = sum( (δ_k .^ 2) ./ (std_obs .^ 2) )
     Dt = sum.(eachcol((Δ .^ 2) ./ (std_obs .^ 2)))
-    Lt = Z .* exp.((-1/2) .* Dt)
-    St = (pθ ./ py) .* Lt
+    # l_k = Z * exp( -(1/2) * d_k )
+    log_Lt = log_Z .+ ((-1/2) .* Dt)
+    
+    w_norm = sum(exp.(log_pθ))
+    py = sum(exp.(log_pθ .- log(w_norm) .+ log_Lt))
+
+    # post = (prior / evidence) * likelihood
+    St = exp.((log_pθ .- log(py)) .+ log_Lt)
     return St
 end
 
