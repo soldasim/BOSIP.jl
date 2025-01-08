@@ -2,41 +2,72 @@
 
 This page contains documentation for all exported functions.
 
-## Main Function
+## Training
 
-Call the main function `bolfi!` to run the BOLFI procedure. 
+Call the main function `bolfi!` to run the BOLFI procedure, which sequentially queries the expensive blackbox simulator to learn the parameter posterior efficiently.
 
 ```@docs
 bolfi!
 ```
 
-## Parameter Posterior
+## Parameter Distributions
 
-This section contains function used to obtain the parameter posterior approximations.
+This section contains function used to obtain the trained parameter posterior approximations.
 
-The `approx_posterior` function can be used to obtain the (normalized) approximate
-posterior obtained by substituting the predictive mean of the GPs directly as the discrepancies.
+The `approx_posterior` function can be used to obtain the (un)normalized approximate posterior
+``p(\theta|y_o) \propto p(y_o|\theta) p(\theta)`` obtained by substituting the predictive means of the GPs directly as the discrepancies.
 
 ```@docs
 approx_posterior
 ```
 
-The `posterior_mean` function can be used to obtain the (normalized) expected posterior obtained by analytically calculating the expectation of the posterior function over the uncertainty in the prediction of the discrepancies.
+The `posterior_mean` function can be used to obtain the (un)normalized expected posterior
+``\mathbb{E}\left[p(\theta|y_o)\right] \propto \mathbb{E}\left[p(y_o|\theta)p(\theta)\right]``
+obtained by analytically calculating the expectation of the posterior function
+over the uncertainty in the prediction of the discrepancies.
 
 ```@docs
 posterior_mean
 ```
 
-The `posterior_variance` function can be used to obtain the (normalized) posterior variance caused by the uncertainty in the prediction of the discrepancies.
+The `posterior_variance` function can be used to obtain the (un)normalized posterior variance
+``\mathbb{V}\left[p(\theta|y_o)\right] \propto \mathbb{V}\left[p(y_o|\theta)p(\theta)\right]``
+caused by the uncertainty in the prediction of the discrepancies.
 
 ```@docs
 posterior_variance
+```
+
+The `approx_likelihood` function can be used to obtain the approximate likelihood
+``p(y_o|\theta)`` obtained by substituting the predictive means of the GPs directly as the discrepancies.
+
+```@docs
+approx_likelihood
+```
+
+The `likelihood_mean` function can be used to obtain the expected likelihood
+``\mathbb{E}\left[p(y_o|\theta)\right]`` obtained by analytically calculating the expectation
+of the likelihood function over the uncertainty in the prediction of the discrepancies.
+
+```@docs
+likelihood_mean
+```
+
+The `likelihood_variance` function can be used to obtain the likelihood variance
+``\mathbb{V}\left[p(y_o|\theta)\right]`` caused by the uncertainty in the prediction of the discrepancies.
+
+```@docs
+likelihood_variance
 ```
 
 The `evidence` function can be used to approximate the evidence ``p(y_o)``
 of a given posterior function by sampling. It is advisable to use this
 estimate only in low parameter dimensions, as it will require many samples
 to achieve reasonable precision on high-dimensional domains.
+
+The evidence is the normalization constant needed to obtain the normalized posterior.
+The `evidence` function is used to normalize the posterior if one calls
+`approx_posterior`, `posterior_mean`, or `posterior_variance` with `normalize=true`.
 
 ```@docs
 evidence
