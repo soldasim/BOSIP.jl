@@ -1,6 +1,4 @@
 
-# - - - APPROX. POSTERIOR - - - - -
-
 """
     approx_posterior(::BolfiProblem; kwargs...)
 
@@ -25,21 +23,55 @@ The unnormalized approximate posterior ``\\hat{p}(y_o|x) p(x)`` is returned by d
 # See Also
 
 [`posterior_mean`](@ref),
-[`posterior_variance`](@ref)
+[`posterior_variance`](@ref),
+[`approx_likelihood`](@ref)
 """
 function approx_posterior(bolfi::BolfiProblem; normalize=false, xs=nothing, samples=10_000)
     problem = bolfi.problem
+    @assert problem.data isa BOSS.ExperimentDataMAP
     gp_post = BOSS.model_posterior(problem.model, problem.data)
     return approx_posterior(gp_post, bolfi.x_prior, bolfi.std_obs; normalize, xs, samples)
 end
-
 function approx_posterior(gp_post, x_prior, std_obs; normalize=false, xs=nothing, samples=10_000)
-    gp_μ = gp_mean(gp_post)
-    return posterior_mean(gp_μ, x_prior, std_obs; normalize, xs, samples)
+    apporx_like = approx_likelihood(gp_post, std_obs)
+    approx_post(x) = apporx_like(x) * pdf(x_prior, x)
+
+    if normalize
+        py = evidence(approx_post, x_prior; xs, samples)
+        return (x) -> approx_post(x) / py
+    else
+        return approx_post
+    end
 end
 
+"""
+    approx_likelihood(::BolfiProblem; kwargs...)
 
-# - - - POSTERIOR MEAN - - - - -
+Return the approximate likelihood ``\\hat{p}(y_o|x)`` as a function of ``x``.
+
+The likelihood is approximated by directly substituting the predictive means of the GPs
+as the discrepancies (and ignoring the variance of the GPs).
+
+# See Also
+
+[`likelihood_mean`](@ref),
+[`likelihood_variance`](@ref),
+[`approx_posterior`](@ref)
+"""
+function approx_likelihood(bolfi::BolfiProblem)
+    problem = bolfi.problem
+    @assert problem.data isa BOSS.ExperimentDataMAP
+    gp_post = BOSS.model_posterior(problem.model, problem.data)
+    return approx_likelihood(gp_post, bolfi.std_obs)
+end
+function approx_likelihood(gp_post, std_obs)
+    function like_mean(x)
+        pred = gp_post(x)
+        μ_δ, _ = pred
+        y_dim = length(μ_δ)
+        return pdf(MvNormal(μ_δ, std_obs), zeros(y_dim))
+    end
+end
 
 """
     posterior_mean(::BolfiProblem; kwargs...)
@@ -60,7 +92,8 @@ Return the expectation of the posterior approximation ``\\mathbb{E}[\\hat{p}(x|y
 # See Also
 
 [`approx_posterior`](@ref),
-[`posterior_variance`](@ref)
+[`posterior_variance`](@ref),
+[`likelihood_mean`](@ref)
 """
 function posterior_mean(bolfi::BolfiProblem; normalize=false, xs=nothing, samples=10_000)
     problem = bolfi.problem
@@ -68,27 +101,43 @@ function posterior_mean(bolfi::BolfiProblem; normalize=false, xs=nothing, sample
     gp_post = BOSS.model_posterior(problem.model, problem.data)
     return posterior_mean(gp_post, bolfi.x_prior, bolfi.std_obs; normalize, xs, samples)
 end
-
 function posterior_mean(gp_post, x_prior, std_obs; normalize=false, xs=nothing, samples=10_000)
-    function mean(x)
-        pred = gp_post(x)
-        μ_δ, std_δ = pred
-        y_dim = length(μ_δ)
-        ll = pdf(MvNormal(zeros(y_dim), sqrt.(std_obs.^2 .+ std_δ.^2)), μ_δ)
-        px = pdf(x_prior, x)
-        return ll * px # / py
-    end
+    like_mean = likelihood_mean(gp_post, std_obs)
+    post_mean(x) = pdf(x_prior, x) * like_mean(x)
 
     if normalize
-        py = evidence(mean, x_prior; xs, samples)
-        return (x) -> mean(x) / py
+        py = evidence(post_mean, x_prior; xs, samples)
+        return (x) -> post_mean(x) / py
     else
-        return mean
+        return post_mean
     end
 end
 
+"""
+    likelihood_mean(::BolfiProblem; kwargs...)
 
-# - - - POSTERIOR VARIANCE - - - - -
+Return the expectation of the likelihood approximation ``\\mathbb{E}[\\hat{p}(y_o|x)]`` as a function of ``x``.
+
+# See Also
+
+[`approx_likelihood`](@ref),
+[`likelihood_variance`](@ref),
+[`posterior_mean`](@ref)
+"""
+function likelihood_mean(bolfi::BolfiProblem)
+    problem = bolfi.problem
+    @assert problem.data isa BOSS.ExperimentDataMAP
+    gp_post = BOSS.model_posterior(problem.model, problem.data)
+    return likelihood_mean(gp_post, bolfi.std_obs)
+end
+function likelihood_mean(gp_post, std_obs)
+    function like_mean(x)
+        pred = gp_post(x)
+        μ_δ, std_δ = pred
+        y_dim = length(μ_δ)
+        return pdf(MvNormal(μ_δ, sqrt.(std_obs.^2 .+ std_δ.^2)), zeros(y_dim))
+    end
+end
 
 """
     posterior_variance(::BolfiProblem; kwargs...)
@@ -111,7 +160,8 @@ The variance of the unnormalized posterior ``\\mathbb{V}[\\hat{p}(y_o|x) p(x)]``
 # See Also
 
 [`approx_posterior`](@ref),
-[`posterior_mean`](@ref)
+[`posterior_mean`](@ref),
+[`likelihood_variance`](@ref)
 """
 function posterior_variance(bolfi::BolfiProblem; normalize=false, xs=nothing, samples=10_000)
     problem = bolfi.problem
@@ -119,7 +169,6 @@ function posterior_variance(bolfi::BolfiProblem; normalize=false, xs=nothing, sa
     gp_post = BOSS.model_posterior(problem.model, problem.data)
     return posterior_variance(gp_post, bolfi.x_prior, bolfi.std_obs; normalize, xs, samples)
 end
-
 function posterior_variance(gp_post, x_prior, std_obs; normalize=false, xs=nothing, samples=10_000)
     if normalize
         isnothing(xs) && (xs = rand(x_prior, samples))
@@ -129,16 +178,37 @@ function posterior_variance(gp_post, x_prior, std_obs; normalize=false, xs=nothi
         py = 1.
     end
 
+    like_var = likelihood_variance(gp_post, std_obs)
+    post_var(x) = (pdf(x_prior, x) / py)^2 * like_var(x)
+end
+
+"""
+    likelihood_variance(::BolfiProblem; kwargs...)
+
+Return the variance of the likelihood approximation ``\\mathbb{V}[\\hat{p}(y_o|x)]`` as a function of ``x``.
+
+# See Also
+
+[`approx_likelihood`](@ref),
+[`likelihood_mean`](@ref),
+[`posterior_variance`](@ref)
+"""
+function likelihood_variance(bolfi::BolfiProblem)
+    problem = bolfi.problem
+    @assert problem.data isa BOSS.ExperimentDataMAP
+    gp_post = BOSS.model_posterior(problem.model, problem.data)
+    return likelihood_variance(gp_post, bolfi.std_obs)
+end
+function likelihood_variance(gp_post, std_obs)
     var_obs = std_obs .^ 2
 
-    function var(x)
+    function like_var(x)
         pred = gp_post(x)
         μ_δ, std_δ = pred
         var_δ = std_δ .^ 2
         prodA = log.(A_.(var_obs, μ_δ, var_δ)) |> sum |> exp
         prodB = log.(B_.(var_obs, μ_δ, var_δ)) |> sum |> exp
-        px = pdf(x_prior, x)
-        return (px^2 / py^2) * (prodA - prodB)
+        return prodA - prodB
     end
 end
 function A_(var_obs, μ_δ, var_δ)
@@ -149,9 +219,6 @@ function B_(var_obs, μ_δ, var_δ)
     varB = var_obs + var_δ
     return pdf(Normal(0, sqrt(varB)), μ_δ)^2
 end
-
-
-# - - - EVIDENCE ESTIMATION - - - - -
 
 """
     evidence(post, x_prior; kwargs...)
