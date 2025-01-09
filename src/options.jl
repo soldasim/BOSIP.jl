@@ -14,20 +14,14 @@ Stores miscellaneous settings.
 - `callback::Union{<:BossCallback, <:BolfiCallback}`: If provided,
         the callback will be called before the BO procedure starts and after every iteration.
 """
-struct BolfiOptions{
+@kwdef struct BolfiOptions{
     CB<:Union{<:BossCallback, <:BolfiCallback},
 }
-    info::Bool
-    debug::Bool
-    parallel_evals::Symbol
-    callback::CB
+    info::Bool = true
+    debug::Bool = false
+    parallel_evals::Symbol = :parallel
+    callback::CB = NoCallback()
 end
-BolfiOptions(;
-    info = true,
-    debug = false,
-    parallel_evals = :parallel,
-    callback = NoCallback(),
-) = BolfiOptions(info, debug, parallel_evals, callback)
 
 create_boss_options(opt::BolfiOptions, bolfi::BolfiProblem) = BOSS.BossOptions(
     opt.info,
