@@ -70,7 +70,7 @@ function init_plotting(; save_plots, plot_dir)
         if isdir(plot_dir)
             rm(plot_dir, recursive=true)
         end
-        mkdir(plot_dir)
+        mkpath(plot_dir)
     end
 end
 

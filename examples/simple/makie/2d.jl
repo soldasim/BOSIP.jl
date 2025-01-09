@@ -1,8 +1,9 @@
 
-function plot_state_2d(bolfi, new_datum; plt, acquisition, kwargs...)
+function plot_state_2d(bolfi, new_datum; plt, acquisition, sample_posterior=true, kwargs...)
     boss = bolfi.problem
     acquisition = unwrap(acquisition)
 
+    approx_post = approx_posterior(bolfi)
     post_mean = posterior_mean(bolfi)
     post_var = posterior_variance(bolfi)
     gp_post = BOSS.model_posterior(boss)
@@ -24,16 +25,24 @@ function plot_state_2d(bolfi, new_datum; plt, acquisition, kwargs...)
     # axislegend(ax; position = :rt)
 
     ax = Axis(f[1,2];
-        title = "posterior mean",
+        title = "approx. posterior",
     )
-    plot_func_2d!(ax, (x,y) -> post_mean([x,y]), bolfi, new_datum; plt)
+    plot_func_2d!(ax, (x,y) -> approx_post([x,y]), bolfi, new_datum; plt)
+    sample_posterior && plot_posterior_samples!(ax, bolfi)
     plot_data_2d!(ax, bolfi, new_datum; plt)
     # axislegend(ax; position = :rt)
 
+    # ax = Axis(f[2,1];
+    #     title = "abs. val. of GP mean",
+    # )
+    # plot_func_2d!(ax, (x,y) -> abs(gp_post([x,y])[1][1]), bolfi, new_datum; plt)
+    # plot_data_2d!(ax, bolfi, new_datum; plt)
+    # # axislegend(ax; position = :rt)
+
     ax = Axis(f[2,1];
-        title = "abs. val. of GP mean",
+        title = "posterior mean",
     )
-    plot_func_2d!(ax, (x,y) -> abs(gp_post([x,y])[1][1]), bolfi, new_datum; plt)
+    plot_func_2d!(ax, (x,y) -> post_mean([x,y]), bolfi, new_datum; plt)
     plot_data_2d!(ax, bolfi, new_datum; plt)
     # axislegend(ax; position = :rt)
 
@@ -68,9 +77,28 @@ function plot_data_2d!(ax, bolfi, new_datum; plt)
 
     scatter!(ax, boss.data.X[1,:], boss.data.X[2,:];
         label = "data",
+        color = :cyan,
     )
     isnothing(new_datum) || scatter!(ax, [new_datum[1]], [new_datum[2]];
         label = "new datum",
+        color = :orange,
+    )
+end
+
+function plot_posterior_samples!(ax, bolfi)
+    bounds = bolfi.problem.domain.bounds
+    xs = BOLFI.sample_posterior(bolfi)
+
+    # fix limits so that samples out of bounds are not plotted
+    xlims = bounds[1][1], bounds[2][1]
+    ylims = bounds[1][2], bounds[2][2]
+    xlims!(ax, xlims)
+    ylims!(ax, ylims)
+
+    scatter!(ax, xs;
+        color = :green,
+        marker = :xcross,
+        markersize = 6,
     )
 end
 

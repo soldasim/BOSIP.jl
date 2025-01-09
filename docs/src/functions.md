@@ -12,7 +12,7 @@ bolfi!
 
 ## Parameter Distributions
 
-This section contains function used to obtain the trained parameter posterior approximations.
+This section contains function used to obtain the trained parameter posterior/likelihood approximations.
 
 The `approx_posterior` function can be used to obtain the (un)normalized approximate posterior
 ``p(\theta|y_o) \propto p(y_o|\theta) p(\theta)`` obtained by substituting the predictive means of the GPs directly as the discrepancies.
@@ -72,6 +72,16 @@ The `evidence` function is used to normalize the posterior if one calls
 ```@docs
 evidence
 ```
+
+## Sampling
+
+The `sample_posterior` function can be used to obtain approximate samples from the trained parameter posterior.
+
+```@docs
+sample_posterior
+```
+
+The sampling is performed via the Turing.jl package. The Turing.jl package is a quite heavy dependency, so it is not loaded by default. To sample from the posterior, one has to first load Turing.jl as `using Turing`, which will also compile the `sample_posterior` function.
 
 ## Confidence Sets
 

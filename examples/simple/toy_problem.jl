@@ -4,6 +4,8 @@ using BOLFI
 using BOSS
 using Distributions
 
+using Turing # to enable posterior sampling
+
 
 # - - - PARAMETER DOMAIN - - - - -
 
