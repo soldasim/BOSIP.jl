@@ -9,21 +9,6 @@ using BOSS
 using Distributions
 ```
 
-Additionally, we will utilize the following function for defining the priors later.
-```julia
-"""
-Return an _approximate_ Inverse Gamma distribution
-with 0.99 probability mass between `lb` and `ub.`
-"""
-function calc_inverse_gamma(lb, ub)
-    μ = (ub + lb) / 2
-    σ = (ub - lb) / 6
-    a = (μ^2 / σ^2) + 2
-    b = μ * ((μ^2 / σ^2) + 1)
-    return InverseGamma(a, b)
-end
-```
-
 ## Problem Definition
 
 In our toy problem, our goal is to infer two parameters ``x \in \mathbb{R}^2``. We defined the true _unknown_ mapping ``f_t(\theta) = g_t(\theta) = \prod\theta``.
@@ -76,6 +61,32 @@ The true parameter posterior (which we would like to learn using the simulated o
 | | | ![True Posterior](img/post.png) | | |
 | | | | | |
 
+## Sampling Initial Data
+
+We can query our simulation for a few initial datapoints. One can sample a few random points from the parameter prior, or use for example LatinHypercubeSampling.jl to obtain a small initial grid.
+
+We will query a few datapoints from the prior here using the following `get_init_data` function.
+```julia
+function get_init_data(count)
+    X = reduce(hcat, (random_datapoint() for _ in 1:count))[:,:]
+    Y = reduce(hcat, (obj(x) for x in eachcol(X)))[:,:]
+    return BOSS.ExperimentDataPrior(X, Y)
+end
+
+function random_datapoint()
+    x_prior = get_x_prior()
+    bounds = get_bounds()
+
+    x = rand(x_prior)
+    while !BOSS.in_bounds(x, bounds)
+        x = rand(x_prior)
+    end
+    return x
+end
+
+init_data = get_init_data(3)
+```
+
 ## Problem Hyperparameters
 
 Now we need to define the kernel and some priors. We use very weak priors here as if we knew very little about the true objective function. See the hyperparameter section for more information about hyperparameters.
@@ -118,7 +129,7 @@ noise_std_priors = fill(
 
 Now, we can instantiate the `BolfiProblem`.
 ```julia
-problem = BolfiProblem(X, Y;
+problem = BolfiProblem(init_data;
     f = gp_objective,
     bounds,
     kernel,
