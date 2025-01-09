@@ -66,7 +66,7 @@ First, we rewrite the likelihood by abusing the assumption of a diagonal covaria
 ```math
 p(y_o|\theta) = \prod\limits_{j=1}^{m} \mathcal{N}(f_t(\theta)^{[j]} - y_o^{[j]}, (\sigma_f^{[j]})^2)|_0 \;,
 ```
-where the superscript ``[j]`` refers to the ``j``-th observation dimension. (For example, ``y_o^[j] \in \mathbb{R}`` is the ``j``-th element of the vector ``y_o``.)
+where the superscript ``[j]`` refers to the ``j``-th observation dimension. (For example, ``y_o^{[j]} \in \mathbb{R}`` is the ``j``-th element of the vector ``y_o``.)
 
 In order to approximate the likelihood we train ``m`` Gaussian processes to predict the discrepancies
 ```math

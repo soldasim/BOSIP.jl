@@ -5,8 +5,16 @@
 
 Defines the LFI problem together with most hyperparameters for the BOLFI procedure.
 
+# Args
+
+The initial data are provided either as two column-wise matrices `X` and `Y`
+with inputs and outputs of the simulator respectively, or as an instance of `BOSS.ExperimentData`.
+
+Currently, at least one datapoint has to be provided (purely for implementation reasons).
+
 # Kwargs
-- `f::Any`: The simulation to be queried for data. Must follow the signature `f(x) = sim(y) - y_obs`.
+
+- `f::Any`: The simulation to be queried for data. Must follow the signature `f(x) = sim(x) - y_obs`.
 - `bounds::AbstractBounds`: The basic box-constraints on `x`. This field is mandatory.
 - `discrete::AbstractVector{<:Bool}`: Can be used to designate some dimensions
         of the domain as discrete.
