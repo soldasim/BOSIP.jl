@@ -73,30 +73,6 @@ The `evidence` function is used to normalize the posterior if one calls
 evidence
 ```
 
-## Predictive Posterior of the GPs
-
-This section contains functions used to transform the GP predictive posterior.
-They all receive the GP posterior as a vector-valued function `(x) -> (μ, σ)`,
-and return some modiftication of this function.
-
-The `gp_mean` ignores the prediction unceratinty by zeroing-out the predictive deviation.
-
-```@docs
-gp_mean
-```
-
-The `gp_bound` predicts the mean plus some (positive or negative) number of standard deviations.
-
-```@docs
-gp_bound
-```
-
-The `gp_quantile` predicts the `q`-th quantile of the predictive distribution.
-
-```@docs
-gp_quantile
-```
-
 ## Confidence Sets
 
 This section contains function used to extract approximate confidence sets from the posterior. It is advised to use these approximations only with low-dimensional parameter domains, as they will require many samples to reach reasonable precision in high-dimensional domains.
