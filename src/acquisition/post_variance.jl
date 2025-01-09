@@ -29,12 +29,9 @@ w.r.t. each approximate posterior.
 
 - `samples::Int`: The number of samples used to estimate the evidence.
 """
-struct MWMVAcq <: BolfiAcquisition
-    samples::Int
+@kwdef struct MWMVAcq <: BolfiAcquisition
+    samples::Int = 10_000
 end
-MWMVAcq(;
-    samples = 10_000,
-) = MWMVAcq(samples)
 
 function (acq::MWMVAcq)(bolfi::BolfiProblem{Matrix{Bool}}, options::BolfiOptions)
     problem = bolfi.problem

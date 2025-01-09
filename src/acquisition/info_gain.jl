@@ -25,19 +25,11 @@ This is also known as  the Hilbert-Schmidt independence criterion (HSIC).
 - `δ_kernel::Kernel`: The kernel used for the samples of the new data point.
 - `p_kernel::Kernel`: The kernel used for the posterior function value samples.
 """
-struct InfoGain <: BolfiAcquisition
+@kwdef struct InfoGain <: BolfiAcquisition
     samples::Int64
     θ_grid::Matrix{Float64}
-    δ_kernel::BOSS.Kernel
-    p_kernel::BOSS.Kernel
-end
-function InfoGain(;
-    samples,
-    θ_grid,
-    δ_kernel = BOSS.GaussianKernel(),
-    p_kernel = BOSS.GaussianKernel(),
-)
-    return InfoGain(samples, θ_grid, δ_kernel, p_kernel)
+    δ_kernel::BOSS.Kernel = BOSS.GaussianKernel()
+    p_kernel::BOSS.Kernel = BOSS.GaussianKernel()
 end
 
 # info gain on the posterior approximation
