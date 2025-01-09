@@ -3,6 +3,7 @@ module BOLFI
 export bolfi!
 export BolfiProblem
 
+export sample_posterior, TuringOptions
 export approx_posterior, posterior_mean, posterior_variance
 export approx_likelihood, likelihood_mean, likelihood_variance
 export evidence
