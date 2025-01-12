@@ -243,20 +243,21 @@ uuid = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
 version = "0.4.7"
 
 [[deps.BOLFI]]
-deps = ["BOSS", "Distributions", "LinearAlgebra", "Random"]
+deps = ["BOSS", "Distributions", "KernelFunctions", "LinearAlgebra", "Random", "Statistics"]
 path = ".."
 uuid = "631834c2-07fe-4b6b-876a-15b6a4e37445"
-version = "0.1.0"
-weakdeps = ["Turing"]
+version = "0.1.1"
+weakdeps = ["CairoMakie", "Turing"]
 
     [deps.BOLFI.extensions]
+    CairoExt = "CairoMakie"
     TuringExt = "Turing"
 
 [[deps.BOSS]]
 deps = ["AbstractGPs", "Distributed", "Distributions", "InteractiveUtils", "LatinHypercubeSampling", "LinearAlgebra", "Optimization", "Random"]
-git-tree-sha1 = "468889ac0fcf793488a843adc9cde52c0148748b"
+git-tree-sha1 = "af9681eea3c30d7396525136094b6ee34094934f"
 uuid = "15052f3f-a82a-4ca3-bbc4-f478a3bd1ae2"
-version = "0.3.3"
+version = "0.3.4"
 weakdeps = ["Turing"]
 
     [deps.BOSS.extensions]
@@ -708,9 +709,9 @@ uuid = "6b7a57c9-7cc1-4fdf-b7f5-e857abae3636"
 version = "0.8.5"
 
 [[deps.Extents]]
-git-tree-sha1 = "81023caa0021a41712685887db1fc03db26f41f5"
+git-tree-sha1 = "063512a13dbe9c40d999c439268539aa552d1ae6"
 uuid = "411431e0-e8b7-467b-b5e0-f676ba4f2910"
-version = "0.1.4"
+version = "0.1.5"
 
 [[deps.FFMPEG_jll]]
 deps = ["Artifacts", "Bzip2_jll", "FreeType2_jll", "FriBidi_jll", "JLLWrappers", "LAME_jll", "Libdl", "Ogg_jll", "OpenSSL_jll", "Opus_jll", "PCRE2_jll", "Zlib_jll", "libaom_jll", "libass_jll", "libfdk_aac_jll", "libvorbis_jll", "x264_jll", "x265_jll"]
@@ -1460,9 +1461,9 @@ version = "7.8.3"
 
 [[deps.NNlib]]
 deps = ["Adapt", "Atomix", "ChainRulesCore", "GPUArraysCore", "KernelAbstractions", "LinearAlgebra", "Random", "Statistics"]
-git-tree-sha1 = "1177f161cda2083543b9967d7ca2a3e24e721e13"
+git-tree-sha1 = "bdc9d30f151590aca0af22690f5ab7dc18a551cb"
 uuid = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
-version = "0.9.26"
+version = "0.9.27"
 
     [deps.NNlib.extensions]
     NNlibAMDGPUExt = "AMDGPU"

@@ -4,6 +4,7 @@ export bolfi!
 export BolfiProblem
 
 export sample_posterior, TuringOptions
+export plot_marginals_int, plot_marginals_kde, PlotSettings
 export approx_posterior, posterior_mean, posterior_variance
 export approx_likelihood, likelihood_mean, likelihood_variance
 export evidence
@@ -19,6 +20,8 @@ using BOSS
 using Distributions
 using LinearAlgebra
 using Random
+using KernelFunctions
+using Statistics
 
 include("include.jl")
 

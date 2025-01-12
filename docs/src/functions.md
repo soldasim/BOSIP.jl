@@ -10,7 +10,7 @@ Call the main function `bolfi!` to run the BOLFI procedure, which sequentially q
 bolfi!
 ```
 
-## Parameter Distributions
+## Parameter Posterior
 
 This section contains function used to obtain the trained parameter posterior/likelihood approximations.
 
@@ -73,7 +73,7 @@ The `evidence` function is used to normalize the posterior if one calls
 evidence
 ```
 
-## Sampling
+## Sampling from the Posterior
 
 The `sample_posterior` function can be used to obtain approximate samples from the trained parameter posterior.
 
@@ -106,4 +106,15 @@ value between two sets.
 
 ```@docs
 set_iou
+```
+
+# Plotting Posterior Marginals
+
+The functions `plot_marginals_int` and `plot_marginals_kde` are provided to visualize the trained posterior. Both functions create a matrix of figures containing the approximate marginal posteriors of each pair of parameters and the individual marginals on the diagonal.
+
+The function `plot_marginals_int` approximates the marginals by numerical integration whereas the function `plot_marginals_kde` approximates the marginals by kernel density estimation.
+
+```@docs
+plot_marginals_int
+plot_marginals_kde
 ```
