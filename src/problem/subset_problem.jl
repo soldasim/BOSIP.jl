@@ -1,11 +1,11 @@
 
-get_subset(bolfi::BolfiProblem{Matrix{Bool}}, idx::Int) =
+get_subset(bolfi::BolfiProblem{<:Any, Matrix{Bool}}, idx::Int) =
     get_subset(bolfi, bolfi.y_sets[:, idx])
 
 function get_subset(bolfi::BolfiProblem, y_set::AbstractVector{<:Bool})
     return BolfiProblem(
         get_subset(bolfi.problem, y_set),
-        bolfi.std_obs[y_set],
+        isnothing(bolfi.std_obs) ? nothing : bolfi.std_obs[y_set],
         bolfi.x_prior,
         nothing,
     )

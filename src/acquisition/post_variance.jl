@@ -8,7 +8,7 @@ Selects the new evaluation point by maximizing the variance of the posterior app
 """
 struct PostVarAcq <: BolfiAcquisition end
 
-function (acq::PostVarAcq)(bolfi::BolfiProblem{Nothing}, options::BolfiOptions)
+function (acq::PostVarAcq)(bolfi::BolfiProblem{<:Any, Nothing}, options::BolfiOptions)
     return posterior_variance(bolfi; normalize=false)
 end
 
@@ -33,7 +33,7 @@ w.r.t. each approximate posterior.
     samples::Int = 10_000
 end
 
-function (acq::MWMVAcq)(bolfi::BolfiProblem{Matrix{Bool}}, options::BolfiOptions)
+function (acq::MWMVAcq)(bolfi::BolfiProblem{<:Any, Matrix{Bool}}, options::BolfiOptions)
     problem = bolfi.problem
     @assert problem.data isa BOSS.ExperimentDataMAP
 
@@ -45,7 +45,7 @@ function (acq::MWMVAcq)(bolfi::BolfiProblem{Matrix{Bool}}, options::BolfiOptions
     for i in eachindex(set_vars)
         set = bolfi.y_sets[:,i]
         post = combine_gp_posts(gp_posts[set])
-        std_obs = bolfi.std_obs[set]
+        std_obs = std_obs(bolfi)[set]
         μ = posterior_mean(post, bolfi.x_prior, std_obs; normalize=true, xs)
         ws[i]  = 1. / sum(μ.(eachcol(bolfi.problem.data.X)))
         set_vars[i] = posterior_variance(post, bolfi.x_prior, std_obs; normalize=true, xs)

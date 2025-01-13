@@ -31,9 +31,12 @@ Currently, at least one datapoint has to be provided (purely for implementation 
         for the amplitude hyperparameters of the GP. The `amp_priors` should be a vector
         of `y_dim` univariate distributions.
 - `noise_std_priors::AbstractVector{<:UnivariateDistribution}`: The prior distributions
-        of the noise standard deviations of each dimension of the simulation output `y`.
-- `std_obs::Vector{Float64}`: The std of the Gaussian noise on the observation `y_obs`
-        in individual dimensions.
+        of the standard deviations the Gaussian simulator noise on each dimension of the output `y`.
+- `std_obs::Union{Vector{Float64}, Nothing}`: The standard deviations of the Gaussian
+        observation noise on each dimension of the "ground truth" observation.
+        (If the observation is considered to be generated from the simulator and not some "real" experiment,
+        provide `std_obs = nothing`` and the adaptively trained simulation noise deviation will be used
+        in place of the experiment noise deviation as well. This may be the case for some toy problems or benchmarks.)
 - `x_prior::MultivariateDistribution`: The prior `p(x)` on the input parameters.
 - `y_sets::Matrix{Bool}`: Optional parameter intended for advanced usage.
         The binary columns define subsets `y_1, ..., y_m` of the observation dimensions within `y`.
@@ -41,10 +44,11 @@ Currently, at least one datapoint has to be provided (purely for implementation 
         The posteriors can be compared after the run is completed to see which observation subsets are most informative.
 """
 struct BolfiProblem{
+    N<:Union{Vector{Float64}, Nothing},
     S<:Union{Nothing, Matrix{Bool}},
 }
     problem::BossProblem
-    std_obs::Vector{Float64}
+    std_obs::N
     x_prior::MultivariateDistribution
     y_sets::S
 end
@@ -95,3 +99,11 @@ end
 
 x_dim(bolfi::BolfiProblem) = BOSS.x_dim(bolfi.problem)
 y_dim(bolfi::BolfiProblem) = BOSS.y_dim(bolfi.problem)
+
+function std_obs(bolfi::BolfiProblem)
+    return bolfi.std_obs
+end
+function std_obs(bolfi::BolfiProblem{Nothing})
+    θ, λ, α, noise_std = bolfi.problem.data.params
+    return noise_std
+end
