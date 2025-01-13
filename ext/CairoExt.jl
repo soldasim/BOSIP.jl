@@ -10,16 +10,30 @@ using BOLFI.Distributions
 @kwdef struct PlotSettings <: BOLFI.PlotSettings
     plot_step::Float64 = 0.1
     param_labels::Union{Nothing, Vector{String}} = nothing
+    plot_data::Bool = false
+    plot_samples::Bool = true
+    full_matrix::Bool = true
 end
 
 BOLFI.PlotSettings(args...; kwargs...) =
     PlotSettings(args...; kwargs...)
 
+const SAMPLES_SCATTER_KWARGS = (
+    color = :green,
+    marker = :xcross,
+    markersize = 3,
+)
+const DATA_SCATTER_KWARGS = (
+    color = :red,
+    marker = :circle,
+    markersize = 5,
+)
+
 function BOLFI.plot_marginals_int(bolfi::BolfiProblem;
     grid_size = 1000,
     plot_settings = PlotSettings(),
     info = true,
-    display = true,
+    display = false,
 )
     info && @info "Generating a latin hypercube of parameter samples ..."
     xs = BOSS.generate_LHC(bolfi.problem.domain.bounds, grid_size)
@@ -34,15 +48,17 @@ end
 function BOLFI.plot_marginals_kde(bolfi::BolfiProblem;
     turing_options = TuringOptions(),
     kernel = GaussianKernel(),
+    lengthscale = 1.,
     plot_settings = PlotSettings(),
     info = true,
-    display = true,
+    display = false,
 )
     info && @info "Sampling parameter samples from the posterior ..."
     xs = sample_posterior(bolfi, turing_options)
 
     info && @info "Plotting the marginals ..."
-    return plot_marginals_kde(bolfi, xs, kernel; plot_settings, display)
+    (lengthscale isa Real) && (lengthscale = fill(lengthscale, BOLFI.x_dim(bolfi)))
+    return plot_marginals_kde(bolfi, xs, kernel, lengthscale; plot_settings, display)
 end
 
 function plot_marginals_int(bolfi::BolfiProblem, grid::AbstractMatrix{<:Real};
@@ -53,7 +69,8 @@ function plot_marginals_int(bolfi::BolfiProblem, grid::AbstractMatrix{<:Real};
     x_dim = BOLFI.x_dim(bolfi)
     count = size(grid)[2]
     bounds = bolfi.problem.domain.bounds
-    approx_post = approx_posterior(bolfi; normalize=true, xs=grid)
+    approx_post = approx_posterior(bolfi; normalize=false)
+    X = bolfi.problem.data.X
 
     fig = Figure()
     labels = isnothing(plot_settings.param_labels) ? ["x$i" for i in 1:x_dim] : plot_settings.param_labels
@@ -73,9 +90,13 @@ function plot_marginals_int(bolfi::BolfiProblem, grid::AbstractMatrix{<:Real};
             grid[dim,:] .= xs[i]
             ys[i] = sum(approx_post.(eachcol(grid)))
         end
+        normalize_prob_vals!(ys, plot_settings.plot_step)
 
         ax = Axis(fig[dim,dim]; xlabel=labels[dim])
         lines!(ax, xs, ys)
+        plot_settings.plot_data && scatter!(ax, X[dim,:], zeros(size(X)[2]);
+            DATA_SCATTER_KWARGS...
+        )
 
         grid[dim,:] .= tmp_row_a
     end
@@ -97,11 +118,20 @@ function plot_marginals_int(bolfi::BolfiProblem, grid::AbstractMatrix{<:Real};
                 grid[dim_b,:] .= x_[2]
                 ys[i] = sum(approx_post.(eachcol(grid)))
             end
+            normalize_prob_vals!(ys, plot_settings.plot_step)
 
             ax = Axis(fig[dim_b, dim_a]; xlabel=labels[dim_a], ylabel=labels[dim_b])
             contourf!(ax, xs_a, xs_b, ys)
-            ax_t = Axis(fig[dim_a, dim_b]; xlabel=labels[dim_b], ylabel=labels[dim_a])
-            contourf!(ax_t, xs_b, xs_a, ys')
+            plot_settings.plot_data && scatter!(ax, X[dim_a,:], X[dim_b,:];
+                DATA_SCATTER_KWARGS...
+            )
+            if plot_settings.full_matrix
+                ax_t = Axis(fig[dim_a, dim_b]; xlabel=labels[dim_b], ylabel=labels[dim_a])
+                contourf!(ax_t, xs_b, xs_a, ys')
+                plot_settings.plot_data && scatter!(ax_t, X[dim_b,:], X[dim_a,:];
+                    DATA_SCATTER_KWARGS...
+                )
+            end
 
             grid[dim_a,:] .= tmp_row_a
             grid[dim_b,:] .= tmp_row_b
@@ -112,7 +142,7 @@ function plot_marginals_int(bolfi::BolfiProblem, grid::AbstractMatrix{<:Real};
     return fig
 end
 
-function plot_marginals_kde(bolfi::BolfiProblem, samples::AbstractMatrix{<:Real}, kernel;
+function plot_marginals_kde(bolfi::BolfiProblem, samples::AbstractMatrix{<:Real}, kernel::Kernel, lengthscale::AbstractVector{<:Real};
     plot_settings,
     display,
     kwargs...    
@@ -120,6 +150,7 @@ function plot_marginals_kde(bolfi::BolfiProblem, samples::AbstractMatrix{<:Real}
     x_dim = BOLFI.x_dim(bolfi)
     bounds = bolfi.problem.domain.bounds
     count = size(samples)[2]
+    X = bolfi.problem.data.X
 
     fig = Figure()
     limits = (bounds[1][1], bounds[2][1]), (bounds[1][2], bounds[2][2])
@@ -131,16 +162,19 @@ function plot_marginals_kde(bolfi::BolfiProblem, samples::AbstractMatrix{<:Real}
         xs = bounds[1][dim]:plot_settings.plot_step:bounds[2][dim] |> collect
         ys = zeros(length(xs))
         
+        k = with_lengthscale(kernel, lengthscale[dim])
         for i in eachindex(xs)
-            ys[i] = mean(kernel.(Ref(xs[i]), samples[dim,:]))
+            ys[i] = mean(k.(Ref(xs[i]), samples[dim,:]))
         end
+        normalize_prob_vals!(ys, plot_settings.plot_step)
 
-        ax = Axis(fig[dim,dim]; xlabel=labels[dim])
+        ax = Axis(fig[dim,dim]; xlabel=labels[dim], limits=(limits[dim],nothing))
         lines!(ax, xs, ys)
-        scatter!(ax, samples[dim,:], zeros(count);
-            color = :green,
-            marker = :xcross,
-            markersize = 3,
+        plot_settings.plot_samples && scatter!(ax, samples[dim,:], zeros(count);
+            SAMPLES_SCATTER_KWARGS...
+        )
+        plot_settings.plot_data && scatter!(ax, X[dim,:], zeros(size(X)[2]);
+            DATA_SCATTER_KWARGS...
         )
     end
 
@@ -152,29 +186,47 @@ function plot_marginals_kde(bolfi::BolfiProblem, samples::AbstractMatrix{<:Real}
             xs = Iterators.product(xs_a, xs_b) |> collect .|> (t -> [t...])
             ys = zeros(size(xs))
             
+            k = with_lengthscale(kernel, lengthscale[[dim_a,dim_b]])
             for i in eachindex(xs)
-                ys[i] = mean(kernel.(Ref(xs[i]), eachcol(samples[[dim_a,dim_b],:])))
+                ys[i] = mean(k.(Ref(xs[i]), eachcol(samples[[dim_a,dim_b],:])))
             end
+            normalize_prob_vals!(ys, plot_settings.plot_step)
 
             ax = Axis(fig[dim_b, dim_a]; xlabel=labels[dim_a], ylabel=labels[dim_b], limits)
             contourf!(ax, xs_a, xs_b, ys)
-            scatter!(ax, samples[dim_a,:], samples[dim_b,:];
-                color = :green,
-                marker = :xcross,
-                markersize = 3,
+            plot_settings.plot_samples && scatter!(ax, samples[dim_a,:], samples[dim_b,:];
+                SAMPLES_SCATTER_KWARGS...
             )
-            ax_t = Axis(fig[dim_a, dim_b]; xlabel=labels[dim_b], ylabel=labels[dim_a], limits)
-            contourf!(ax_t, xs_b, xs_a, ys')
-            scatter!(ax_t, samples[dim_b,:], samples[dim_a,:];
-                color = :green,
-                marker = :xcross,
-                markersize = 3,
+            plot_settings.plot_data && scatter!(ax, X[dim_a,:], X[dim_b,:];
+                DATA_SCATTER_KWARGS...
             )
+            if plot_settings.full_matrix
+                ax_t = Axis(fig[dim_a, dim_b]; xlabel=labels[dim_b], ylabel=labels[dim_a], limits)
+                contourf!(ax_t, xs_b, xs_a, ys')
+                plot_settings.plot_samples && scatter!(ax_t, samples[dim_b,:], samples[dim_a,:];
+                    SAMPLES_SCATTER_KWARGS...
+                )
+                plot_settings.plot_data && scatter!(ax_t, X[dim_b,:], X[dim_a,:];
+                    DATA_SCATTER_KWARGS...
+                )
+            end
         end
     end
 
     display && CairoMakie.display(fig)
     return fig
+end
+
+function normalize_prob_vals!(ys::AbstractVector{<:Real}, plot_step::Real)
+    total = sum(ys)
+    total -= 0.5 * (ys[begin] + ys[end])
+    ys ./= plot_step * total
+end
+function normalize_prob_vals!(ys::AbstractMatrix{<:Real}, plot_step::Real)
+    total = sum(ys)
+    total -= 0.5 * (sum(ys[begin,:]) + sum(ys[end,:]) + sum(ys[:,begin]) + sum(ys[:,end]))
+    total += 0.25 * (ys[begin,begin] + ys[begin,end] + ys[end,begin] + ys[end,end])
+    ys ./= plot_step * total
 end
 
 end # module CairoExt
