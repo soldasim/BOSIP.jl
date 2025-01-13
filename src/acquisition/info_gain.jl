@@ -33,7 +33,7 @@ This is also known as  the Hilbert-Schmidt independence criterion (HSIC).
 end
 
 # info gain on the posterior approximation
-function (acq::InfoGain)(bolfi::BolfiProblem{Nothing}, options::BolfiOptions)
+function (acq::InfoGain)(bolfi::BolfiProblem{<:Any, Nothing}, options::BolfiOptions)
     problem = bolfi.problem
     y_dim = BOSS.y_dim(problem)
 
@@ -92,7 +92,7 @@ function construct_hsic_acquisition(
         Δs = sample_Δ.(μs_samples, Ref(ΣLs), Es)
         
         # calculate Ss (functional values of the posterior) from the Δ samples
-        Ss = get_S.(Δs, Ref(bolfi.std_obs), Ref(log_pθ))
+        Ss = get_S.(Δs, Ref(std_obs(bolfi)), Ref(log_pθ))
 
         # # calculate MMD
         # δs_shuffled = δs[rand_perm]
