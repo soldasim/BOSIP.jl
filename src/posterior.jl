@@ -2,13 +2,11 @@
 """
     approx_posterior(::BolfiProblem; kwargs...)
 
-Return the approximate posterior ``\\hat{p}(x|y_o)`` as a function of ``x``.
+Return the MAP estimation of the (un)normalized approximate posterior ``\\hat{p}(x|y_o)`` as a function of ``x``.
 
 The posterior is approximated by directly substituting the predictive means of the GPs
-as the discrepancies (and ignoring the uncertainty of the GPs). Thus, the probability
-given by `approx_posterior` is the probability of the given parameters being the true ones
-used to generate the observation while only taking into account the noise on the observation,
-and assuming that the mean prediction of the GP gives the true noiseless observation for the parameters.
+as the discrepancies from the true observation and ignoring both the uncertainty of the GPs
+due to a lack of data and the uncertainty of the simulator due to the evaluation noise.
 
 The unnormalized approximate posterior ``\\hat{p}(y_o|x) p(x)`` is returned by default.
 
@@ -37,8 +35,8 @@ function approx_posterior(bolfi::BolfiProblem; normalize=false, xs=nothing, samp
 end
 
 function approx_posterior(gp_post, x_prior, std_obs; normalize=false, xs=nothing, samples=10_000)
-    apporx_like = approx_likelihood(gp_post, std_obs)
-    approx_post(x) = apporx_like(x) * pdf(x_prior, x)
+    approx_like = approx_likelihood(gp_post, std_obs)
+    approx_post(x) = approx_like(x) * pdf(x_prior, x)
 
     if normalize
         py = evidence(approx_post, x_prior; xs, samples)
@@ -51,10 +49,11 @@ end
 """
     approx_likelihood(::BolfiProblem; kwargs...)
 
-Return the approximate likelihood ``\\hat{p}(y_o|x)`` as a function of ``x``.
+Return the MAP estimation of the likelihood ``\\hat{p}(y_o|x)`` as a function of ``x``.
 
 The likelihood is approximated by directly substituting the predictive means of the GPs
-as the discrepancies (and ignoring the variance of the GPs).
+as the discrepancies from the true observation and ignoring both the uncertainty of the GPs
+due to a lack of data and the uncertainty of the simulator due to the evaluation noise.
 
 # See Also
 
@@ -81,10 +80,9 @@ end
 
 Return the expectation of the posterior approximation ``\\mathbb{E}[\\hat{p}(x|y_o)]`` as a function of ``x``.
 
-In contrast to `approx_posterior`, the `posterior_mean` considers the uncertainty of the GPs as well.
-Thus, the probability given by the `posterior_mean` is the probability of the given parameters
-being the true ones used to generate the observation while taking into account the noise
-on the observation, the noise of the simulator, and the uncertainty due to lack of data.
+The returned function maps parameters `x` to the expected posterior probability density value
+integrated over the uncertainty of the GPs due to a lack of data and the uncertainty of the simulator
+due to the evaluation noise.
 
 # Keywords
 
@@ -126,6 +124,10 @@ end
 
 Return the expectation of the likelihood approximation ``\\mathbb{E}[\\hat{p}(y_o|x)]`` as a function of ``x``.
 
+The returned function maps parameters `x` to the expected likelihood probability density value
+integrated over the uncertainty of the GPs due to a lack of data and the uncertainty of the simulator
+due to the evaluation noise.
+
 # See Also
 
 [`approx_likelihood`](@ref),
@@ -151,8 +153,9 @@ end
 
 Return the variance of the posterior approximation ``\\mathbb{V}[\\hat{p}(x|y_o)]`` as a function of ``x``.
 
-The returned variance is the variance of the predicted posterior probability of the given parameters
-caused by the uncertainty of the GPs due to the simulator noise and a (possible) lack of data.
+The returned function maps parameters `x` to the variance of the posterior probability density value estimate
+caused by the uncertainty of the GPs due to a lack of data and the uncertainty of the simulator
+due to the evaluation noise.
 
 The variance of the unnormalized posterior ``\\mathbb{V}[\\hat{p}(y_o|x) p(x)]`` is returned by default.
 
@@ -196,6 +199,10 @@ end
     likelihood_variance(::BolfiProblem; kwargs...)
 
 Return the variance of the likelihood approximation ``\\mathbb{V}[\\hat{p}(y_o|x)]`` as a function of ``x``.
+
+The returned function maps parameters `x` to the variance of the likelihood probability density value estimate
+caused by the uncertainty of the GPs due to a lack of data and the uncertainty of the simulator
+due to the evaluation noise.
 
 # See Also
 
