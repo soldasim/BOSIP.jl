@@ -15,46 +15,46 @@ bolfi!
 This section contains function used to obtain the trained parameter posterior/likelihood approximations.
 
 The `approx_posterior` function can be used to obtain the (un)normalized approximate posterior
-``p(\theta|y_o) \propto p(y_o|\theta) p(\theta)`` obtained by substituting the predictive means of the GPs directly as the discrepancies.
+``p(\theta|y_o) \propto p(y_o|\theta) p(\theta)`` obtained by substituting the predictive means of the GPs directly as the discrepancies from the true observation.
 
 ```@docs
 approx_posterior
 ```
 
-The `posterior_mean` function can be used to obtain the (un)normalized expected posterior
+The `posterior_mean` function can be used to obtain the expected value of the (un)normalized posterior
 ``\mathbb{E}\left[p(\theta|y_o)\right] \propto \mathbb{E}\left[p(y_o|\theta)p(\theta)\right]``
-obtained by analytically calculating the expectation of the posterior function
-over the uncertainty in the prediction of the discrepancies.
+obtained by analytically integrating over the uncertainty of the GPs and the simulator.
 
 ```@docs
 posterior_mean
 ```
 
-The `posterior_variance` function can be used to obtain the (un)normalized posterior variance
+The `posterior_variance` function can be used to obtain the variance of the (un)normalized posterior
 ``\mathbb{V}\left[p(\theta|y_o)\right] \propto \mathbb{V}\left[p(y_o|\theta)p(\theta)\right]``
-caused by the uncertainty in the prediction of the discrepancies.
+obtained by analytically integrating over the uncertainty of the GPs and the simulator.
 
 ```@docs
 posterior_variance
 ```
 
-The `approx_likelihood` function can be used to obtain the approximate likelihood
-``p(y_o|\theta)`` obtained by substituting the predictive means of the GPs directly as the discrepancies.
+The `approx_likelihood` function can be used to obtain the approximate likelihood ``p(y_o|\theta)``
+obtained by substituting the predictive means of the GPs directly as the discrepancies from the true observation.
 
 ```@docs
 approx_likelihood
 ```
 
-The `likelihood_mean` function can be used to obtain the expected likelihood
-``\mathbb{E}\left[p(y_o|\theta)\right]`` obtained by analytically calculating the expectation
-of the likelihood function over the uncertainty in the prediction of the discrepancies.
+The `likelihood_mean` function can be used to obtain the expected value of the likelihood
+``\mathbb{E}\left[p(y_o|\theta)\right]`` obtained by analytically integrating over the uncertainty
+of the GPs and the simulator.
 
 ```@docs
 likelihood_mean
 ```
 
-The `likelihood_variance` function can be used to obtain the likelihood variance
-``\mathbb{V}\left[p(y_o|\theta)\right]`` caused by the uncertainty in the prediction of the discrepancies.
+The `likelihood_variance` function can be used to obtain the variance of the likelihood
+``\mathbb{V}\left[p(y_o|\theta)\right]`` obtained by analytically integrating over the uncertainty
+of the GPs and the simulator.
 
 ```@docs
 likelihood_variance
