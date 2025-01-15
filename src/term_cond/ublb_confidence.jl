@@ -43,13 +43,18 @@ function UBLBConfidence(;
     return UBLBConfidence(iter_limit, samples, xs, n, q, r)
 end
 
-function (cond::UBLBConfidence)(bolfi::BolfiProblem{<:Any, Nothing})
+function (cond::UBLBConfidence)(bolfi::BolfiProblem)
+    @assert bolfi.problem.data isa ExperimentDataMAP
+    return ublb_confidence(cond, bolfi)
+end
+
+function ublb_confidence(cond::UBLBConfidence, bolfi::BolfiProblem{<:Any, Nothing})
     cond.iter_limit(bolfi.problem) || return false
     ratio = calculate(cond, bolfi) 
     return ratio < cond.r
 end
 
-function (cond::UBLBConfidence)(bolfi::BolfiProblem{<:Any, Matrix{Bool}})
+function ublb_confidence(cond::UBLBConfidence, bolfi::BolfiProblem{<:Any, Matrix{Bool}})
     cond.iter_limit(bolfi.problem) || return false
     (bolfi.problem.data isa ExperimentDataPrior) && return true
     ratios = calculate.(Ref(cond), get_subset.(Ref(bolfi), eachcol(bolfi.y_sets)))
@@ -67,10 +72,15 @@ function calculate(cond::UBLBConfidence, bolfi::BolfiProblem)
     gp_lb = gp_bound(gp_post, -cond.n)
     gp_ub = gp_bound(gp_post, +cond.n)
 
-    f_lb = approx_posterior(gp_lb, bolfi.x_prior, std_obs(bolfi); xs)
-    f_ub = approx_posterior(gp_ub, bolfi.x_prior, std_obs(bolfi); xs)
-    f_lb, c_lb = find_cutoff(f_lb, bolfi.x_prior, cond.q; xs)
-    f_ub, c_ub = find_cutoff(f_ub, bolfi.x_prior, cond.q; xs)
+    like_lb = approx_likelihood(gp_lb, std_obs(bolfi))
+    like_ub = approx_likelihood(gp_ub, std_obs(bolfi))
+
+    x_prior = bolfi.x_prior
+
+    f_lb(x) = pdf(x_prior, x) * like_lb(x)
+    f_ub(x) = pdf(x_prior, x) * like_ub(x)
+    f_lb, c_lb = find_cutoff(f_lb, x_prior, cond.q; xs)
+    f_ub, c_ub = find_cutoff(f_ub, x_prior, cond.q; xs)
 
     in_lb = (f_lb.(eachcol(xs)) .> c_lb)
     in_ub = (f_ub.(eachcol(xs)) .> c_ub)

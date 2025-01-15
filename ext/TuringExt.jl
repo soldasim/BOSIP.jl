@@ -1,6 +1,7 @@
 module TuringExt
 
 using BOLFI
+using BOSS
 using Turing
 
 """
@@ -18,6 +19,11 @@ end
 BOLFI.TuringOptions(args...; kwargs...) = TuringOptions(args...; kwargs...)
 
 function BOLFI.sample_posterior(bolfi::BolfiProblem, options::TuringOptions = TuringOptions())
+    (bolfi.problem.data isa ExperimentDataBI) && @warn """
+        Calling `sample_posterior` with BI model fitter. Sampling from the averaged posterior.
+        You may want to fit the model via some MAP model fitter and call then call `sample_posterior` again.
+    """
+
     approx_like = approx_likelihood(bolfi)
     model = turing_model(bolfi.x_prior, approx_like)
 

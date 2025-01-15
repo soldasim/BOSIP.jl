@@ -2,13 +2,18 @@
 """
     approx_posterior(::BolfiProblem; kwargs...)
 
-Return the MAP estimation of the (un)normalized approximate posterior ``\\hat{p}(x|y_o)`` as a function of ``x``.
+Return the MAP estimation of the unnormalized approximate posterior ``\\hat{p}(y_o|x) p(x)`` as a function of ``x``.
+
+If `normalize=true`, the resulting posterior is approximately normalized.
 
 The posterior is approximated by directly substituting the predictive means of the GPs
 as the discrepancies from the true observation and ignoring both the uncertainty of the GPs
-due to a lack of data and the uncertainty of the simulator due to the evaluation noise.
+due to a lack of data and due to the simulator evaluation noise.
 
-The unnormalized approximate posterior ``\\hat{p}(y_o|x) p(x)`` is returned by default.
+By using `approx_posterior` or `posterior_mean` one controls,
+whether to integrate over the uncertainty in the discrepancy estimate.
+In addition to that, by providing a `ModelFitter{MAP}` or a `ModelFitter{BI}` to `bolfi!` one controls,
+whether to integrate over the uncertainty in the GP hyperparameters.
 
 # Keywords
 
@@ -28,15 +33,10 @@ The unnormalized approximate posterior ``\\hat{p}(y_o|x) p(x)`` is returned by d
 [`approx_likelihood`](@ref)
 """
 function approx_posterior(bolfi::BolfiProblem; normalize=false, xs=nothing, samples=10_000)
-    problem = bolfi.problem
-    @assert problem.data isa BOSS.ExperimentDataMAP
-    gp_post = BOSS.model_posterior(problem.model, problem.data)
-    return approx_posterior(gp_post, bolfi.x_prior, std_obs(bolfi); normalize, xs, samples)
-end
+    x_prior = bolfi.x_prior
 
-function approx_posterior(gp_post, x_prior, std_obs; normalize=false, xs=nothing, samples=10_000)
-    approx_like = approx_likelihood(gp_post, std_obs)
-    approx_post(x) = approx_like(x) * pdf(x_prior, x)
+    approx_like = approx_likelihood(bolfi)
+    approx_post(x) = pdf(x_prior, x) * approx_like(x)
 
     if normalize
         py = evidence(approx_post, x_prior; xs, samples)
@@ -47,13 +47,18 @@ function approx_posterior(gp_post, x_prior, std_obs; normalize=false, xs=nothing
 end
 
 """
-    approx_likelihood(::BolfiProblem; kwargs...)
+    approx_likelihood(::BolfiProblem)
 
 Return the MAP estimation of the likelihood ``\\hat{p}(y_o|x)`` as a function of ``x``.
 
 The likelihood is approximated by directly substituting the predictive means of the GPs
 as the discrepancies from the true observation and ignoring both the uncertainty of the GPs
-due to a lack of data and the uncertainty of the simulator due to the evaluation noise.
+due to a lack of data and due to the simulator evaluation noise.
+
+By using `approx_likelihood` or `likelihood_mean` one controls,
+whether to integrate over the uncertainty in the discrepancy estimate.
+In addition to that, by providing a `ModelFitter{MAP}` or a `ModelFitter{BI}` to `bolfi!` one controls,
+whether to integrate over the uncertainty in the GP hyperparameters.
 
 # See Also
 
@@ -62,15 +67,27 @@ due to a lack of data and the uncertainty of the simulator due to the evaluation
 [`approx_posterior`](@ref)
 """
 function approx_likelihood(bolfi::BolfiProblem)
-    problem = bolfi.problem
-    @assert problem.data isa BOSS.ExperimentDataMAP
-    gp_post = BOSS.model_posterior(problem.model, problem.data)
+    return approx_likelihood(typeof(bolfi.problem.data), bolfi)
+end
+
+function approx_likelihood(::Type{<:ExperimentDataMAP}, bolfi::BolfiProblem)
+    gp_post = BOSS.model_posterior(bolfi.problem)
     return approx_likelihood(gp_post, std_obs(bolfi))
 end
+function approx_likelihood(::Type{<:ExperimentDataBI}, bolfi::BolfiProblem)
+    gp_posts = BOSS.model_posterior(bolfi.problem)
+    sample_count = length(gp_posts)
+    
+    approx_likes = approx_likelihood.(gp_posts, std_obs(bolfi))
+    
+    function exp_approx_like(x)
+        return mapreduce(l -> l(x), +, approx_likes) / sample_count
+    end
+end
+
 function approx_likelihood(gp_post, std_obs::AbstractVector{<:Real})
-    function like_mean(x)
-        pred = gp_post(x)
-        μ_δ, _ = pred
+    function approx_like(x)
+        μ_δ, _ = gp_post(x)
         return pdf(MvNormal(μ_δ, std_obs), zero(μ_δ))
     end
 end
@@ -78,11 +95,17 @@ end
 """
     posterior_mean(::BolfiProblem; kwargs...)
 
-Return the expectation of the posterior approximation ``\\mathbb{E}[\\hat{p}(x|y_o)]`` as a function of ``x``.
+Return the expectation of the unnormalized posterior ``\\mathbb{E}[\\hat{p}(y_o|x) p(x)]`` as a function of ``x``.
+
+If `normalize=true`, the resulting expected posterior is approximately normalized.
 
 The returned function maps parameters `x` to the expected posterior probability density value
-integrated over the uncertainty of the GPs due to a lack of data and the uncertainty of the simulator
-due to the evaluation noise.
+integrated over the uncertainty of the GPs due to a lack of data and due to the simulator evaluation noise.
+
+By using `approx_posterior` or `posterior_mean` one controls,
+whether to integrate over the uncertainty in the discrepancy estimate.
+In addition to that, by providing a `ModelFitter{MAP}` or a `ModelFitter{BI}` to `bolfi!` one controls,
+whether to integrate over the uncertainty in the GP hyperparameters.
 
 # Keywords
 
@@ -102,13 +125,9 @@ due to the evaluation noise.
 [`likelihood_mean`](@ref)
 """
 function posterior_mean(bolfi::BolfiProblem; normalize=false, xs=nothing, samples=10_000)
-    problem = bolfi.problem
-    @assert problem.data isa BOSS.ExperimentDataMAP
-    gp_post = BOSS.model_posterior(problem.model, problem.data)
-    return posterior_mean(gp_post, bolfi.x_prior, std_obs(bolfi); normalize, xs, samples)
-end
-function posterior_mean(gp_post, x_prior, std_obs; normalize=false, xs=nothing, samples=10_000)
-    like_mean = likelihood_mean(gp_post, std_obs)
+    x_prior = bolfi.x_prior
+
+    like_mean = likelihood_mean(bolfi)
     post_mean(x) = pdf(x_prior, x) * like_mean(x)
 
     if normalize
@@ -120,13 +139,17 @@ function posterior_mean(gp_post, x_prior, std_obs; normalize=false, xs=nothing, 
 end
 
 """
-    likelihood_mean(::BolfiProblem; kwargs...)
+    likelihood_mean(::BolfiProblem)
 
 Return the expectation of the likelihood approximation ``\\mathbb{E}[\\hat{p}(y_o|x)]`` as a function of ``x``.
 
 The returned function maps parameters `x` to the expected likelihood probability density value
-integrated over the uncertainty of the GPs due to a lack of data and the uncertainty of the simulator
-due to the evaluation noise.
+integrated over the uncertainty of the GPs due to a lack of data and due to the simulator evaluation noise.
+
+By using `approx_likelihood` or `likelihood_mean` one controls,
+whether to integrate over the uncertainty in the discrepancy estimate.
+In addition to that, by providing a `ModelFitter{MAP}` or a `ModelFitter{BI}` to `bolfi!` one controls,
+whether to integrate over the uncertainty in the GP hyperparameters.
 
 # See Also
 
@@ -135,29 +158,44 @@ due to the evaluation noise.
 [`posterior_mean`](@ref)
 """
 function likelihood_mean(bolfi::BolfiProblem)
-    problem = bolfi.problem
-    @assert problem.data isa BOSS.ExperimentDataMAP
-    gp_post = BOSS.model_posterior(problem.model, problem.data)
+    return likelihood_mean(typeof(bolfi.problem.data), bolfi)
+end
+
+function likelihood_mean(::Type{<:ExperimentDataMAP}, bolfi::BolfiProblem)
+    gp_post = BOSS.model_posterior(bolfi.problem)
     return likelihood_mean(gp_post, std_obs(bolfi))
 end
+function likelihood_mean(::Type{<:ExperimentDataBI}, bolfi::BolfiProblem)
+    gp_posts = BOSS.model_posterior(bolfi.problem)
+    sample_count = length(gp_posts)
+    
+    like_means = likelihood_mean.(gp_posts, std_obs(bolfi))
+    
+    function exp_like_mean(x)
+        return mapreduce(l -> l(x), +, like_means) / sample_count
+    end
+end
+
 function likelihood_mean(gp_post, std_obs::AbstractVector{<:Real})
     function like_mean(x)
-        pred = gp_post(x)
-        μ_δ, std_δ = pred
-        return pdf(MvNormal(μ_δ, sqrt.(std_obs.^2 .+ std_δ.^2)), zero(μ_δ))
+        μ_δ, std_δ = gp_post(x)
+        std = sqrt.(std_obs.^2 .+ std_δ.^2)
+        return pdf(MvNormal(μ_δ, std), zero(μ_δ))
     end
 end
 
 """
     posterior_variance(::BolfiProblem; kwargs...)
 
-Return the variance of the posterior approximation ``\\mathbb{V}[\\hat{p}(x|y_o)]`` as a function of ``x``.
+Return the variance of the unnormalized posterior ``\\mathbb{V}[\\hat{p}(y_o|x) p(x)]`` as a function of ``x``.
+
+If `normalize=true`, the resulting posterior variance is approximately normalized.
 
 The returned function maps parameters `x` to the variance of the posterior probability density value estimate
-caused by the uncertainty of the GPs due to a lack of data and the uncertainty of the simulator
-due to the evaluation noise.
+caused by the uncertainty of the GPs due to a lack of data and due to the simulator evaluation noise.
 
-The variance of the unnormalized posterior ``\\mathbb{V}[\\hat{p}(y_o|x) p(x)]`` is returned by default.
+By providing a `ModelFitter{MAP}` or a `ModelFitter{BI}` to `bolfi!` one controls,
+whether to compute the variance over the uncertainty in the GP hyperparameters as well.
 
 # Keywords
 
@@ -177,32 +215,32 @@ The variance of the unnormalized posterior ``\\mathbb{V}[\\hat{p}(y_o|x) p(x)]``
 [`likelihood_variance`](@ref)
 """
 function posterior_variance(bolfi::BolfiProblem; normalize=false, xs=nothing, samples=10_000)
-    problem = bolfi.problem
-    @assert problem.data isa BOSS.ExperimentDataMAP
-    gp_post = BOSS.model_posterior(problem.model, problem.data)
-    return posterior_variance(gp_post, bolfi.x_prior, std_obs(bolfi); normalize, xs, samples)
-end
-function posterior_variance(gp_post, x_prior, std_obs; normalize=false, xs=nothing, samples=10_000)
-    if normalize
-        isnothing(xs) && (xs = rand(x_prior, samples))
-        mean = posterior_mean(gp_post, x_prior, std_obs; normalize=false, xs)
-        py = evidence(mean, x_prior; xs)
-    else
-        py = 1.
-    end
+    x_prior = bolfi.x_prior
 
-    like_var = likelihood_variance(gp_post, std_obs)
-    post_var(x) = (pdf(x_prior, x) / py)^2 * like_var(x)
+    like_var = likelihood_variance(bolfi)
+    post_var(x) = (pdf(x_prior, x) ^ 2) * like_var(x)
+
+    if normalize
+        post_mean = posterior_mean(bolfi)
+        py = evidence(post_mean, x_prior; xs, samples)
+        py2 = py ^ 2
+        return (x) -> post_var(x) / py2
+    else
+        return post_var
+    end
 end
 
 """
-    likelihood_variance(::BolfiProblem; kwargs...)
+    likelihood_variance(::BolfiProblem)
 
 Return the variance of the likelihood approximation ``\\mathbb{V}[\\hat{p}(y_o|x)]`` as a function of ``x``.
 
 The returned function maps parameters `x` to the variance of the likelihood probability density value estimate
 caused by the uncertainty of the GPs due to a lack of data and the uncertainty of the simulator
 due to the evaluation noise.
+
+By providing a `ModelFitter{MAP}` or a `ModelFitter{BI}` to `bolfi!` one controls,
+whether to compute the variance over the uncertainty in the GP hyperparameters as well.
 
 # See Also
 
@@ -211,32 +249,42 @@ due to the evaluation noise.
 [`posterior_variance`](@ref)
 """
 function likelihood_variance(bolfi::BolfiProblem)
-    problem = bolfi.problem
-    @assert problem.data isa BOSS.ExperimentDataMAP
-    gp_post = BOSS.model_posterior(problem.model, problem.data)
-    return likelihood_variance(gp_post, std_obs(bolfi))
+    return likelihood_variance(typeof(bolfi.problem.data), bolfi)
 end
-function likelihood_variance(gp_post, std_obs::AbstractVector{<:Real})
-    var_obs = std_obs .^ 2
+
+function likelihood_variance(::Type{<:ExperimentDataMAP}, bolfi::BolfiProblem)
+    gp_post = BOSS.model_posterior(bolfi.problem)
+    
+    like_mean = likelihood_mean(gp_post, std_obs(bolfi))
+    sq_like_mean = _sq_likelihood_mean(gp_post, std_obs(bolfi))
 
     function like_var(x)
-        pred = gp_post(x)
-        μ_δ, std_δ = pred
-        var_δ = std_δ .^ 2
+        return sq_like_mean(x) - (like_mean(x) ^ 2)
+    end
+end
+function likelihood_variance(::Type{<:ExperimentDataBI}, bolfi::BolfiProblem)
+    gp_posts = BOSS.model_posterior(bolfi.problem)
+    sample_count = length(gp_posts)
+    
+    like_means = likelihood_mean.(gp_posts, std_obs(bolfi))
+    sq_like_means = _sq_likelihood_mean.(gp_posts, std_obs(bolfi))
 
-        prodA = log.(A_.(μ_δ, var_δ, var_obs)) |> sum |> exp
-        prodB = log.(B_.(μ_δ, var_δ, var_obs)) |> sum |> exp
-        return prodA - prodB
+    function like_var(x)
+        exp_like = mapreduce(l -> l(x), +, like_means) / sample_count
+        exp_sq_like = mapreduce(l -> l(x), +, sq_like_means) / sample_count
+        return exp_sq_like - (exp_like ^ 2)
     end
 end
 
-function A_(μ_δ, var_δ, var_obs)
-    varA = var_obs + 2*var_δ
-    return sqrt(varA / var_obs) * pdf(Normal(0, sqrt(varA)), μ_δ)^2
-end
-function B_(μ_δ, var_δ, var_obs)
-    varB = var_obs + var_δ
-    return pdf(Normal(0, sqrt(varB)), μ_δ)^2
+# ``\mathbb{E}[\hat{p}(y_o|x)^2]``
+function _sq_likelihood_mean(gp_post, std_obs::AbstractVector{<:Real})
+    function sq_like_mean(x)
+        μ_δ, std_δ = gp_post(x)
+        std = sqrt.((std_obs.^2 .+ (2 .* std_δ.^2)) ./ 2)
+        # C = 1 / prod(2 * sqrt(π) .* std_obs)
+        C = exp((-1) * sum(log.(2 * sqrt(π) .* std_obs)))
+        return C * pdf(MvNormal(μ_δ, std), zero(μ_δ))
+    end
 end
 
 """

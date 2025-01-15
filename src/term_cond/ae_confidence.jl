@@ -38,13 +38,18 @@ function AEConfidence(;
     return AEConfidence(iter_limit, samples, xs, q, r)
 end
 
-function (cond::AEConfidence)(bolfi::BolfiProblem{<:Any, Nothing})
+function (cond::AEConfidence)(bolfi::BolfiProblem)
+    @assert bolfi.problem.data isa ExperimentDataMAP
+    return ae_confidence(cond, bolfi)
+end
+
+function ae_confidence(cond::AEConfidence, bolfi::BolfiProblem{<:Any, Nothing})
     cond.iter_limit(bolfi.problem) || return false
     ratio = calculate(cond, bolfi)
     return ratio < cond.r
 end
 
-function (cond::AEConfidence)(bolfi::BolfiProblem{<:Any, Matrix{Bool}})
+function ae_confidence(cond::AEConfidence, bolfi::BolfiProblem{<:Any, Matrix{Bool}})
     cond.iter_limit(bolfi.problem) || return false
     (bolfi.problem.data isa ExperimentDataPrior) && return true
     ratios = calculate.(Ref(cond), get_subset.(Ref(bolfi), eachcol(bolfi.y_sets)))
@@ -58,10 +63,8 @@ function calculate(cond::AEConfidence, bolfi::BolfiProblem)
         xs = cond.xs
     end
 
-    gp_post = BOSS.model_posterior(bolfi.problem)
-
-    f_approx = approx_posterior(gp_post, bolfi.x_prior, std_obs(bolfi); xs,)
-    f_expect = posterior_mean(gp_post, bolfi.x_prior, std_obs(bolfi); xs,)
+    f_approx = approx_posterior(bolfi; normalize=false, xs)
+    f_expect = posterior_mean(bolfi; normalize=false, xs)
     f_approx, c_approx = find_cutoff(f_approx, bolfi.x_prior, cond.q; xs)
     f_expect, c_expect = find_cutoff(f_expect, bolfi.x_prior, cond.q; xs)
 
