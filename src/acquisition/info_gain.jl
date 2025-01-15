@@ -33,7 +33,7 @@ This is also known as  the Hilbert-Schmidt independence criterion (HSIC).
 end
 
 # info gain on the posterior approximation
-function (acq::InfoGain)(bolfi::BolfiProblem{<:Any, Nothing}, options::BolfiOptions)
+function (acq::InfoGain)(::Type{<:ExperimentDataMAP}, bolfi::BolfiProblem{<:Any, Nothing}, options::BolfiOptions)
     problem = bolfi.problem
     y_dim = BOSS.y_dim(problem)
 

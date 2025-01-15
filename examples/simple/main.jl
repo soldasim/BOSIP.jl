@@ -34,7 +34,7 @@ function script_bolfi(;
         save_plots = true,
         plot_dir = "./examples/simple/plots/_new_",
         plot_name = "p",
-        step = 0.05,  # TODO
+        step = 0.05,
     )
     options = BolfiOptions(;
         callback = plt,

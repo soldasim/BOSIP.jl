@@ -43,7 +43,7 @@ Currently, at least one datapoint has to be provided (purely for implementation 
         The algorithm then trains multiple posteriors `p(θ|y_1), ..., p(θ|y_m)` simultaneously.
         The posteriors can be compared after the run is completed to see which observation subsets are most informative.
 """
-struct BolfiProblem{
+mutable struct BolfiProblem{
     N<:Union{Vector{Float64}, Nothing},
     S<:Union{Nothing, Matrix{Bool}},
 }
@@ -100,10 +100,33 @@ end
 x_dim(bolfi::BolfiProblem) = BOSS.x_dim(bolfi.problem)
 y_dim(bolfi::BolfiProblem) = BOSS.y_dim(bolfi.problem)
 
+"""
+Return the standard deviation of the Gaussian observation noise.
+
+Return the predefined value if `BolfiProblem.std_obs` is assigned.
+If `BolfiProblem.std_obs` is nothing, consider the observation to have been drawn from the simulator
+and return the standard deviation of the simulator evaluation noise adaptively fitted by the GP instead.
+
+Return a single vector of values in case of MAP model fitter.
+In case of BI model fitter, return some broadcastable object, which broadcasts over individual samples.
+"""
 function std_obs(bolfi::BolfiProblem)
+    return std_obs(bolfi, typeof(bolfi.problem.data))
+end
+
+# Return a single instance of `std_obs` in case of MAP parameters.
+function std_obs(bolfi::BolfiProblem, ::Type{<:ExperimentDataMAP})
     return bolfi.std_obs
 end
-function std_obs(bolfi::BolfiProblem{Nothing})
+function std_obs(bolfi::BolfiProblem{Nothing}, ::Type{<:ExperimentDataMAP})
     θ, λ, α, noise_std = bolfi.problem.data.params
     return noise_std
+end
+
+# Return a broadcastable object of multiple `std_obs` in case of BI samples.
+function std_obs(bolfi::BolfiProblem, ::Type{<:ExperimentDataBI})
+    return Ref(bolfi.std_obs)
+end
+function std_obs(bolfi::BolfiProblem{Nothing}, ::Type{<:ExperimentDataBI})
+    return [noise_std for (θ, λ, α, noise_std) in bolfi.problem.data.params]
 end
