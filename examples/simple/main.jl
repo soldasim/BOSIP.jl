@@ -9,21 +9,23 @@ Random.seed!(555)
 include("toy_problem.jl")
 include("makie/makie.jl")
 
-# MAIN SCRIPT
-function script_bolfi(;
-    init_data=3,
+function main(;
+    init_data = 3,
+    plots = true,
 )
     problem = ToyProblem.bolfi_problem(init_data)
     acquisition = PostVarAcq()
 
-    model_fitter = SamplingMAP(;
-        samples = 200,
+    model_fitter = OptimizationMAP(;
+        algorithm = NEWUOA(),
+        multistart = 200,
         parallel = true,
     )
-    acq_maximizer = GridAM(;
-        problem.problem,
-        steps = fill(0.05, ToyProblem.x_dim()),
+    acq_maximizer = OptimizationAM(;
+        algorithm = BOBYQA(),
+        multistart = 200,
         parallel = true,
+        rhoend = 1e-4,
     )
     term_cond = IterLimit(25)
 
@@ -37,12 +39,12 @@ function script_bolfi(;
         step = 0.05,
     )
     options = BolfiOptions(;
-        callback = plt,
+        callback = plots ? plt : NoCallback(),
     )
 
     MakiePlots.init_plotting(plt)
     bolfi!(problem; acquisition, model_fitter, acq_maximizer, term_cond, options)
-    MakiePlots.plot_final(plt; acquisition, model_fitter, acq_maximizer, term_cond, options)
+    plots && MakiePlots.plot_final(plt; acquisition, model_fitter, acq_maximizer, term_cond, options)
     
     # MakiePlots.plot_param_slices(plt, problem; options, samples=2_000)
     return problem
