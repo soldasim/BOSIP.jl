@@ -61,3 +61,49 @@ function bolfi!(bolfi::BolfiProblem;
     )
     return bolfi
 end
+
+"""
+    estimate_parameters!(::BolfiProblem, ::ModelFitter)
+
+Estimate the hyperparameters of the model.
+Uses the provided `ModelFitter` to fit the hyperparameters of the model according to the data stored in the `BolfiProblem`.
+
+# Keywords
+
+- `options::BolfiOptions`: Defines miscellaneous settings.
+
+"""
+function BOSS.estimate_parameters!(bolfi::BolfiProblem, model_fitter::ModelFitter; options::BolfiOptions=BolfiOptions())
+    boss_options = create_boss_options(options, bolfi)
+    estimate_parameters!(bolfi.problem, model_fitter; options=boss_options)
+end
+
+"""
+    x = maximize_acquisition(::BolfiProblem, ::BolfiAcquisition, ::AcquisitionMaximizer)
+
+Select parameters for the next simulation.
+Uses the provided `AcquisitionMaximizer` to maximize the `BolfiAcquisition` function and find the optimal candidate parameters.
+
+# Keywords
+
+- `options::BolfiOptions`: Defines miscellaneous settings.
+"""
+function BOSS.maximize_acquisition(bolfi::BolfiProblem, acquisition::BolfiAcquisition, acq_maximizer::AcquisitionMaximizer; options::BolfiOptions=BolfiOptions())
+    boss_options = create_boss_options(options, bolfi)
+    boss_acq = AcqWrapper(acquisition, bolfi, options)
+    return maximize_acquisition(bolfi.problem, boss_acq, acq_maximizer; options=boss_options)
+end
+
+"""
+    eval_objective!(::BolfiProblem, x::AbstractVector{<:Real})
+
+Evaluate the blackbox simulation for the given parameters `x`.
+
+# Keywords
+
+- `options::BolfiOptions`: Defines miscellaneous settings.
+"""
+function BOSS.eval_objective!(bolfi::BolfiProblem, x::AbstractVector{<:Real}; options::BolfiOptions=BolfiOptions())
+    boss_options = create_boss_options(options, bolfi)
+    BOSS.eval_objective!(bolfi.problem, x; options=boss_options)
+end
