@@ -14,6 +14,7 @@ Aggregates all plot settings for the `plot_marginals_int` and `plot_marginals_kd
         from the posterior are also plotted.
 - `full_matrix::Bool`: Set to `full_matrix=false` to only plot the marginals below the diagonal
         and skipped the redundant mirrored plots above the diagonal.
+- `plot_cell_res::Int64`: The resolution of a single plot in the plot matrix.
 """
 abstract type PlotSettings end
 
@@ -28,8 +29,17 @@ Approximates the marginals by numerically integrating the marginal integrals
 over a generated latin hypercube grid of parameter samples.
 The plots are normalized according to the plotting grid.
 
+Also provides an option to plot "marginals" of different functions by using the `func` and `normalize` keywords.
+
 # Kwargs
 
+- `func::Function`: Defines the function which is plotted.
+        The plotted function `f` is defined as `f = func(::BolfiProblem)`.
+        Reasonable options for `func` include `approx_posterior`, `posterior_mean`, `posterior_variance` etc.
+- `normalize::Bool`: Specifies whether the plotted marginals are normalized.
+        If `normalize=false`, the plotted values are simply averages over the random LHC grid.
+        If `normalize=true`, the plotted values are additionally normalized sum to 1.
+        Defaults to `true`.
 - `grid_size::Int`: The number of samples in the generate LHC grid.
         The higher the number, the more precise marginal plots.
 - `plot_settings::PlotSettings`: Settings for the plotting.
