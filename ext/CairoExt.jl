@@ -164,7 +164,7 @@ function plot_marginals_kde(bolfi::BolfiProblem, samples::AbstractMatrix{<:Real}
     fig = Figure(;
         size = (res, res),
     )
-    limits = (bounds[1][1], bounds[2][1]), (bounds[1][2], bounds[2][2])
+    limits = [(bounds[1][i], bounds[2][i]) for i in 1:x_dim]
     labels = isnothing(plot_settings.param_labels) ? ["x$i" for i in 1:x_dim] : plot_settings.param_labels
     @assert length(labels) == x_dim
 
@@ -203,7 +203,7 @@ function plot_marginals_kde(bolfi::BolfiProblem, samples::AbstractMatrix{<:Real}
             end
             normalize_prob_vals!(ys, plot_settings.plot_step)
 
-            ax = Axis(fig[dim_b, dim_a]; xlabel=labels[dim_a], ylabel=labels[dim_b], limits)
+            ax = Axis(fig[dim_b, dim_a]; xlabel=labels[dim_a], ylabel=labels[dim_b], limits=(limits[dim_a],limits[dim_b]))
             contourf!(ax, xs_a, xs_b, ys)
             plot_settings.plot_samples && scatter!(ax, samples[dim_a,:], samples[dim_b,:];
                 SAMPLES_SCATTER_KWARGS...
@@ -212,7 +212,7 @@ function plot_marginals_kde(bolfi::BolfiProblem, samples::AbstractMatrix{<:Real}
                 DATA_SCATTER_KWARGS...
             )
             if plot_settings.full_matrix
-                ax_t = Axis(fig[dim_a, dim_b]; xlabel=labels[dim_b], ylabel=labels[dim_a], limits)
+                ax_t = Axis(fig[dim_a, dim_b]; xlabel=labels[dim_b], ylabel=labels[dim_a], limits=(limits[dim_b],limits[dim_a]))
                 contourf!(ax_t, xs_b, xs_a, ys')
                 plot_settings.plot_samples && scatter!(ax_t, samples[dim_b,:], samples[dim_a,:];
                     SAMPLES_SCATTER_KWARGS...
