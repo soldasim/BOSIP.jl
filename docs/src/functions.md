@@ -10,6 +10,24 @@ Call the main function `bolfi!` to run the BOLFI procedure, which sequentially q
 bolfi!
 ```
 
+Call the function `estimate_parameters!` to fit the model hyperparameters according to the current dataset. One can also call `bolfi!` with `term_cond = IterLimit(0)` to fit the hyperparameters without running any simulations. This will additionally only refit the model if the dataset changed since the last parameter estimation. In contrast, calling `estimate_parameters!` will always re-run the parameter estimation.
+
+```@docs
+estimate_parameters!
+```
+
+Call the function `maximize_acquisition` to obtain a promising candidate for the next simulation.
+
+```@docs
+maximize_acquisition
+```
+
+Call the function `eval_objective!` to start a simulation run.
+
+```@docs
+eval_objective!
+```
+
 ## Parameter Posterior
 
 This section contains function used to obtain the trained parameter posterior/likelihood approximations.

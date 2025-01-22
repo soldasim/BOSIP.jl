@@ -1,6 +1,7 @@
 module BOLFI
 
 export bolfi!
+export estimate_parameters!, maximize_acquisition, eval_objective!
 export BolfiProblem
 
 export sample_posterior, TuringOptions
