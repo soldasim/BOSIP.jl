@@ -10,9 +10,10 @@ using BOLFI.Distributions
 @kwdef struct PlotSettings <: BOLFI.PlotSettings
     plot_step::Float64 = 0.1
     param_labels::Union{Nothing, Vector{String}} = nothing
-    plot_data::Bool = false
+    plot_data::Bool = true
     plot_samples::Bool = true
     full_matrix::Bool = true
+    plot_cell_res::Int = 400
 end
 
 BOLFI.PlotSettings(args...; kwargs...) =
@@ -30,10 +31,12 @@ const DATA_SCATTER_KWARGS = (
 )
 
 function BOLFI.plot_marginals_int(bolfi::BolfiProblem;
+    func = approx_posterior,
+    normalize = true,
     grid_size = 1000,
     plot_settings = PlotSettings(),
     info = true,
-    display = false,
+    display = true,
 )
     info && @info "Generating a latin hypercube of parameter samples ..."
     xs = BOSS.generate_LHC(bolfi.problem.domain.bounds, grid_size)
@@ -42,7 +45,7 @@ function BOLFI.plot_marginals_int(bolfi::BolfiProblem;
     xs = xs[:, keep]
 
     info && @info "Plotting the marginals ..."
-    return plot_marginals_int(bolfi, xs; plot_settings, display)
+    return plot_marginals_int(bolfi, xs; func, normalize, plot_settings, display)
 end
 
 function BOLFI.plot_marginals_kde(bolfi::BolfiProblem;
@@ -62,17 +65,22 @@ function BOLFI.plot_marginals_kde(bolfi::BolfiProblem;
 end
 
 function plot_marginals_int(bolfi::BolfiProblem, grid::AbstractMatrix{<:Real};
+    func,
+    normalize,
     plot_settings,
     display,
-    kwargs...    
+    kwargs...
 )
     x_dim = BOLFI.x_dim(bolfi)
     count = size(grid)[2]
     bounds = bolfi.problem.domain.bounds
-    approx_post = approx_posterior(bolfi; normalize=false)
+    f = func(bolfi)
     X = bolfi.problem.data.X
 
-    fig = Figure()
+    res = x_dim * plot_settings.plot_cell_res
+    fig = Figure(;
+        size = (res, res),
+    )
     labels = isnothing(plot_settings.param_labels) ? ["x$i" for i in 1:x_dim] : plot_settings.param_labels
     @assert length(labels) == x_dim
 
@@ -88,9 +96,9 @@ function plot_marginals_int(bolfi::BolfiProblem, grid::AbstractMatrix{<:Real};
         
         for i in eachindex(xs)
             grid[dim,:] .= xs[i]
-            ys[i] = sum(approx_post.(eachcol(grid)))
+            ys[i] = mean(f.(eachcol(grid)))
         end
-        normalize_prob_vals!(ys, plot_settings.plot_step)
+        normalize && normalize_prob_vals!(ys, plot_settings.plot_step)
 
         ax = Axis(fig[dim,dim]; xlabel=labels[dim])
         lines!(ax, xs, ys)
@@ -116,9 +124,9 @@ function plot_marginals_int(bolfi::BolfiProblem, grid::AbstractMatrix{<:Real};
                 x_ = xs[i]
                 grid[dim_a,:] .= x_[1]
                 grid[dim_b,:] .= x_[2]
-                ys[i] = sum(approx_post.(eachcol(grid)))
+                ys[i] = mean(f.(eachcol(grid)))
             end
-            normalize_prob_vals!(ys, plot_settings.plot_step)
+            normalize && normalize_prob_vals!(ys, plot_settings.plot_step)
 
             ax = Axis(fig[dim_b, dim_a]; xlabel=labels[dim_a], ylabel=labels[dim_b])
             contourf!(ax, xs_a, xs_b, ys)
@@ -145,14 +153,17 @@ end
 function plot_marginals_kde(bolfi::BolfiProblem, samples::AbstractMatrix{<:Real}, kernel::Kernel, lengthscale::AbstractVector{<:Real};
     plot_settings,
     display,
-    kwargs...    
+    kwargs...
 )
     x_dim = BOLFI.x_dim(bolfi)
     bounds = bolfi.problem.domain.bounds
     count = size(samples)[2]
     X = bolfi.problem.data.X
 
-    fig = Figure()
+    res = x_dim * plot_settings.plot_cell_res
+    fig = Figure(;
+        size = (res, res),
+    )
     limits = (bounds[1][1], bounds[2][1]), (bounds[1][2], bounds[2][2])
     labels = isnothing(plot_settings.param_labels) ? ["x$i" for i in 1:x_dim] : plot_settings.param_labels
     @assert length(labels) == x_dim
