@@ -43,13 +43,13 @@ function (cond::AEConfidence)(bolfi::BolfiProblem)
     return ae_confidence(cond, bolfi)
 end
 
-function ae_confidence(cond::AEConfidence, bolfi::BolfiProblem{<:Any, Nothing})
+function ae_confidence(cond::AEConfidence, bolfi::BolfiProblem{Nothing})
     cond.iter_limit(bolfi.problem) || return false
     ratio = calculate(cond, bolfi)
     return ratio < cond.r
 end
 
-function ae_confidence(cond::AEConfidence, bolfi::BolfiProblem{<:Any, Matrix{Bool}})
+function ae_confidence(cond::AEConfidence, bolfi::BolfiProblem{Matrix{Bool}})
     cond.iter_limit(bolfi.problem) || return false
     (bolfi.problem.data isa ExperimentDataPrior) && return true
     ratios = calculate.(Ref(cond), get_subset.(Ref(bolfi), eachcol(bolfi.y_sets)))

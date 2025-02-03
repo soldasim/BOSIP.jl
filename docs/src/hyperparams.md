@@ -6,9 +6,11 @@ It is important to define reasonable values and priors for the hyperparameters. 
 
 The parameter prior describes our expert knowledge about the domain. If we have limited knowledge about the parameters, the uniform prior can be used, which will not affect the optimization at all. Or one might for example use a zero-centered multivariate normal prior to suppress parameters with too large absolute values.
 
-## Observation Noise
+## Likelihood
 
-The observation noise deviation ``\sigma_f`` has to be estimated by the user and provided as a vector-valued constant. It should reflect the measurement precision in the real experiment used to obtain the observation ``y_o``. The value of ``\sigma_f`` greatly affects the width of the resulting posterior. Thus some care should be taken with its choice.
+The likelihood ``p(y_o|x)`` describes the stochastic process which generated the real experiment observation ``y_o``. In general, the likelihood somehow depends on the simulator output ``y = g(x)``. In most cases, one can view the simulator as an oracle providing the true value ``y = g(x) \approx f_t(x)`` and the likelihood describes the nature of the noise of the real observation ``y_o \sim p(y_o|f_t(x))`.
+
+In the case of the `NormalLikelihood`, one needs to define the observation noise deviation ``\sigma_f``. This deviation has to be estimated by the user and provided as a vector-valued constant. It should reflect the measurement precision in the real experiment used to obtain the observation ``y_o``. The value of ``\sigma_f`` greatly affects the width of the resulting posterior. Thus some care should be taken with its choice.
 
 ## Kernel
 

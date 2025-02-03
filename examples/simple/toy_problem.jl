@@ -43,13 +43,15 @@ function simulation(x; noise_std=ω)
 end
 
 # The objective for the GP.
-obj(x) = simulation(x) .- y_obs
+obj(x) = simulation(x)
 
-
-# - - - HYPERPARAMETERS - - - - -
+get_likelihood() = GaussianLikelihood(; y_obs, std_obs=σe)
 
 # get_x_prior() = Product(fill(Uniform(-5., 5.), x_dim()))
 get_x_prior() = Product(fill(Normal(0., 5/3), x_dim()))
+
+
+# - - - HYPERPARAMETERS - - - - -
 
 get_kernel() = BOSS.Matern32Kernel()
 
@@ -103,7 +105,7 @@ function bolfi_problem(data::ExperimentData)
         length_scale_priors = get_length_scale_priors(),
         amp_priors = get_amplitude_priors(),
         noise_std_priors = get_noise_std_priors(),
-        std_obs = σe,
+        likelihood = get_likelihood(),
         x_prior = get_x_prior(),
     )
 end

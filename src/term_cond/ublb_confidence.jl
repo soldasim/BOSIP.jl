@@ -48,13 +48,13 @@ function (cond::UBLBConfidence)(bolfi::BolfiProblem)
     return ublb_confidence(cond, bolfi)
 end
 
-function ublb_confidence(cond::UBLBConfidence, bolfi::BolfiProblem{<:Any, Nothing})
+function ublb_confidence(cond::UBLBConfidence, bolfi::BolfiProblem{Nothing})
     cond.iter_limit(bolfi.problem) || return false
     ratio = calculate(cond, bolfi) 
     return ratio < cond.r
 end
 
-function ublb_confidence(cond::UBLBConfidence, bolfi::BolfiProblem{<:Any, Matrix{Bool}})
+function ublb_confidence(cond::UBLBConfidence, bolfi::BolfiProblem{Matrix{Bool}})
     cond.iter_limit(bolfi.problem) || return false
     (bolfi.problem.data isa ExperimentDataPrior) && return true
     ratios = calculate.(Ref(cond), get_subset.(Ref(bolfi), eachcol(bolfi.y_sets)))
@@ -72,8 +72,8 @@ function calculate(cond::UBLBConfidence, bolfi::BolfiProblem)
     gp_lb = gp_bound(gp_post, -cond.n)
     gp_ub = gp_bound(gp_post, +cond.n)
 
-    like_lb = approx_likelihood(gp_lb, std_obs(bolfi))
-    like_ub = approx_likelihood(gp_ub, std_obs(bolfi))
+    like_lb = approx_likelihood(bolfi.likelihood, gp_lb)
+    like_ub = approx_likelihood(bolfi.likelihood, gp_ub)
 
     x_prior = bolfi.x_prior
 

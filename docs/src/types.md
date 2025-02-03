@@ -8,6 +8,20 @@ The `BolfiProblem` structure contains all information about the inference proble
 BolfiProblem
 ```
 
+## Likelihood
+
+The abstract type `Likelihood` represents the likelihood distribution of the observation `y_o`.
+
+```@docs
+Likelihood
+```
+
+The `GaussianLikelihood` assumes that the observation `y_o` has been drawn from a Gaussian distribution with a known diagonal covariance matrix with the `std_obs` values on the diagonal.
+
+```@docs
+GaussianLikelihood
+```
+
 ## Acquisition Function
 
 The abstract type `BolfiAcquisition` represents the acquisition function.

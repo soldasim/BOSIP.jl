@@ -17,7 +17,7 @@ w.r.t. each approximate posterior.
     samples::Int = 10_000
 end
 
-function (acq::MWMVAcq)(::Type{<:ExperimentDataMAP}, bolfi::BolfiProblem{<:Any, Matrix{Bool}}, options::BolfiOptions)
+function (acq::MWMVAcq)(::Type{<:ExperimentDataMAP}, bolfi::BolfiProblem{Matrix{Bool}}, options::BolfiOptions)
     sets = size(bolfi.y_sets)[2]
     xs = rand(bolfi.x_prior, acq.samples)  # shared samples
     
@@ -41,7 +41,7 @@ function (acq::MWMVAcq)(::Type{<:ExperimentDataMAP}, bolfi::BolfiProblem{<:Any, 
 end
 
 # TODO: Think about MWMVAcq for BI
-function (acq::MWMVAcq)(::Type{<:ExperimentDataBI}, bolfi::BolfiProblem{<:Any, Matrix{Bool}}, options::BolfiOptions)
+function (acq::MWMVAcq)(::Type{<:ExperimentDataBI}, bolfi::BolfiProblem{Matrix{Bool}}, options::BolfiOptions)
     throw(ArgumentError("""
         The support for Bayesian inference is not implemented yet for the MWMV acquisition.
         Use a MAP model fitter or another acquisition function.
