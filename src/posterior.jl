@@ -72,23 +72,16 @@ end
 
 function approx_likelihood(::Type{<:ExperimentDataMAP}, bolfi::BolfiProblem)
     gp_post = BOSS.model_posterior(bolfi.problem)
-    return approx_likelihood(gp_post, std_obs(bolfi))
+    return approx_likelihood(bolfi.likelihood, gp_post)
 end
 function approx_likelihood(::Type{<:ExperimentDataBI}, bolfi::BolfiProblem)
     gp_posts = BOSS.model_posterior(bolfi.problem)
     sample_count = length(gp_posts)
     
-    approx_likes = approx_likelihood.(gp_posts, std_obs(bolfi))
+    approx_likes = approx_likelihood.(Ref(bolfi.likelihood), gp_posts)
     
     function exp_approx_like(x)
         return mapreduce(l -> l(x), +, approx_likes) / sample_count
-    end
-end
-
-function approx_likelihood(gp_post, std_obs::AbstractVector{<:Real})
-    function approx_like(x)
-        μ_δ, _ = gp_post(x)
-        return pdf(MvNormal(μ_δ, std_obs), zero(μ_δ))
     end
 end
 
@@ -163,24 +156,16 @@ end
 
 function likelihood_mean(::Type{<:ExperimentDataMAP}, bolfi::BolfiProblem)
     gp_post = BOSS.model_posterior(bolfi.problem)
-    return likelihood_mean(gp_post, std_obs(bolfi))
+    return likelihood_mean(bolfi.likelihood, gp_post)
 end
 function likelihood_mean(::Type{<:ExperimentDataBI}, bolfi::BolfiProblem)
     gp_posts = BOSS.model_posterior(bolfi.problem)
     sample_count = length(gp_posts)
     
-    like_means = likelihood_mean.(gp_posts, std_obs(bolfi))
+    like_means = likelihood_mean.(Ref(bolfi.likelihood), gp_posts)
     
     function exp_like_mean(x)
         return mapreduce(l -> l(x), +, like_means) / sample_count
-    end
-end
-
-function likelihood_mean(gp_post, std_obs::AbstractVector{<:Real})
-    function like_mean(x)
-        μ_δ, std_δ = gp_post(x)
-        std = sqrt.(std_obs.^2 .+ std_δ.^2)
-        return pdf(MvNormal(μ_δ, std), zero(μ_δ))
     end
 end
 
@@ -255,8 +240,8 @@ end
 function likelihood_variance(::Type{<:ExperimentDataMAP}, bolfi::BolfiProblem)
     gp_post = BOSS.model_posterior(bolfi.problem)
     
-    like_mean = likelihood_mean(gp_post, std_obs(bolfi))
-    sq_like_mean = _sq_likelihood_mean(gp_post, std_obs(bolfi))
+    like_mean = likelihood_mean(bolfi.likelihood, gp_post)
+    sq_like_mean = sq_likelihood_mean(bolfi.likelihood, gp_post)
 
     function like_var(x)
         return sq_like_mean(x) - (like_mean(x) ^ 2)
@@ -266,24 +251,13 @@ function likelihood_variance(::Type{<:ExperimentDataBI}, bolfi::BolfiProblem)
     gp_posts = BOSS.model_posterior(bolfi.problem)
     sample_count = length(gp_posts)
     
-    like_means = likelihood_mean.(gp_posts, std_obs(bolfi))
-    sq_like_means = _sq_likelihood_mean.(gp_posts, std_obs(bolfi))
+    like_means = likelihood_mean.(Ref(bolfi.likelihood), gp_posts)
+    sq_like_means = sq_likelihood_mean.(Ref(bolfi.likelihood), gp_posts)
 
     function like_var(x)
         exp_like = mapreduce(l -> l(x), +, like_means) / sample_count
         exp_sq_like = mapreduce(l -> l(x), +, sq_like_means) / sample_count
         return exp_sq_like - (exp_like ^ 2)
-    end
-end
-
-# ``\mathbb{E}[\hat{p}(y_o|x)^2]``
-function _sq_likelihood_mean(gp_post, std_obs::AbstractVector{<:Real})
-    function sq_like_mean(x)
-        μ_δ, std_δ = gp_post(x)
-        std = sqrt.((std_obs.^2 .+ (2 .* std_δ.^2)) ./ 2)
-        # C = 1 / prod(2 * sqrt(π) .* std_obs)
-        C = exp((-1) * sum(log.(2 * sqrt(π) .* std_obs)))
-        return C * pdf(MvNormal(μ_δ, std), zero(μ_δ))
     end
 end
 

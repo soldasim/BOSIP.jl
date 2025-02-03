@@ -14,7 +14,7 @@ Currently, at least one datapoint has to be provided (purely for implementation 
 
 # Kwargs
 
-- `f::Any`: The simulation to be queried for data. Must follow the signature `f(x) = sim(x) - y_obs`.
+- `f::Any`: The simulation to be queried for data.
 - `bounds::AbstractBounds`: The basic box-constraints on `x`. This field is mandatory.
 - `discrete::AbstractVector{<:Bool}`: Can be used to designate some dimensions
         of the domain as discrete.
@@ -32,11 +32,7 @@ Currently, at least one datapoint has to be provided (purely for implementation 
         of `y_dim` univariate distributions.
 - `noise_std_priors::AbstractVector{<:UnivariateDistribution}`: The prior distributions
         of the standard deviations the Gaussian simulator noise on each dimension of the output `y`.
-- `std_obs::Union{Vector{Float64}, Nothing}`: The standard deviations of the Gaussian
-        observation noise on each dimension of the "ground truth" observation.
-        (If the observation is considered to be generated from the simulator and not some "real" experiment,
-        provide `std_obs = nothing`` and the adaptively trained simulation noise deviation will be used
-        in place of the experiment noise deviation as well. This may be the case for some toy problems or benchmarks.)
+- `likelihood::Likelihood`: The likelihood of the experiment observation `y_o`.
 - `x_prior::MultivariateDistribution`: The prior `p(x)` on the input parameters.
 - `y_sets::Matrix{Bool}`: Optional parameter intended for advanced usage.
         The binary columns define subsets `y_1, ..., y_m` of the observation dimensions within `y`.
@@ -44,11 +40,10 @@ Currently, at least one datapoint has to be provided (purely for implementation 
         The posteriors can be compared after the run is completed to see which observation subsets are most informative.
 """
 mutable struct BolfiProblem{
-    N<:Union{Vector{Float64}, Nothing},
     S<:Union{Nothing, Matrix{Bool}},
 }
     problem::BossProblem
-    std_obs::N
+    likelihood::Likelihood
     x_prior::MultivariateDistribution
     y_sets::S
 end
@@ -65,7 +60,7 @@ function BolfiProblem(data;
     length_scale_priors,
     amp_priors,
     noise_std_priors,
-    std_obs,
+    likelihood,
     x_prior,
     y_sets = nothing,
 )
@@ -91,7 +86,7 @@ function BolfiProblem(data;
 
     return BolfiProblem(
         problem,
-        std_obs,
+        likelihood,
         x_prior,
         y_sets,
     )
@@ -99,34 +94,3 @@ end
 
 x_dim(bolfi::BolfiProblem) = BOSS.x_dim(bolfi.problem)
 y_dim(bolfi::BolfiProblem) = BOSS.y_dim(bolfi.problem)
-
-"""
-Return the standard deviation of the Gaussian observation noise.
-
-Return the predefined value if `BolfiProblem.std_obs` is assigned.
-If `BolfiProblem.std_obs` is nothing, consider the observation to have been drawn from the simulator
-and return the standard deviation of the simulator evaluation noise adaptively fitted by the GP instead.
-
-Return a single vector of values in case of MAP model fitter.
-In case of BI model fitter, return some broadcastable object, which broadcasts over individual samples.
-"""
-function std_obs(bolfi::BolfiProblem)
-    return std_obs(bolfi, typeof(bolfi.problem.data))
-end
-
-# Return a single instance of `std_obs` in case of MAP parameters.
-function std_obs(bolfi::BolfiProblem, ::Type{<:ExperimentDataMAP})
-    return bolfi.std_obs
-end
-function std_obs(bolfi::BolfiProblem{Nothing}, ::Type{<:ExperimentDataMAP})
-    θ, λ, α, noise_std = bolfi.problem.data.params
-    return noise_std
-end
-
-# Return a broadcastable object of multiple `std_obs` in case of BI samples.
-function std_obs(bolfi::BolfiProblem, ::Type{<:ExperimentDataBI})
-    return Ref(bolfi.std_obs)
-end
-function std_obs(bolfi::BolfiProblem{Nothing}, ::Type{<:ExperimentDataBI})
-    return [noise_std for (θ, λ, α, noise_std) in bolfi.problem.data.params]
-end

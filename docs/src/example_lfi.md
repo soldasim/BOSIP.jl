@@ -18,14 +18,14 @@ f_(x) = x[1] * x[2]
 
 _(Note that we refer to the parameters as `x` here, inteas of ``\theta``, to be consistent with the source code of BOLFI.jl.)_
 
-The experiment observation noise deviation ``\sigma_f = 0.5`` is defined as
-```julia
-obs_noise_std = [0.5]
-```
-
 We have observed the single observation ``\prod\theta = 1.``.
 ```julia
 y_obs = [1.]
+```
+
+The experiment is assumed to follow a Normal likelihood with observation noise deviation ``\sigma_f = 0.5``.
+```julia
+likelihood = GaussianLikelihood(; y_obs, obs_std=[0.5])
 ```
 
 We define the noisy simulation function ``g(x)``. The _unknown_ simulation noise deviatoin is set to ``\sigma_g = 0.001``.
@@ -36,9 +36,9 @@ function simulation(x; noise_std=0.001)
 end
 ```
 
-Then we need to define the objective function for the Gaussian processes to query data from. This function should take a vector of parameters ``\theta`` as the input, and return a vector of discrepancies ``\delta(\theta) = y(\theta) - y_o`` between the simulated (noisy) observations ``y(\theta)`` and the real observations ``y_o``.
+Then we need to define the objective function for the Gaussian processes to query data from. This function should take a vector of parameters ``\theta`` as the input, and return the simulated outputs ``y(\theta)``.
 ```julia
-gp_objective(x) = simulation(x) .- y_obs
+gp_objective(x) = simulation(x)
 ```
 
 We will limit the domain to a ``\theta \in [-5,5]^2``.
@@ -136,7 +136,7 @@ problem = BolfiProblem(init_data;
     length_scale_priors,
     amp_priors,
     noise_std_priors,
-    std_obs,
+    likelihood,
     x_prior,
 )
 ```

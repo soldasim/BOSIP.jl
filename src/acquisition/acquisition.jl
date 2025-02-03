@@ -14,13 +14,13 @@ An abstract type for BOLFI acquisition functions.
 abstract type BolfiAcquisition end
 
 # Broadcast between MAP and BI parameters.
-function (acq::BolfiAcquisition)(bolfi::BolfiProblem{<:Any, <:Any}, options::BolfiOptions)
+function (acq::BolfiAcquisition)(bolfi::BolfiProblem{<:Any}, options::BolfiOptions)
     return acq(typeof(bolfi.problem.data), bolfi, options)
 end
 
 # Default fallback for `ExperimentDataBI`.
 # Constructs a separate acquisition function for each sample and averages them.
-function (acq::BolfiAcquisition)(::Type{<:ExperimentDataBI}, bolfi::BolfiProblem{<:Any, <:Any}, options::BolfiOptions)
+function (acq::BolfiAcquisition)(::Type{<:ExperimentDataBI}, bolfi::BolfiProblem{<:Any}, options::BolfiOptions)
     data = bolfi.problem.data
     sample_count = BOSS.sample_count(data)
     
