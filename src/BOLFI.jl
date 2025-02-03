@@ -12,7 +12,7 @@ export evidence
 export find_cutoff, approx_cutoff_area, set_iou
 export get_subset
 
-export BolfiAcquisition, PostVarAcq, MWMVAcq, InfoGain
+export BolfiAcquisition, PostVarAcq, MWMVAcq
 export BolfiTermCond, AEConfidence, UBLBConfidence
 export BolfiCallback, CombinedCallback
 export BolfiOptions
