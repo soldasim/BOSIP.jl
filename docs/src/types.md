@@ -16,10 +16,16 @@ The abstract type `Likelihood` represents the likelihood distribution of the obs
 Likelihood
 ```
 
-The `GaussianLikelihood` assumes that the observation `y_o` has been drawn from a Gaussian distribution with a known diagonal covariance matrix with the `std_obs` values on the diagonal.
+The `GaussianLikelihood` assumes that the observation `y_o` has been drawn from a Gaussian distribution with a known diagonal covariance matrix with the `std_obs` values on the diagonal. The simulator is used to learn the mean function.
 
 ```@docs
 GaussianLikelihood
+```
+
+The `BinomialLikelihood` assumes that the observation `y_o` has been drawn from a Binomial distribution with a known number `trials`. The simulator is used to learn the probability parameter `p` as a function of the input parameters. The expectation over this likelihood (in case one wants to use `posterior_mean` and/or `posterior_variance`) is calculated via simple numerical integration on a predefined grid.
+
+```@docs
+BinomialLikelihood
 ```
 
 ## Acquisition Function
