@@ -13,14 +13,16 @@ as `y_o \\sim Normal(f(x), Diagonal(std_obs))`. We can use the simulator to quer
         provide `std_obs = nothing`` and the adaptively trained simulation noise deviation will be used
         in place of the experiment noise deviation as well. This may be the case for some toy problems or benchmarks.)
 """
-@kwdef struct GaussianLikelihood <: Likelihood
+@kwdef struct GaussianLikelihood{
+    S<:Union{Vector{Float64}, Nothing},
+} <: Likelihood
     y_obs::Vector{Float64}
-    std_obs::Vector{Float64}
+    std_obs::S
 end
 
-function approx_likelihood(like::GaussianLikelihood, gp_post)
+function approx_likelihood(like::GaussianLikelihood, bolfi, gp_post)
     y_obs = like.y_obs
-    std_obs = like.std_obs
+    std_obs = _std_obs(like, bolfi)
 
     function approx_like(x)
         μ_δ, _ = gp_post(x)
@@ -28,9 +30,9 @@ function approx_likelihood(like::GaussianLikelihood, gp_post)
     end
 end
 
-function likelihood_mean(like::GaussianLikelihood, gp_post)
+function likelihood_mean(like::GaussianLikelihood, bolfi, gp_post)
     y_obs = like.y_obs
-    std_obs = like.std_obs
+    std_obs = _std_obs(like, bolfi)
 
     function like_mean(x)
         μ_δ, std_δ = gp_post(x)
@@ -39,9 +41,9 @@ function likelihood_mean(like::GaussianLikelihood, gp_post)
     end
 end
 
-function sq_likelihood_mean(like::GaussianLikelihood, gp_post)
+function sq_likelihood_mean(like::GaussianLikelihood, bolfi, gp_post)
     y_obs = like.y_obs
-    std_obs = like.std_obs
+    std_obs = _std_obs(like, bolfi)
 
     function sq_like_mean(x)
         μ_δ, std_δ = gp_post(x)
@@ -50,6 +52,15 @@ function sq_likelihood_mean(like::GaussianLikelihood, gp_post)
         C = exp((-1) * sum(log.(2 * sqrt(π) .* std_obs)))
         return C * pdf(MvNormal(μ_δ, std), y_obs)
     end
+end
+
+function _std_obs(like::GaussianLikelihood{Nothing}, bolfi)
+    @assert bolfi.problem.data isa ExperimentDataMAP
+    θ, λ, α, noise_std = bolfi.problem.data.params
+    return noise_std
+end
+function _std_obs(like::GaussianLikelihood, bolfi)
+    return like.std_obs
 end
 
 function get_subset(like::GaussianLikelihood, y_set::AbstractVector{<:Bool})

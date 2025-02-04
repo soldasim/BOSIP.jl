@@ -18,7 +18,7 @@ The simulator should only return values between 0 and 1. The GP estimates are cl
     int_grid_size::Int64 = 200
 end
 
-function approx_likelihood(like::BinomialLikelihood, gp_post)
+function approx_likelihood(like::BinomialLikelihood, bolfi, gp_post)
     y_obs = like.y_obs
     trials = like.trials
 
@@ -29,7 +29,7 @@ function approx_likelihood(like::BinomialLikelihood, gp_post)
     end
 end
 
-function likelihood_mean(like::BinomialLikelihood, gp_post)
+function likelihood_mean(like::BinomialLikelihood, bolfi, gp_post)
     y_obs = like.y_obs
     trials = like.trials
     grid = range(0., 1.; length=like.int_grid_size)
@@ -49,7 +49,7 @@ function likelihood_mean(like::BinomialLikelihood, gp_post)
     end
 end
 
-function sq_likelihood_mean(like::BinomialLikelihood, gp_post)
+function sq_likelihood_mean(like::BinomialLikelihood, bolfi, gp_post)
     y_obs = like.y_obs
     trials = like.trials
     grid = range(0., 1.; length=like.int_grid_size)

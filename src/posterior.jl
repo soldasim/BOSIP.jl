@@ -72,13 +72,13 @@ end
 
 function approx_likelihood(::Type{<:ExperimentDataMAP}, bolfi::BolfiProblem)
     gp_post = BOSS.model_posterior(bolfi.problem)
-    return approx_likelihood(bolfi.likelihood, gp_post)
+    return approx_likelihood(bolfi.likelihood, bolfi, gp_post)
 end
 function approx_likelihood(::Type{<:ExperimentDataBI}, bolfi::BolfiProblem)
     gp_posts = BOSS.model_posterior(bolfi.problem)
     sample_count = length(gp_posts)
     
-    approx_likes = approx_likelihood.(Ref(bolfi.likelihood), gp_posts)
+    approx_likes = approx_likelihood.(Ref(bolfi.likelihood), Ref(bolfi), gp_posts)
     
     function exp_approx_like(x)
         return mapreduce(l -> l(x), +, approx_likes) / sample_count
@@ -156,13 +156,13 @@ end
 
 function likelihood_mean(::Type{<:ExperimentDataMAP}, bolfi::BolfiProblem)
     gp_post = BOSS.model_posterior(bolfi.problem)
-    return likelihood_mean(bolfi.likelihood, gp_post)
+    return likelihood_mean(bolfi.likelihood, bolfi, gp_post)
 end
 function likelihood_mean(::Type{<:ExperimentDataBI}, bolfi::BolfiProblem)
     gp_posts = BOSS.model_posterior(bolfi.problem)
     sample_count = length(gp_posts)
     
-    like_means = likelihood_mean.(Ref(bolfi.likelihood), gp_posts)
+    like_means = likelihood_mean.(Ref(bolfi.likelihood), Ref(bolfi), gp_posts)
     
     function exp_like_mean(x)
         return mapreduce(l -> l(x), +, like_means) / sample_count
@@ -240,8 +240,8 @@ end
 function likelihood_variance(::Type{<:ExperimentDataMAP}, bolfi::BolfiProblem)
     gp_post = BOSS.model_posterior(bolfi.problem)
     
-    like_mean = likelihood_mean(bolfi.likelihood, gp_post)
-    sq_like_mean = sq_likelihood_mean(bolfi.likelihood, gp_post)
+    like_mean = likelihood_mean(bolfi.likelihood, bolfi, gp_post)
+    sq_like_mean = sq_likelihood_mean(bolfi.likelihood, bolfi, gp_post)
 
     function like_var(x)
         return sq_like_mean(x) - (like_mean(x) ^ 2)
@@ -251,8 +251,8 @@ function likelihood_variance(::Type{<:ExperimentDataBI}, bolfi::BolfiProblem)
     gp_posts = BOSS.model_posterior(bolfi.problem)
     sample_count = length(gp_posts)
     
-    like_means = likelihood_mean.(Ref(bolfi.likelihood), gp_posts)
-    sq_like_means = sq_likelihood_mean.(Ref(bolfi.likelihood), gp_posts)
+    like_means = likelihood_mean.(Ref(bolfi.likelihood), Ref(bolfi), gp_posts)
+    sq_like_means = sq_likelihood_mean.(Ref(bolfi.likelihood), Ref(bolfi), gp_posts)
 
     function like_var(x)
         exp_like = mapreduce(l -> l(x), +, like_means) / sample_count
