@@ -231,13 +231,23 @@ end
 function normalize_prob_vals!(ys::AbstractVector{<:Real}, plot_step::Real)
     total = sum(ys)
     total -= 0.5 * (ys[begin] + ys[end])
-    ys ./= plot_step * total
+    
+    if total == 0.
+        ys .= 1. / (length(ys) - 1)
+    else
+        ys ./= plot_step * total
+    end
 end
 function normalize_prob_vals!(ys::AbstractMatrix{<:Real}, plot_step::Real)
     total = sum(ys)
     total -= 0.5 * (sum(ys[begin,:]) + sum(ys[end,:]) + sum(ys[:,begin]) + sum(ys[:,end]))
     total += 0.25 * (ys[begin,begin] + ys[begin,end] + ys[end,begin] + ys[end,end])
-    ys ./= plot_step * total
+    
+    if total == 0.
+        ys .= 1. / ((size(ys,1) - 1) * (size(ys,2) - 1))
+    else
+        ys ./= plot_step * total
+    end
 end
 
 end # module CairoExt
