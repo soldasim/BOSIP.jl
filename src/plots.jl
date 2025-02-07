@@ -5,7 +5,8 @@
 Aggregates all plot settings for the `plot_marginals_int` and `plot_marginals_kde` functions.
 
 # Kwargs
-- `plot_step::Float64`: Controls the plot resolution. Greatly impacts the computational cost of plotting.
+- `grid_size::Int64`: The size of the grid used for plotting. 
+        This hyperparameter greatly impacts the computational cost of the plotting.
 - `param_labels::Union{Nothing, Vector{String}}`: Labels used for the parameters in the plots.
         Defaults to `nothing`, in which case the default labels "x1,x2,..." are used.
 - `plot_data::Bool`: Controls whether to plot the datapoints queried from the simulation
@@ -14,7 +15,7 @@ Aggregates all plot settings for the `plot_marginals_int` and `plot_marginals_kd
         from the posterior are also plotted.
 - `full_matrix::Bool`: Set to `full_matrix=false` to only plot the marginals below the diagonal
         and skipped the redundant mirrored plots above the diagonal.
-- `plot_cell_res::Int64`: The resolution of a single plot in the plot matrix.
+- `plot_cell_res::Int64`: The resolution (in pixels) of a single plot in the plot matrix.
 """
 abstract type PlotSettings end
 
@@ -40,7 +41,7 @@ Also provides an option to plot "marginals" of different functions by using the 
         If `normalize=false`, the plotted values are simply averages over the random LHC grid.
         If `normalize=true`, the plotted values are additionally normalized sum to 1.
         Defaults to `true`.
-- `grid_size::Int`: The number of samples in the generate LHC grid.
+- `lhc_grid_size::Int`: The number of samples in the generate LHC grid.
         The higher the number, the more precise marginal plots.
 - `plot_settings::PlotSettings`: Settings for the plotting.
 - `info::Bool`: Set to `false` to disable prints.

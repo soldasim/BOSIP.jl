@@ -8,7 +8,7 @@ using BOLFI.LinearAlgebra
 using BOLFI.Distributions
 
 @kwdef struct PlotSettings <: BOLFI.PlotSettings
-    plot_step::Float64 = 0.1
+    grid_size::Int = 200
     param_labels::Union{Nothing, Vector{String}} = nothing
     plot_data::Bool = true
     plot_samples::Bool = true
@@ -33,15 +33,15 @@ const DATA_SCATTER_KWARGS = (
 function BOLFI.plot_marginals_int(bolfi::BolfiProblem;
     func = approx_posterior,
     normalize = true,
-    grid_size = 1000,
+    lhc_grid_size = 1000,
     plot_settings = PlotSettings(),
     info = true,
     display = true,
 )
     info && @info "Generating a latin hypercube of parameter samples ..."
-    xs = BOSS.generate_LHC(bolfi.problem.domain.bounds, grid_size)
+    xs = BOSS.generate_LHC(bolfi.problem.domain.bounds, lhc_grid_size)
     keep = BOSS.in_domain.(eachcol(xs), Ref(bolfi.problem.domain))
-    info && (sum(keep) < grid_size) && @warn "Discarding some LHC points outside of the parameter domain."
+    info && (sum(keep) < lhc_grid_size) && @warn "Discarding some LHC points outside of the parameter domain."
     xs = xs[:, keep]
 
     info && @info "Plotting the marginals ..."
@@ -76,6 +76,9 @@ function plot_marginals_int(bolfi::BolfiProblem, grid::AbstractMatrix{<:Real};
     bounds = bolfi.problem.domain.bounds
     f = func(bolfi)
     X = bolfi.problem.data.X
+    
+    grid_size = plot_settings.grid_size
+    steps = plot_steps(grid_size, bounds)
 
     res = x_dim * plot_settings.plot_cell_res
     fig = Figure(;
@@ -91,14 +94,14 @@ function plot_marginals_int(bolfi::BolfiProblem, grid::AbstractMatrix{<:Real};
     for dim in 1:x_dim
         tmp_row_a .= grid[dim,:]
 
-        xs = bounds[1][dim]:plot_settings.plot_step:bounds[2][dim] |> collect
+        xs = range(bounds[1][dim], bounds[2][dim]; length=grid_size) |> collect
         ys = zeros(length(xs))
         
         for i in eachindex(xs)
             grid[dim,:] .= xs[i]
             ys[i] = mean(f.(eachcol(grid)))
         end
-        normalize && normalize_prob_vals!(ys, plot_settings.plot_step)
+        normalize && normalize_prob_vals!(ys, steps[dim])
 
         ax = Axis(fig[dim,dim]; xlabel=labels[dim])
         lines!(ax, xs, ys)
@@ -115,8 +118,8 @@ function plot_marginals_int(bolfi::BolfiProblem, grid::AbstractMatrix{<:Real};
             tmp_row_a .= grid[dim_a,:]
             tmp_row_b .= grid[dim_b,:]
 
-            xs_a = bounds[1][dim_a]:plot_settings.plot_step:bounds[2][dim_a]
-            xs_b = bounds[1][dim_b]:plot_settings.plot_step:bounds[2][dim_b]
+            xs_a = range(bounds[1][dim_a], bounds[2][dim_a]; length=grid_size)
+            xs_b = range(bounds[1][dim_b], bounds[2][dim_b]; length=grid_size)
             xs = Iterators.product(xs_a, xs_b) |> collect
             ys = zeros(size(xs))
             
@@ -126,7 +129,7 @@ function plot_marginals_int(bolfi::BolfiProblem, grid::AbstractMatrix{<:Real};
                 grid[dim_b,:] .= x_[2]
                 ys[i] = mean(f.(eachcol(grid)))
             end
-            normalize && normalize_prob_vals!(ys, plot_settings.plot_step)
+            normalize && normalize_prob_vals!(ys, steps[dim_a], steps[dim_b])
 
             ax = Axis(fig[dim_b, dim_a]; xlabel=labels[dim_a], ylabel=labels[dim_b])
             contourf!(ax, xs_a, xs_b, ys)
@@ -160,6 +163,9 @@ function plot_marginals_kde(bolfi::BolfiProblem, samples::AbstractMatrix{<:Real}
     count = size(samples)[2]
     X = bolfi.problem.data.X
 
+    grid_size = plot_settings.grid_size
+    steps = plot_steps(grid_size, bounds)
+
     res = x_dim * plot_settings.plot_cell_res
     fig = Figure(;
         size = (res, res),
@@ -170,14 +176,14 @@ function plot_marginals_kde(bolfi::BolfiProblem, samples::AbstractMatrix{<:Real}
 
     # single parameter marginals (diagonal)
     for dim in 1:x_dim
-        xs = bounds[1][dim]:plot_settings.plot_step:bounds[2][dim] |> collect
+        xs = range(bounds[1][dim], bounds[2][dim]; length=grid_size) |> collect
         ys = zeros(length(xs))
         
         k = with_lengthscale(kernel, lengthscale[dim])
         for i in eachindex(xs)
             ys[i] = mean(k.(Ref(xs[i]), samples[dim,:]))
         end
-        normalize_prob_vals!(ys, plot_settings.plot_step)
+        normalize_prob_vals!(ys, steps[dim])
 
         ax = Axis(fig[dim,dim]; xlabel=labels[dim], limits=(limits[dim],nothing))
         lines!(ax, xs, ys)
@@ -192,8 +198,8 @@ function plot_marginals_kde(bolfi::BolfiProblem, samples::AbstractMatrix{<:Real}
     # pair marginals
     for dim_a in 1:x_dim
         for dim_b in dim_a+1:x_dim
-            xs_a = bounds[1][dim_a]:plot_settings.plot_step:bounds[2][dim_a]
-            xs_b = bounds[1][dim_b]:plot_settings.plot_step:bounds[2][dim_b]
+            xs_a = range(bounds[1][dim_a], bounds[2][dim_a]; length=grid_size)
+            xs_b = range(bounds[1][dim_b], bounds[2][dim_b]; length=grid_size)
             xs = Iterators.product(xs_a, xs_b) |> collect .|> (t -> [t...])
             ys = zeros(size(xs))
             
@@ -201,7 +207,7 @@ function plot_marginals_kde(bolfi::BolfiProblem, samples::AbstractMatrix{<:Real}
             for i in eachindex(xs)
                 ys[i] = mean(k.(Ref(xs[i]), eachcol(samples[[dim_a,dim_b],:])))
             end
-            normalize_prob_vals!(ys, plot_settings.plot_step)
+            normalize_prob_vals!(ys, steps[dim_a], steps[dim_b])
 
             ax = Axis(fig[dim_b, dim_a]; xlabel=labels[dim_a], ylabel=labels[dim_b], limits=(limits[dim_a],limits[dim_b]))
             contourf!(ax, xs_a, xs_b, ys)
@@ -228,26 +234,31 @@ function plot_marginals_kde(bolfi::BolfiProblem, samples::AbstractMatrix{<:Real}
     return fig
 end
 
-function normalize_prob_vals!(ys::AbstractVector{<:Real}, plot_step::Real)
+function normalize_prob_vals!(ys::AbstractVector{<:Real}, step::Real)
     total = sum(ys)
     total -= 0.5 * (ys[begin] + ys[end])
     
     if total == 0.
-        ys .= 1. / (length(ys) - 1)
+        ys .= 1. / (step * (length(ys) - 1))
     else
-        ys ./= plot_step * total
+        ys ./= step * total
     end
 end
-function normalize_prob_vals!(ys::AbstractMatrix{<:Real}, plot_step::Real)
+function normalize_prob_vals!(ys::AbstractMatrix{<:Real}, step_a::Real, step_b::Real)
     total = sum(ys)
     total -= 0.5 * (sum(ys[begin,:]) + sum(ys[end,:]) + sum(ys[:,begin]) + sum(ys[:,end]))
     total += 0.25 * (ys[begin,begin] + ys[begin,end] + ys[end,begin] + ys[end,end])
     
     if total == 0.
-        ys .= 1. / ((size(ys,1) - 1) * (size(ys,2) - 1))
+        ys .= 1. / (step_a * step_b * (size(ys,1) - 1) * (size(ys,2) - 1))
     else
-        ys ./= plot_step * total
+        ys ./= step_a * step_b * total
     end
+end
+
+function plot_steps(grid::Int, bounds::AbstractBounds)
+    lb, ub = bounds
+    return (ub .- lb) ./ (grid - 1)
 end
 
 end # module CairoExt
