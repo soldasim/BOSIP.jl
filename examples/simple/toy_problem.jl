@@ -45,7 +45,7 @@ end
 # The objective for the GP.
 obj(x) = simulation(x)
 
-get_likelihood() = GaussianLikelihood(; y_obs, std_obs=σe)
+get_likelihood() = NormalLikelihood(; y_obs, std_obs=σe)
 
 # get_x_prior() = Product(fill(Uniform(-5., 5.), x_dim()))
 get_x_prior() = Product(fill(Normal(0., 5/3), x_dim()))

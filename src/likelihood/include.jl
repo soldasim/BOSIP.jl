@@ -1,3 +1,3 @@
 include("likelihood.jl")
-include("gaussian.jl")
+include("normal.jl")
 include("binomial.jl")
