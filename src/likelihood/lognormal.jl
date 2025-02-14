@@ -3,7 +3,11 @@
     LogNormalLikelihood(; y_obs, std_obs)
 
 The observation is assumed to have been generated from a normal distribution
-as `y_o \\sim LogNormal(f(x), Diagonal(std_obs))`. We can use the simulator to query `y = f(x)`.
+as `y_o \\sim LogNormal(f(x), Diagonal(std_obs))`. We can use the simulator to query `z = f(x)`.
+
+In many cases, one may want to take the logarithm of the output of the simulator.
+Meaning, if one has simulator `z = sim(x)`, one would define `f` as `y = f(x) = log(sim(x))`.
+This way, the `y` values with high likelihood will have similar values to the `z` values.
 
 # Kwargs
 - `y_obs::Vector{Float64}`: The observed values from the real experiment.

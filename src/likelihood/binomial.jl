@@ -3,7 +3,7 @@
     BinomialLikelihood(; std_obs::Vector{Float64})
 
 The observation is assumed to have been generated from a Binomial distribution
-as `y_o \\sim Binomial(trials, f(x))`. We can use the simulator to query `y = f(x)`.
+as `y_o \\sim Binomial(trials, f(x))`. We can use the simulator to query `z = f(x)`.
 
 The simulator should only return values between 0 and 1. The GP estimates are clamped to this range.
 
