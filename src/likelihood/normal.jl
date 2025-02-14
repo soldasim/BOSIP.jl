@@ -3,7 +3,7 @@
     NormalLikelihood(; y_obs, std_obs)
 
 The observation is assumed to have been generated from a normal distribution
-as `y_o \\sim Normal(f(x), Diagonal(std_obs))`. We can use the simulator to query `y = f(x)`.
+as `y_o \\sim Normal(f(x), Diagonal(std_obs))`. We can use the simulator to query `z = f(x)`.
 
 # Kwargs
 - `y_obs::Vector{Float64}`: The observed values from the real experiment.
