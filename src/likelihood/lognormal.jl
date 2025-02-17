@@ -11,17 +11,21 @@ This way, the `y` values with high likelihood will have similar values to the `z
 
 # Kwargs
 - `y_obs::Vector{Float64}`: The observed values from the real experiment.
-- `std_obs::Vector{Float64}`: The standard deviations of the LogNormal
-        observation noise.
+- `std_obs::Vector{Float64}`: The standard deviations of the LogNormal observation noise.
+        (If the observation is considered to be generated from the simulator and not some "real" experiment,
+        provide `std_obs = nothing`` and the adaptively trained simulation noise deviation will be used
+        in place of the experiment noise deviation as well. This may be the case for some toy problems or benchmarks.)
 """
-@kwdef struct LogNormalLikelihood <: Likelihood
+@kwdef struct LogNormalLikelihood{
+    S<:Union{Vector{Float64}, Nothing},
+} <: Likelihood
     y_obs::Vector{Float64}
-    std_obs::Vector{Float64}
+    std_obs::S
 end
 
 function approx_likelihood(like::LogNormalLikelihood, bolfi, gp_post)
     y_obs = like.y_obs
-    std_obs = like.std_obs
+    std_obs = _std_obs(like, bolfi)
 
     function approx_like(x)
         μ_z, _ = gp_post(x)
@@ -32,7 +36,7 @@ end
 # Identical to `likelihood_mean(::GaussianLikelihood)`, just swapped `MvNormal` for `MvLogNormal`
 function likelihood_mean(like::LogNormalLikelihood, bolfi, gp_post)
     y_obs = like.y_obs
-    std_obs = like.std_obs
+    std_obs = _std_obs(like, bolfi)
 
     function like_mean(x)
         μ_z, std_z = gp_post(x)
@@ -44,7 +48,7 @@ end
 # Identical to `sq_likelihood_mean(::GaussianLikelihood)`, just swapped `MvNormal` for `MvLogNormal`
 function sq_likelihood_mean(like::LogNormalLikelihood, bolfi, gp_post)
     y_obs = like.y_obs
-    std_obs = like.std_obs
+    std_obs = _std_obs(like, bolfi)
 
     function sq_like_mean(x)
         μ_z, std_z = gp_post(x)
@@ -55,6 +59,21 @@ function sq_likelihood_mean(like::LogNormalLikelihood, bolfi, gp_post)
     end
 end
 
+function _std_obs(like::LogNormalLikelihood{Nothing}, bolfi)
+    @assert bolfi.problem.data isa ExperimentDataMAP
+    θ, λ, α, noise_std = bolfi.problem.data.params
+    return noise_std
+end
+function _std_obs(like::LogNormalLikelihood, bolfi)
+    return like.std_obs
+end
+
+function get_subset(like::LogNormalLikelihood{Nothing}, y_set::AbstractVector{<:Bool})
+    return LogNormalLikelihood(
+        like.y_obs[y_set],
+        nothing,
+    )
+end
 function get_subset(like::LogNormalLikelihood, y_set::AbstractVector{<:Bool})
     return LogNormalLikelihood(
         like.y_obs[y_set],
