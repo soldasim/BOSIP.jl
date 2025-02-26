@@ -20,6 +20,10 @@ as `y_o \\sim Normal(f(x), Diagonal(std_obs))`. We can use the simulator to quer
     std_obs::S
 end
 
+function loglike(like::NormalLikelihood, z::AbstractVector{<:Real})
+    return logpdf(MvNormal(z, like.std_obs), like.y_obs)
+end
+
 function approx_likelihood(like::NormalLikelihood, bolfi, gp_post)
     y_obs = like.y_obs
     std_obs = _std_obs(like, bolfi)
