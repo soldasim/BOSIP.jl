@@ -23,6 +23,7 @@ struct CombinedCallback <: BolfiCallback
     callbacks::Vector{BolfiCallback}
 end
 CombinedCallback(cbs...) = CombinedCallback([cbs...])
+CombinedCallback(cb::BolfiCallback) = CombinedCallback([cb])
 
 function (comb::CombinedCallback)(bolfi::BolfiProblem; kwargs...)
     for cb in comb.callbacks
