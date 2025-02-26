@@ -23,6 +23,10 @@ This way, the `y` values with high likelihood will have similar values to the `z
     std_obs::S
 end
 
+function loglike(like::LogNormalLikelihood, z::AbstractVector{<:Real})
+    return logpdf(MvLogNormal(z, like.std_obs), like.y_obs)
+end
+
 function approx_likelihood(like::LogNormalLikelihood, bolfi, gp_post)
     y_obs = like.y_obs
     std_obs = _std_obs(like, bolfi)
