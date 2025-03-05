@@ -72,15 +72,19 @@ function calculate(cond::UBLBConfidence, bolfi::BolfiProblem)
     gp_lb = gp_bound(gp_post, -cond.n)
     gp_ub = gp_bound(gp_post, +cond.n)
 
-    like_lb = approx_likelihood(bolfi.likelihood, gp_lb)
-    like_ub = approx_likelihood(bolfi.likelihood, gp_ub)
+    like_lb = approx_likelihood(bolfi.likelihood, bolfi, gp_lb)
+    like_ub = approx_likelihood(bolfi.likelihood, bolfi, gp_ub)
 
     x_prior = bolfi.x_prior
-
     f_lb(x) = pdf(x_prior, x) * like_lb(x)
     f_ub(x) = pdf(x_prior, x) * like_ub(x)
-    f_lb, c_lb = find_cutoff(f_lb, x_prior, cond.q; xs)
-    f_ub, c_ub = find_cutoff(f_ub, x_prior, cond.q; xs)
+
+    xs_logpdf = logpdf.(Ref(x_prior), eachcol(xs))
+    ws_lb = exp.(  log.(f_lb.(eachcol(xs))) .- xs_logpdf )
+    ws_ub = exp.(  log.(f_ub.(eachcol(xs))) .- xs_logpdf )
+
+    c_lb = find_cutoff(f_lb, xs, ws_lb, cond.q)
+    c_ub = find_cutoff(f_ub, xs, ws_ub, cond.q)
 
     in_lb = (f_lb.(eachcol(xs)) .> c_lb)
     in_ub = (f_ub.(eachcol(xs)) .> c_ub)

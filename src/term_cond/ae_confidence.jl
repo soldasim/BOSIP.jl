@@ -65,8 +65,13 @@ function calculate(cond::AEConfidence, bolfi::BolfiProblem)
 
     f_approx = approx_posterior(bolfi; normalize=false, xs)
     f_expect = posterior_mean(bolfi; normalize=false, xs)
-    f_approx, c_approx = find_cutoff(f_approx, bolfi.x_prior, cond.q; xs)
-    f_expect, c_expect = find_cutoff(f_expect, bolfi.x_prior, cond.q; xs)
+
+    xs_logpdf = logpdf.(Ref(bolfi.x_prior), eachcol(xs))
+    ws_approx = exp.( log.(f_approx.(eachcol(xs))) .-  xs_logpdf)
+    ws_expect = exp.( log.(f_expect.(eachcol(xs))) .-  xs_logpdf)
+
+    c_approx = find_cutoff(f_approx, xs, ws_approx, cond.q)
+    c_expect = find_cutoff(f_expect, xs, ws_expect, cond.q)
 
     in_approx = (f_approx.(eachcol(xs)) .> c_approx)
     in_expect = (f_expect.(eachcol(xs)) .> c_expect)
