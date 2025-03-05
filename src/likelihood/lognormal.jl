@@ -57,9 +57,9 @@ function sq_likelihood_mean(like::LogNormalLikelihood, bolfi, gp_post)
     function sq_like_mean(x)
         μ_z, std_z = gp_post(x)
         std = sqrt.((std_obs.^2 .+ (2 .* std_z.^2)) ./ 2)
-        # C = 1 / prod(2 * sqrt(π) .* std_obs)
-        C = exp((-1) * sum(log.(2 * sqrt(π) .* std_obs)))
-        return C * pdf(MvLogNormal(μ_z, std), y_obs)
+        # C = 1 / prod(2 * sqrt(π) .* std_obs .* y_obs)
+        log_C = (-1) * sum(log.(2 * sqrt(π) .* std_obs .* y_obs))
+        return exp(log_C + logpdf(MvLogNormal(μ_z, std), y_obs))
     end
 end
 
