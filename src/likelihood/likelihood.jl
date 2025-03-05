@@ -19,7 +19,7 @@ abstract type Likelihood end
 
 Return the log-likelihood of the observation given the simulator output `z`.
 """
-function loglike(::Likelihood, z::AbstractVector{<:Real}) end
+function loglike end
 
 """
     pdf(::Likelihood, z::AbstractVector{<:Real})
@@ -35,20 +35,23 @@ end
 
 Returns a function mapping ``x`` to ``\\hat{p}(y_o|x)``.
 """
-function approx_likelihood(::Likelihood, bolfi, gp_post) end
+function approx_likelihood end
 
 """
     likelihood_mean(::Likelihood, bolfi, gp_post)
 
 Returns a function mapping ``x`` to ``\\mathbb{E}[ \\hat{p}(y_o|x) | GP ]``.
 """
-function likelihood_mean(::Likelihood, bolfi, gp_post) end
+function likelihood_mean end
 
 """
     sq_likelihood_mean(::Likelihood, bolfi, gp_post)
 
 Returns a function mapping ``x`` to ``\\mathbb{E}[ \\hat{p}(y_o|x)^2 | GP ]``.
 """
-function sq_likelihood_mean(::Likelihood, bolfi, gp_post) end
+function sq_likelihood_mean end
 
-function get_subset(::Likelihood, y_set::AbstractVector{<:Bool}) end
+"""
+    like_ = get_subset(like::Likelihood, y_set::AbstractVector{<:Bool})
+"""
+function get_subset end
