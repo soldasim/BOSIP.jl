@@ -28,7 +28,7 @@ function plot_state_2d(bolfi, new_datum; plt, acquisition, sample_posterior=true
         title = "approx. posterior",
     )
     plot_func_2d!(ax, (x,y) -> approx_post([x,y]), bolfi, new_datum; plt)
-    sample_posterior && plot_posterior_samples!(ax, bolfi)
+    sample_posterior && plot_posterior_samples!(ax, approx_post, bolfi)
     plot_data_2d!(ax, bolfi, new_datum; plt)
     # axislegend(ax; position = :rt)
 
@@ -85,9 +85,9 @@ function plot_data_2d!(ax, bolfi, new_datum; plt)
     )
 end
 
-function plot_posterior_samples!(ax, bolfi)
+function plot_posterior_samples!(ax, post, bolfi)
     bounds = bolfi.problem.domain.bounds
-    xs = BOLFI.sample_posterior(bolfi)
+    xs = BOLFI.sample_posterior(x -> log(post(x)), bounds)
 
     # fix limits so that samples out of bounds are not plotted
     xlims = bounds[1][1], bounds[2][1]

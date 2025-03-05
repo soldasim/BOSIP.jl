@@ -18,15 +18,36 @@ end
 
 BOLFI.TuringOptions(args...; kwargs...) = TuringOptions(args...; kwargs...)
 
-function BOLFI.sample_posterior(bolfi::BolfiProblem, options::TuringOptions = TuringOptions())
-    (bolfi.problem.data isa ExperimentDataBI) && @warn """
-        Calling `sample_posterior` with BI model fitter. Sampling from the averaged posterior.
-        You may want to fit the model via some MAP model fitter and call then call `sample_posterior` again.
-    """
+function BOLFI.sample_approx_posterior(bolfi::BolfiProblem, options::TuringOptions = TuringOptions())
+    like = approx_likelihood(bolfi)
+    loglike_ = x -> log(like(x))
+    return BOLFI.sample_posterior(loglike_, bolfi.x_prior, options)
+end
+function BOLFI.sample_posterior_mean(bolfi::BolfiProblem, options::TuringOptions = TuringOptions())
+    like = likelihood_mean(bolfi)
+    loglike_ = x -> log(like(x))
+    return BOLFI.sample_posterior(loglike_, bolfi.x_prior, options)
+end
 
-    approx_like = approx_likelihood(bolfi)
-    model = turing_model(bolfi.x_prior, approx_like)
+function BOLFI.sample_posterior(logpost, bounds::AbstractBounds, options::TuringOptions = TuringOptions())
+    model = turing_model(logpost, bounds)
+    return sample_posterior_(model, options)
+end
+function BOLFI.sample_posterior(loglike, prior::MultivariateDistribution, options::TuringOptions = TuringOptions())
+    model = turing_model(loglike, prior)
+    return sample_posterior_(model, options)
+end
 
+@model function turing_model(logpost, bounds::AbstractBounds)
+    x ~ product_distribution(Uniform.(bounds...))
+    Turing.@addlogprob! logpost(x)
+end
+@model function turing_model(loglike, x_prior::MultivariateDistribution)
+    x ~ x_prior
+    Turing.@addlogprob! loglike(x)
+end
+
+function sample_posterior_(model, options::TuringOptions = TuringOptions())
     samples_in_chain = options.warmup + (options.leap_size * options.samples_in_chain)
     if options.parallel
         chains = Turing.sample(model, options.sampler, MCMCThreads(), samples_in_chain, options.chain_count; progress=false)
@@ -44,11 +65,6 @@ function BOLFI.sample_posterior(bolfi::BolfiProblem, options::TuringOptions = Tu
     samples = samples' |> collect
 
     return samples
-end
-
-@model function turing_model(x_prior, approx_likelihood)
-    x ~ x_prior
-    Turing.@addlogprob! log(approx_likelihood(x))
 end
 
 end # module TuringExt

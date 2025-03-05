@@ -26,10 +26,55 @@ abstract type TuringOptions end
 
 """
     using Turing
-    xs = sample_posterior(problem::BolfiProblem)
-    xs = sample_posterior(problem::BolfiProblem, options::TuringOptions)
+    xs = sample_approx_posterior(::BolfiProblem)
+    xs = sample_approx_posterior(::BolfiProblem, ::TuringOptions)
 
-Sample `count` samples from the learned posterior stored in `problem`.
+Sample from the approximate posterior (`see approx_posterior`).
+
+The `TuringOptions` argument controls the hyperparameters of the sampling.
+It is an optional argument and defaults to `TuringOptions()` if not specified.
+
+# See Also
+
+[`sample_posterior_mean`](@ref),
+[`sample_posterior`](@ref)
+"""
+function sample_approx_posterior end
+
+"""
+    using Turing
+    xs = sample_posterior_mean(::BolfiProblem)
+    xs = sample_posterior_mean(::BolfiProblem, ::TuringOptions)
+
+Sample from the expected posterior (see `posterior_mean`).
+
+The `TuringOptions` argument controls the hyperparameters of the sampling.
+It is an optional argument and defaults to `TuringOptions()` if not specified.
+
+# See Also
+
+[`sample_approx_posterior`](@ref),
+[`sample_posterior`](@ref)
+"""
+function sample_posterior_mean end
+
+"""
+    using Turing
+    xs = sample_posterior(logpost, bounds::AbstractBounds, options::TuringOptions)
+    xs = sample_posterior(loglike, prior::MultivariateDistribution, options::TuringOptions)
+
+Sample from the learned posterior stored in `problem`.
+
+Either provide the log-posterior (as a function) and the domain bounds.
+Or provide the log-likelihood (as a function) and the prior distribution.
+
+The last `options` argument controls the hyperparameters of the sampling.
+It is an optional argument and defaults to `TuringOptions()` if not specified.
+
+# See Also
+
+[`sample_approx_posterior`](@ref),
+[`sample_posterior_mean`](@ref)
 """
 function sample_posterior end
 

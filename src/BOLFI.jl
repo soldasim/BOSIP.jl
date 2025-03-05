@@ -8,7 +8,8 @@ export x_dim, y_dim
 export approx_posterior, posterior_mean, posterior_variance
 export approx_likelihood, likelihood_mean, likelihood_variance
 export evidence
-export sample_posterior, TuringOptions
+export loglike
+export sample_approx_posterior, sample_posterior_mean, sample_posterior, TuringOptions
 export plot_marginals_int, plot_marginals_kde, PlotSettings
 export find_cutoff, approx_cutoff_area, set_iou
 export get_subset
