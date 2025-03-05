@@ -93,9 +93,11 @@ evidence
 
 ## Sampling from the Posterior
 
-The `sample_posterior` function can be used to obtain approximate samples from the trained parameter posterior.
+The `sample_approx_posterior`, `sample_posterior_mean`, and `sample_posterior` functions can be used to obtain approximate samples from the trained parameter posterior.
 
 ```@docs
+sample_approx_posterior
+sample_posterior_mean
 sample_posterior
 ```
 
