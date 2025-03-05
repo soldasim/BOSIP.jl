@@ -1,63 +1,57 @@
 
 """
-    post, c = find_cutoff(post, x_prior, q; kwargs...)
+    c = find_cutoff(target_pdf, xs, q)
+    c = find_cutoff(target_pdf, xs, ws, q)
 
-Estimate the cutoff value `c` such that the set `{x | post(x) > c}`
+Estimate the cutoff value `c` such that the set `{x | post(x) >= c}`
 contains `q` of the total probability mass.
 
-The approximation is calculated by MC sampling from the `x_prior`.
+The value `c` is estimated based on the provided samples `xs` sampled according to the `target_pdf`.
 
-The returned posterior `post` is unchanged.
-
-# Keywords
-
-- `xs::Union{Nothing, <:AbstractMatrix{<:Real}}`: Can be used to provide a pre-sampled
-        set of samples from the `x_prior` as a column-wise matrix.
-- `samples::Int`: Controls the number of samples used for the approximation.
-        Only has an effect if `isnothing(xs)`.
+Alternatively, one can provide samples `xs` sampled according to some `proposal_pdf`
+with corresponding importance weights `ws = target_pdf.(eachcol(xs)) ./ proposal_pdf.(eachcol(xs))`.
 
 # See Also
 
 [`approx_cutoff_area`](@ref)
 [`set_iou`](@ref)
 """
-function find_cutoff(post, x_prior, q; xs=nothing, samples=10_000)
-    isnothing(xs) && (xs = rand(x_prior, samples))
-    ws = post.(eachcol(xs)) ./ pdf.(Ref(x_prior), eachcol(xs))
-    vals = post.(eachcol(xs))
+function find_cutoff(target_pdf, xs::AbstractMatrix{<:Real}, q::Real)
+    ws = ones(size(xs, 2))
+    return find_cutoff(target_pdf, xs, ws, q)
+end
+function find_cutoff(target_pdf, xs::AbstractMatrix{<:Real}, ws::AbstractVector{<:Real}, q::Real)
+    vals = target_pdf.(eachcol(xs))
     c = quantile(vals, Distributions.weights(ws), 1. - q)
-    return post, c
+    return c
 end
 
 """
-    V = approx_cutoff_area(post, x_prior, c; kwargs...)
+    V = approx_cutoff_area(target_pdf, xs, c)
+    V = approx_cutoff_area(target_pdf, xs, ws, c)
 
-Approximate the ratio of the area where `post(x) > c`
-relative to the whole support of `post(x)`.
+Approximate the ratio of the area where `target_pdf(x) >= c`
+relative to the whole support of `target_pdf`.
 
-The approximation is calculated by MC sampling from the `x_prior`.
+The are is estimated based on the provided samples `xs`
+sampled uniformly from the whole support of `target_pdf`.
 
-The prior `x_prior` must support the whole support of `post(x)`.
-
-# Keywords
-
-- `xs::Union{Nothing, <:AbstractMatrix{<:Real}}`: Can be used to provide a pre-sampled
-        set of samples from the `x_prior` as a column-wise matrix.
-- `samples::Int`: Controls the number of samples used for the approximation.
-        Only has an effect if `isnothing(xs)`.
+Alternatively, one can provide samples `xs` sampled according to some `proposal_pdf`
+with corresponding importance weights `ws = 1 ./ proposal_pdf.(eachcol(xs))`.
 
 # See Also
 
 [`find_cutoff`](@ref)
 [`set_iou`](@ref)
 """
-function approx_cutoff_area(post, x_prior, c; xs=nothing, samples=10_000)
-    if isnothing(xs)
-        xs = rand(x_prior, samples)
-    end
-    ws = 1 ./ pdf.(Ref(x_prior), eachcol(xs))
-    ws ./= sum(ws)
-    V = sum(ws[post.(eachcol(xs)) .> c])
+function approx_cutoff_area(target_pdf, xs, c)
+    ws = ones(size(xs, 2))
+    return approx_cutoff_area(target_pdf, xs, ws, c)
+end
+function approx_cutoff_area(target_pdf, xs, ws, c)
+    ws = deepcopy(ws)
+    ws .= exp.( log.(ws) .- log(sum(ws)) ) # normalize
+    V = sum(ws[target_pdf.(eachcol(xs)) .>= c])
     return V
 end
 
