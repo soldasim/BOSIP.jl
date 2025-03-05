@@ -2,8 +2,10 @@
 """
     BolfiProblem(X, Y; kwargs...)
     BolfiProblem(data::ExperimentData; kwargs...)
+    BolfiProblem(::BossProblem, ::Likelihood, x_prior::MultivariateDistribution)
+    BolfiProblem(::BossProblem, ::Likelihood, x_prior::MultivariateDistribution, y_sets::Matrix{Bool})
 
-Defines the LFI problem together with most hyperparameters for the BOLFI procedure.
+Defines the likelihood-free inference problem and stores all data.
 
 # Args
 
@@ -48,10 +50,13 @@ mutable struct BolfiProblem{
     y_sets::S
 end
 
-BolfiProblem(X, Y; kwargs...) =
+BolfiProblem(problem, likelihood, x_prior) =
+    BolfiProblem(problem, likelihood, x_prior, nothing)
+
+BolfiProblem(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real}; kwargs...) =
     BolfiProblem(ExperimentData(X, Y); kwargs...)
 
-function BolfiProblem(data;
+function BolfiProblem(data::ExperimentData;
     f,
     bounds,
     discrete = fill(false, length(first(bounds))),
