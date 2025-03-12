@@ -7,8 +7,8 @@ the method `cb(::BolfiProblem; kwargs...)` will be called in every iteration.
 cb(problem::BolfiProblem;
     model_fitter::BOSS.ModelFitter,
     acq_maximizer::BOSS.AcquisitionMaximizer,
-    acquisition::AcqWrapper,                # `BolfiAcquisition` wrapped into `AcqWrapper`
-    term_cond::TermCond,                    # either `BOSS.TermCond` or a `BolfiTermCond` wrapped into `TermCondWrapper`
+    acquisition::BOLFI.AcqWrapper,              # `BolfiAcquisition` wrapped into `AcqWrapper`
+    term_cond::TermCond,                        # either `BOSS.TermCond` or a `BolfiTermCond` wrapped into `TermCondWrapper`
     options::BossOptions,
     first::Bool,
 )
