@@ -1,7 +1,7 @@
 
 # BOLFI.jl
 
-BOLFI stands for "Bayesian Optimization Likelihood-Free Inference". BOLFI.jl provides a high-level algorithm, which uses Bayesian optimization-like procedure to solve likelihood-free inference problems. The package is inspired by the papers [1,2,3], which explored the idea of using Bayesian optimization for solving LFI problems. Notably, the core of BOLFI.jl follows the method described in [3].
+BOLFI stands for "Bayesian Optimization Likelihood-Free Inference". BOLFI.jl provides a high-level algorithm, which uses Bayesian optimization-like procedure to solve likelihood-free inference problems. The package is inspired by the papers [1,2,3], which explored the idea of using Bayesian optimization for solving LFI problems.
 
 Additionally, BOLFI.jl provides a method to solve likelihood-free sensor selection (LFSS) problems. This is a newly formulated problem based on LFI.
 
