@@ -1,6 +1,6 @@
 
 """
-    BinomialLikelihood(; std_obs::Vector{Float64})
+    BinomialLikelihood(; y_obs, trials, kwargs...)
 
 The observation is assumed to have been generated from a Binomial distribution
 as `y_o \\sim Binomial(trials, f(x))`. We can use the simulator to query `z = f(x)`.
@@ -16,15 +16,18 @@ The simulator should only return values between 0 and 1. The GP estimates are cl
     y_obs::Vector{Int64}
     trials::Vector{Int64}
     int_grid_size::Int64 = 200
+
+    function BinomialLikelihood(y_obs, trials, int_grid_size)
+        @assert all(y_obs .>= 0)
+        @assert all(trials .>= 1)
+        @assert all(y_obs .<= trials)
+        new(y_obs, trials, int_grid_size)
+    end
 end
 
 function loglike(like::BinomialLikelihood, z::AbstractVector{<:Real})
-    # TODO refactor
     if any(z .< 0.) || any(z .> 1.)
-        # @warn "Called `loglike(::BinomialLikelihood, z)`, where `z = $z` is outside of range `[0, 1]`."
-        z = deepcopy(z)
-        z[z .< 0.] .= 0.
-        z[z .> 1.] .= 1.
+        error("Called `loglike(::BinomialLikelihood, z)`, where `z = $z` is outside of range `[0, 1]`.")
     end
 
     # return sum(logpdf.(Binomial.(like.trials, z), like.y_obs))
