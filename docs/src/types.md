@@ -34,6 +34,12 @@ The `BinomialLikelihood` assumes that the observation `y_o` has been drawn from 
 BinomialLikelihood
 ```
 
+The `GutmannNormalLikelihood` is implemented according to the equations of Gutmann et al. in [1,2]. It is defined in a different way to the other `Likelihood`s. It is provided mainly for a comparison with `NormalLikelihood`.
+
+```@docs
+GutmannNormalLikelihood
+```
+
 ## Acquisition Function
 
 The abstract type `BolfiAcquisition` represents the acquisition function.
@@ -88,3 +94,9 @@ For an example usage of this functionality, see the [example](https://github.com
 ```@docs
 BolfiCallback
 ```
+
+# References
+
+[1] Gutmann, Michael U., and Jukka Cor. "Bayesian optimization for likelihood-free inference of simulator-based statistical models." Journal of Machine Learning Research 17.125 (2016): 1-47.
+
+[2] Järvenpää, Marko, et al. "Efficient acquisition rules for model-based approximate Bayesian computation." (2019): 595-622.

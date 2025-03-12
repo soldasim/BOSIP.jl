@@ -15,6 +15,7 @@ export find_cutoff, approx_cutoff_area, set_iou
 export get_subset
 
 export Likelihood, NormalLikelihood, LogNormalLikelihood, BinomialLikelihood
+export GutmannNormalLikelihood
 export BolfiAcquisition, PostVarAcq, MWMVAcq
 export BolfiTermCond, AEConfidence, UBLBConfidence
 export BolfiCallback, CombinedCallback
@@ -26,6 +27,9 @@ using LinearAlgebra
 using Random
 using KernelFunctions
 using Statistics
+
+using StatsFuns         # used in GutmannNormalLikelihood
+using SpecialFunctions  # used in utils/owent.jl: erfc
 
 include("include.jl")
 
