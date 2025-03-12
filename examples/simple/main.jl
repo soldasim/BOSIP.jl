@@ -19,12 +19,12 @@ function main(;
     model_fitter = OptimizationMAP(;
         algorithm = NEWUOA(),
         multistart = 200,
-        parallel = true,
+        parallel = false, # issues with PRIMA.jl
     )
     acq_maximizer = OptimizationAM(;
         algorithm = BOBYQA(),
         multistart = 200,
-        parallel = true,
+        parallel = false, # issues with PRIMA.jl
         rhoend = 1e-4,
     )
     term_cond = IterLimit(25)
