@@ -59,9 +59,8 @@ function sq_likelihood_mean(like::NormalLikelihood, bolfi, gp_post)
 end
 
 function _std_obs(like::NormalLikelihood{Nothing}, bolfi)
-    @assert bolfi.problem.data isa ExperimentDataMAP
-    θ, λ, α, noise_std = bolfi.problem.data.params
-    return noise_std
+    @assert bolfi.problem.params isa UniFittedParams
+    return bolfi.problem.params.σ
 end
 function _std_obs(like::NormalLikelihood, bolfi)
     return like.std_obs

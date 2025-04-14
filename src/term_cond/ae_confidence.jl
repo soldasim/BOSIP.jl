@@ -39,7 +39,7 @@ function AEConfidence(;
 end
 
 function (cond::AEConfidence)(bolfi::BolfiProblem)
-    @assert bolfi.problem.data isa ExperimentDataMAP
+    @assert bolfi.problem.params isa UniFittedParams
     return ae_confidence(cond, bolfi)
 end
 
@@ -51,7 +51,7 @@ end
 
 function ae_confidence(cond::AEConfidence, bolfi::BolfiProblem{Matrix{Bool}})
     cond.iter_limit(bolfi.problem) || return false
-    (bolfi.problem.data isa ExperimentDataPrior) && return true
+    (bolfi.problem.data isa ExperimentData) && return true
     ratios = calculate.(Ref(cond), get_subset.(Ref(bolfi), eachcol(bolfi.y_sets)))
     return any(ratios .< cond.r)
 end

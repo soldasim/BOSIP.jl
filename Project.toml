@@ -22,7 +22,7 @@ CairoExt = "CairoMakie"
 TuringExt = "Turing"
 
 [compat]
-BOSS = "0.3.4"
+BOSS = "0.3.4, 0.4.0"
 CairoMakie = "0.12.18"
 Distributions = "0.25.112"
 KernelFunctions = "0.10.64"

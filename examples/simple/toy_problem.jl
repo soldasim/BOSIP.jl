@@ -20,23 +20,16 @@ const y_obs = [1.]
 const y_dim = 1
 
 """observation noise std"""
-const σe_true = [0.5]  # true noise
-const σe =      [0.5]  # hyperparameter
+const σe = [0.5]
 """simulation noise std"""
-const ω = [0.001 for _ in 1:y_dim]
+const ω = fill(0., y_dim)
 
 
 # - - - EXPERIMENT - - - - -
 
 f_(x) = prod(x)
 
-# The "real experiment". (for plotting only)
-function experiment(x; noise_std=σe_true)
-    y1 = f_(x) + rand(Normal(0., noise_std[1]))
-    return [y1]
-end
-
-# The "simulation". (approximates the "experiment")
+# The "simulation".
 function simulation(x; noise_std=ω)
     y1 = f_(x) + rand(Normal(0., noise_std[1]))
     return [y1]
@@ -57,8 +50,8 @@ get_kernel() = BOSS.Matern32Kernel()
 
 const λ_MIN = 0.05
 const λ_MAX = 10.
-# get_length_scale_priors() = fill(Product(fill(truncated(Normal(1., 10/3)), x_dim())), y_dim)
-get_length_scale_priors() = fill(Product(fill(calc_inverse_gamma(λ_MIN, λ_MAX), x_dim())), y_dim)
+# get_lengthscale_priors() = fill(Product(fill(truncated(Normal(1., 10/3)), x_dim())), y_dim)
+get_lengthscale_priors() = fill(Product(fill(calc_inverse_gamma(λ_MIN, λ_MAX), x_dim())), y_dim)
 
 function get_amplitude_priors()
     # return fill(truncated(Normal(0., 5.); lower=0.), y_dim)
@@ -69,7 +62,8 @@ function get_noise_std_priors()
     # μ_std = ω
     # max_std = 10 * ω
     # return [truncated(Normal(μ_std[i], max_std[i] / 3); lower=0.) for i in 1:y_dim]
-    return [calc_inverse_gamma(ω[i]/10, ω[i]*100) for i in 1:y_dim]
+    # return [calc_inverse_gamma(0.1, ω[i]*100) for i in 1:y_dim]
+    return fill(Dirac(0.), y_dim)
 end
 
 
@@ -78,7 +72,7 @@ end
 function get_init_data(count)
     X = reduce(hcat, (random_datapoint() for _ in 1:count))[:,:]
     Y = reduce(hcat, (obj(x) for x in eachcol(X)))[:,:]
-    return BOSS.ExperimentDataPrior(X, Y)
+    return BOSS.ExperimentData(X, Y)
 end
 
 function random_datapoint()
@@ -102,8 +96,8 @@ function bolfi_problem(data::ExperimentData)
         f = obj,
         bounds = get_bounds(),
         kernel = get_kernel(),
-        length_scale_priors = get_length_scale_priors(),
-        amp_priors = get_amplitude_priors(),
+        lengthscale_priors = get_lengthscale_priors(),
+        amplitude_priors = get_amplitude_priors(),
         noise_std_priors = get_noise_std_priors(),
         likelihood = get_likelihood(),
         x_prior = get_x_prior(),

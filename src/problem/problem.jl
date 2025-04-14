@@ -25,12 +25,12 @@ Currently, at least one datapoint has to be provided (purely for implementation 
         maximizer which can handle nonlinear constraints must be used if `cons` is provided.
         (See `BOSS.AcquisitionMaximizer`.)
 - `kernel::Kernel`: The kernel used in the GP. Defaults to the `Matern32Kernel()`.
-- `length_scale_priors::AbstractVector{<:MultivariateDistribution}`: The prior distributions
-        for the length scales of the GP. The `length_scale_priors` should be a vector
+- `lengthscale_priors::AbstractVector{<:MultivariateDistribution}`: The prior distributions
+        for the length scales of the GP. The `lengthscale_priors` should be a vector
         of `y_dim` `x_dim`-variate distributions where `x_dim` and `y_dim` are
         the dimensions of the input and output of the model respectively.
-- `amp_priors::AbstractVector{<:UnivariateDistribution}`: The prior distributions
-        for the amplitude hyperparameters of the GP. The `amp_priors` should be a vector
+- `amplitude_priors::AbstractVector{<:UnivariateDistribution}`: The prior distributions
+        for the amplitude hyperparameters of the GP. The `amplitude_priors` should be a vector
         of `y_dim` univariate distributions.
 - `noise_std_priors::AbstractVector{<:UnivariateDistribution}`: The prior distributions
         of the standard deviations the Gaussian simulator noise on each dimension of the output `y`.
@@ -62,8 +62,8 @@ function BolfiProblem(data::ExperimentData;
     discrete = fill(false, length(first(bounds))),
     cons = nothing,
     kernel = BOSS.Matern32Kernel(),
-    length_scale_priors,
-    amp_priors,
+    lengthscale_priors = BOSS.NoVal, length_scale_priors = BOSS.NoVal, # deprecated
+    amplitude_priors = BOSS.NoVal, amp_priors = BOSS.NoVal, # deprecated
     noise_std_priors,
     likelihood,
     x_prior,
@@ -77,8 +77,8 @@ function BolfiProblem(data::ExperimentData;
 
     model = GaussianProcess(;
         kernel,
-        amp_priors,
-        length_scale_priors,
+        amplitude_priors, amp_priors,
+        lengthscale_priors, length_scale_priors,
         noise_std_priors,
     )
 
@@ -97,5 +97,5 @@ function BolfiProblem(data::ExperimentData;
     )
 end
 
-x_dim(bolfi::BolfiProblem) = BOSS.x_dim(bolfi.problem)
-y_dim(bolfi::BolfiProblem) = BOSS.y_dim(bolfi.problem)
+BOSS.x_dim(bolfi::BolfiProblem) = BOSS.x_dim(bolfi.problem)
+BOSS.y_dim(bolfi::BolfiProblem) = BOSS.y_dim(bolfi.problem)
