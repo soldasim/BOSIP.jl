@@ -33,6 +33,13 @@ The parameter `\\epsilon` is the acceptance threshold.
     ϵ::Float64
 end
 
+"""
+    GutmannGaussianLikelihood(; y_obs, std_obs)
+
+Alias for [`GutmannNormalLikelihood`](@ref).
+"""
+const GutmannGaussianLikelihood = GutmannNormalLikelihood
+
 function approx_likelihood(like::GutmannNormalLikelihood, bolfi, gp_post)
     if (y_dim(bolfi) != 1) || any(bolfi.problem.data.Y .< 0.)
         throw(error("The simulator should return a positive scalar discrepancy for Gutmann's likelihood."))
