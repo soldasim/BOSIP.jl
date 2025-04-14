@@ -2,6 +2,7 @@ using BOLFI
 using BOSS
 using Distributions
 using OptimizationPRIMA
+using Turing
 
 using Random
 Random.seed!(555)

@@ -44,7 +44,7 @@ function UBLBConfidence(;
 end
 
 function (cond::UBLBConfidence)(bolfi::BolfiProblem)
-    @assert bolfi.problem.data isa ExperimentDataMAP
+    @assert bolfi.problem.params isa UniFittedParams
     return ublb_confidence(cond, bolfi)
 end
 
@@ -56,7 +56,7 @@ end
 
 function ublb_confidence(cond::UBLBConfidence, bolfi::BolfiProblem{Matrix{Bool}})
     cond.iter_limit(bolfi.problem) || return false
-    (bolfi.problem.data isa ExperimentDataPrior) && return true
+    (bolfi.problem.data isa ExperimentData) && return true
     ratios = calculate.(Ref(cond), get_subset.(Ref(bolfi), eachcol(bolfi.y_sets)))
     return any(ratios .< cond.r)
 end

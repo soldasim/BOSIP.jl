@@ -67,14 +67,14 @@ whether to integrate over the uncertainty in the GP hyperparameters.
 [`approx_posterior`](@ref)
 """
 function approx_likelihood(bolfi::BolfiProblem)
-    return approx_likelihood(typeof(bolfi.problem.data), bolfi)
+    return approx_likelihood(typeof(bolfi.problem.params), bolfi)
 end
 
-function approx_likelihood(::Type{<:ExperimentDataMAP}, bolfi::BolfiProblem)
+function approx_likelihood(::Type{<:UniFittedParams}, bolfi::BolfiProblem)
     gp_post = BOSS.model_posterior(bolfi.problem)
     return approx_likelihood(bolfi.likelihood, bolfi, gp_post)
 end
-function approx_likelihood(::Type{<:ExperimentDataBI}, bolfi::BolfiProblem)
+function approx_likelihood(::Type{<:MultiFittedParams}, bolfi::BolfiProblem)
     gp_posts = BOSS.model_posterior(bolfi.problem)
     sample_count = length(gp_posts)
     
@@ -151,14 +151,14 @@ whether to integrate over the uncertainty in the GP hyperparameters.
 [`posterior_mean`](@ref)
 """
 function likelihood_mean(bolfi::BolfiProblem)
-    return likelihood_mean(typeof(bolfi.problem.data), bolfi)
+    return likelihood_mean(typeof(bolfi.problem.params), bolfi)
 end
 
-function likelihood_mean(::Type{<:ExperimentDataMAP}, bolfi::BolfiProblem)
+function likelihood_mean(::Type{<:UniFittedParams}, bolfi::BolfiProblem)
     gp_post = BOSS.model_posterior(bolfi.problem)
     return likelihood_mean(bolfi.likelihood, bolfi, gp_post)
 end
-function likelihood_mean(::Type{<:ExperimentDataBI}, bolfi::BolfiProblem)
+function likelihood_mean(::Type{<:MultiFittedParams}, bolfi::BolfiProblem)
     gp_posts = BOSS.model_posterior(bolfi.problem)
     sample_count = length(gp_posts)
     
@@ -234,10 +234,10 @@ whether to compute the variance over the uncertainty in the GP hyperparameters a
 [`posterior_variance`](@ref)
 """
 function likelihood_variance(bolfi::BolfiProblem)
-    return likelihood_variance(typeof(bolfi.problem.data), bolfi)
+    return likelihood_variance(typeof(bolfi.problem.params), bolfi)
 end
 
-function likelihood_variance(::Type{<:ExperimentDataMAP}, bolfi::BolfiProblem)
+function likelihood_variance(::Type{<:UniFittedParams}, bolfi::BolfiProblem)
     gp_post = BOSS.model_posterior(bolfi.problem)
     
     like_mean = likelihood_mean(bolfi.likelihood, bolfi, gp_post)
@@ -247,7 +247,7 @@ function likelihood_variance(::Type{<:ExperimentDataMAP}, bolfi::BolfiProblem)
         return sq_like_mean(x) - (like_mean(x) ^ 2)
     end
 end
-function likelihood_variance(::Type{<:ExperimentDataBI}, bolfi::BolfiProblem)
+function likelihood_variance(::Type{<:MultiFittedParams}, bolfi::BolfiProblem)
     gp_posts = BOSS.model_posterior(bolfi.problem)
     sample_count = length(gp_posts)
     

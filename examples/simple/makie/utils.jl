@@ -1,8 +1,8 @@
 
 function true_post(x)
-    y = ToyProblem.experiment(x; noise_std=zeros(ToyProblem.y_dim))
+    y = ToyProblem.simulation(x; noise_std=zeros(ToyProblem.y_dim))
 
-    ll = pdf(MvNormal(y, ToyProblem.σe_true), ToyProblem.y_obs)
+    ll = pdf(MvNormal(y, ToyProblem.σe), ToyProblem.y_obs)
     pθ = pdf(ToyProblem.get_x_prior(), x)
     return pθ * ll
 end

@@ -4,25 +4,25 @@ An abstract type for BOLFI acquisition functions.
 
 ### **Required** API for subtypes of `BolfiAcquisition`:
 
-- Implement method `(::CustomAcq)(::Type{<:ExperimentDataMAP}, ::BolfiProblem, ::BolfiOptions) -> (x -> ::Real)`.
+- Implement method `(::CustomAcq)(::Type{<:UniFittedParams}, ::BolfiProblem, ::BolfiOptions) -> (x -> ::Real)`.
 
 ### **Optional** API for subtypes of `BolfiAcquisition`:
 
-- Implement method `(::CustomAcq)(::Type{<:ExperimentDataBI}, ::BolfiProblem, ::BolfiOptions) -> (x -> ::Real)`.
-    A default fallback is provided for `ExperimentDataBI`, which averages individual acquisition functions for each sample.
+- Implement method `(::CustomAcq)(::Type{<:MultiFittedParams}, ::BolfiProblem, ::BolfiOptions) -> (x -> ::Real)`.
+    A default fallback is provided for `MultiFittedParams`, which averages individual acquisition functions for each sample.
 """
 abstract type BolfiAcquisition end
 
 # Broadcast between MAP and BI parameters.
 function (acq::BolfiAcquisition)(bolfi::BolfiProblem{<:Any}, options::BolfiOptions)
-    return acq(typeof(bolfi.problem.data), bolfi, options)
+    return acq(typeof(bolfi.problem.params), bolfi, options)
 end
 
-# Default fallback for `ExperimentDataBI`.
+# Default fallback for `MultiFittedParams`.
 # Constructs a separate acquisition function for each sample and averages them.
-function (acq::BolfiAcquisition)(::Type{<:ExperimentDataBI}, bolfi::BolfiProblem{<:Any}, options::BolfiOptions)
-    data = bolfi.problem.data
-    sample_count = BOSS.sample_count(data)
+function (acq::BolfiAcquisition)(::Type{<:MultiFittedParams}, bolfi::BolfiProblem{<:Any}, options::BolfiOptions)
+    params = bolfi.problem.params
+    sample_count = length(params)
     
     # create shallow copies of the problem
     bolfis = [shallow_copy(bolfi) for _ in 1:sample_count]
@@ -31,11 +31,11 @@ function (acq::BolfiAcquisition)(::Type{<:ExperimentDataBI}, bolfi::BolfiProblem
     # change pointers to data
     for i in 1:sample_count
         bolfis[i].problem = problems[i]
-        problems[i].data = BOSS.get_sample(data, i)
+        problems[i].params = params[i]
     end
 
     # average posterior variance over the samples
-    acqs = acq.(Ref(ExperimentDataMAP), bolfis, Ref(options))
+    acqs = acq.(Ref(UniFittedParams), bolfis, Ref(options))
     function exp_acq(x)
         return mapreduce(a -> a(x), +, acqs) / sample_count
     end
