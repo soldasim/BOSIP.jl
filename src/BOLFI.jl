@@ -14,8 +14,12 @@ export plot_marginals_int, plot_marginals_kde, PlotSettings
 export find_cutoff, approx_cutoff_area, set_iou
 export get_subset
 
-export Likelihood, NormalLikelihood, LogNormalLikelihood, BinomialLikelihood
-export GutmannNormalLikelihood
+export Likelihood
+export GutmannNormalLikelihood, GutmannGaussianLikelihood
+export NormalLikelihood, GaussianLikelihood
+export LogNormalLikelihood, LogGaussianLikelihood
+export BinomialLikelihood
+
 export BolfiAcquisition, PostVarAcq, MWMVAcq
 export BolfiTermCond, AEConfidence, UBLBConfidence
 export BolfiCallback, CombinedCallback

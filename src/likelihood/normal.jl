@@ -20,6 +20,13 @@ as `y_o \\sim Normal(f(x), Diagonal(std_obs))`. We can use the simulator to quer
     std_obs::S
 end
 
+"""
+    GaussianLikelihood(; y_obs, std_obs)
+
+Alias for [`NormalLikelihood`](@ref).
+"""
+const GaussianLikelihood = NormalLikelihood
+
 function loglike(like::NormalLikelihood, z::AbstractVector{<:Real})
     return logpdf(MvNormal(z, like.std_obs), like.y_obs)
 end

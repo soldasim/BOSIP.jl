@@ -23,6 +23,13 @@ This way, the `y` values with high likelihood will have similar values to the `z
     std_obs::S
 end
 
+"""
+    LogGaussianLikelihood(; y_obs, std_obs)
+
+Alias for [`LogNormalLikelihood`](@ref).
+"""
+const LogGaussianLikelihood = LogNormalLikelihood
+
 function loglike(like::LogNormalLikelihood, z::AbstractVector{<:Real})
     return logpdf(MvLogNormal(z, like.std_obs), like.y_obs)
 end
