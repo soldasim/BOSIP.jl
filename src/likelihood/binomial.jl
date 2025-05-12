@@ -10,7 +10,7 @@ The simulator should only return values between 0 and 1. The GP estimates are cl
 # Kwargs
 - `y_obs::Vector{Int64}`: The observed values from the real experiment.
 - `trials::Vector{Int64}`: The number of trials for each observation dimension.
-- `int_grid_size::Int64`: The number of points of the grid used for numerical integration.
+- `int_grid_size::Int64`: The number of samples used to approximate the expected likelihood.
 """
 @kwdef struct BinomialLikelihood <: Likelihood
     y_obs::Vector{Int64}
@@ -48,18 +48,18 @@ end
 function likelihood_mean(like::BinomialLikelihood, bolfi, gp_post)
     y_obs = like.y_obs
     trials = like.trials
-    grid = range(0., 1.; length=like.int_grid_size)
+
+    ϵs = rand(Uniform(0, 1), like.int_grid_size)
 
     # TODO refactor
     function like_mean(x)
-        ps_dists = Normal.(gp_post(x)...)
+        ps_dists = truncated.(Normal.(gp_post(x)...); lower=0., upper=1.)
         
         ll = 0.
         for i in eachindex(y_obs)
-            ws = pdf.(Ref(ps_dists[i]), grid)
-            _normalize_weights!(ws)
-            vals = pdf.(Binomial.(Ref(trials[i]), grid), Ref(y_obs[i]))
-            ll += log(ws' * vals)
+            zs = quantile.(Ref(ps_dists[i]), ϵs)
+            vals = pdf.(Binomial.(Ref(trials[i]), zs), Ref(y_obs[i]))
+            ll += log(mean(vals))
         end
         return exp(ll)
     end
@@ -68,32 +68,21 @@ end
 function sq_likelihood_mean(like::BinomialLikelihood, bolfi, gp_post)
     y_obs = like.y_obs
     trials = like.trials
-    grid = range(0., 1.; length=like.int_grid_size)
+
+    ϵs = rand(Uniform(0, 1), like.int_grid_size)
 
     # TODO refactor
     function like_mean(x)
-        ps_dists = Normal.(gp_post(x)...)
-
+        ps_dists = truncated.(Normal.(gp_post(x)...); lower=0., upper=1.)
+        
         ll = 0.
         for i in eachindex(y_obs)
-            ws = pdf.(Ref(ps_dists[i]), grid)
-            _normalize_weights!(ws)
-            vals = pdf.(Binomial.(Ref(trials[i]), grid), Ref(y_obs[i])) .^ 2
-            ll += log(ws' * vals)
+            zs = quantile.(Ref(ps_dists[i]), ϵs)
+            vals = pdf.(Binomial.(Ref(trials[i]), zs), Ref(y_obs[i])) .^ 2
+            ll += log(mean(vals))
         end
         return exp(ll)
     end
-end
-
-function _normalize_weights!(ws)
-    s = sum(ws)
-    if s == 0.
-        @warn "BinomialLikelihood: All weights are zero during numerical integration!"
-        ws .= 1 / length(ws)
-    else
-        ws ./= s
-    end
-    return ws
 end
 
 function get_subset(like::BinomialLikelihood, y_set::AbstractVector{<:Bool})
