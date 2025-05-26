@@ -24,6 +24,7 @@ Currently, at least one datapoint has to be provided (purely for implementation 
         Feasible points `x` must satisfy `all(cons(x) .> 0.)`. An appropriate acquisition
         maximizer which can handle nonlinear constraints must be used if `cons` is provided.
         (See `BOSS.AcquisitionMaximizer`.)
+- `acquisition::BolfiAcquisition`: Defines the acquisition function.
 - `kernel::Kernel`: The kernel used in the GP. Defaults to the `Matern32Kernel()`.
 - `lengthscale_priors::AbstractVector{<:MultivariateDistribution}`: The prior distributions
         for the length scales of the GP. The `lengthscale_priors` should be a vector
@@ -56,11 +57,22 @@ BolfiProblem(problem, likelihood, x_prior) =
 BolfiProblem(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real}; kwargs...) =
     BolfiProblem(ExperimentData(X, Y); kwargs...)
 
+"""
+    DummyAcq()
+
+Dummy acquisition function used only in the `BolfiProblem` constructor
+as a temporary placeholder.
+
+It does _not_ implement the `BOSS.AcquisitionFunction` API.
+"""
+struct DummyAcq <: AcquisitionFunction end
+
 function BolfiProblem(data::ExperimentData;
     f,
     bounds,
     discrete = fill(false, length(first(bounds))),
     cons = nothing,
+    acquisition = PostVarAcq(),
     kernel = BOSS.Matern32Kernel(),
     lengthscale_priors = BOSS.NoVal, length_scale_priors = BOSS.NoVal, # deprecated
     amplitude_priors = BOSS.NoVal, amp_priors = BOSS.NoVal, # deprecated
@@ -85,16 +97,28 @@ function BolfiProblem(data::ExperimentData;
     problem = BossProblem(;
         f,
         domain,
+        acquisition = DummyAcq(), # is filled in below
         model,
         data,
     )
 
-    return BolfiProblem(
+    bolfi = BolfiProblem(
         problem,
         likelihood,
         x_prior,
         y_sets,
     )
+
+    # fill in the acquisition function
+    bolfi.problem.acquisition = AcqWrapper(
+        acquisition,
+        bolfi,
+        # leave default options for now
+        # they are updated later in `_init_problem!`
+        BolfiOptions(),
+    )
+
+    return bolfi
 end
 
 BOSS.x_dim(bolfi::BolfiProblem) = BOSS.x_dim(bolfi.problem)

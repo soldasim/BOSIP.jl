@@ -15,7 +15,6 @@ function main(;
     plots = true,
 )
     problem = ToyProblem.bolfi_problem(init_data)
-    acquisition = PostVarAcq()
 
     model_fitter = OptimizationMAP(;
         algorithm = NEWUOA(),
@@ -44,8 +43,8 @@ function main(;
     )
 
     MakiePlots.init_plotting(plt)
-    bolfi!(problem; acquisition, model_fitter, acq_maximizer, term_cond, options)
-    plots && MakiePlots.plot_final(plt; acquisition, model_fitter, acq_maximizer, term_cond, options)
+    bolfi!(problem; model_fitter, acq_maximizer, term_cond, options)
+    plots && MakiePlots.plot_final(plt; model_fitter, acq_maximizer, term_cond, options)
     
     # MakiePlots.plot_param_slices(plt, problem; options, samples=2_000)
     return problem

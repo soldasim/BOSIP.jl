@@ -1,7 +1,7 @@
 
-function plot_state_2d(bolfi, new_datum; plt, acquisition, sample_posterior=true, kwargs...)
+function plot_state_2d(bolfi, new_datum; plt, sample_posterior=true, kwargs...)
     boss = bolfi.problem
-    acquisition = unwrap(acquisition)
+    acquisition = unwrap(bolfi.problem.acquisition)
 
     approx_post = approx_posterior(bolfi)
     post_mean = posterior_mean(bolfi)
