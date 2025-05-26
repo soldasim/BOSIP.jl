@@ -38,7 +38,7 @@ PlotCallback(;
 """
 Plots the state in the current iteration.
 """
-function (plt::PlotCallback)(bolfi::BolfiProblem; acquisition, options, first, kwargs...)
+function (plt::PlotCallback)(bolfi::BolfiProblem; options, first, kwargs...)
     if first
         plt.prev_state = deepcopy(bolfi)
         plt.iters += 1
@@ -51,7 +51,7 @@ function (plt::PlotCallback)(bolfi::BolfiProblem; acquisition, options, first, k
     if plot_iter % plt.plot_each == 0
         options.info && @info "Plotting ..."
         new_datum = bolfi.problem.data.X[:,end]
-        plot_state(plt.prev_state, new_datum; plt, acquisition, iter=plot_iter)
+        plot_state(plt.prev_state, new_datum; plt, iter=plot_iter)
     end
     
     plt.prev_state = deepcopy(bolfi)

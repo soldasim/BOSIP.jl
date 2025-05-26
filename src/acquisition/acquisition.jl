@@ -44,7 +44,7 @@ end
 """
 A wrapper around any `BolfiAcquisition` function converting it to the BOSS.jl `AcquisitionFunction`.
 """
-struct AcqWrapper{
+mutable struct AcqWrapper{
     A<:BolfiAcquisition
 } <: AcquisitionFunction
     acq::A
@@ -52,4 +52,5 @@ struct AcqWrapper{
     options::BolfiOptions
 end
 
-(wrap::AcqWrapper)(::BossProblem, ::BossOptions) = wrap.acq(wrap.bolfi, wrap.options)
+BOSS.construct_acquisition(wrap::AcqWrapper, ::BossProblem, ::BossOptions) =
+    wrap.acq(wrap.bolfi, wrap.options)

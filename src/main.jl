@@ -14,7 +14,6 @@ which implements the underlying Bayesian optimization procedure.
 
 # Keywords
 
-- `acquisition::BolfiAcquisition`: Defines the acquisition function.
 - `model_fitter::BOSS.ModelFitter`: Defines the algorithm
         used to estimate the model hyperparameters.
 - `acq_maximizer::BOSS.AcquisitionMaximizer`: Defines the algorithm
@@ -42,23 +41,32 @@ See 'https://soldasim.github.io/BOLFI.jl/stable/example_lfi' for example usage.
 
 """
 function bolfi!(bolfi::BolfiProblem;
-    acquisition::BolfiAcquisition = PostVarAcq(),
     model_fitter::ModelFitter,
     acq_maximizer::AcquisitionMaximizer,
     term_cond::Union{<:TermCond, <:BolfiTermCond} = IterLimit(1),
     options::BolfiOptions = BolfiOptions(),    
 )
-    boss_acq = AcqWrapper(acquisition, bolfi, options)
+    # TODO the wrapper system is unnecessarily convoluted
+    # unify the API with BOSS to simplify the code
+
+    _init_problem!(bolfi, options)
+
     boss_term_cond = TermCondWrapper(term_cond, bolfi)
     boss_options = create_boss_options(options, bolfi)
 
     bo!(bolfi.problem;
-        acquisition = boss_acq,
         model_fitter,
         acq_maximizer,
         term_cond = boss_term_cond,
         options = boss_options,
     )
+    return bolfi
+end
+
+function _init_problem!(bolfi::BolfiProblem, options::BolfiOptions)
+    # replace the default options
+    bolfi.problem.acquisition.options = options
+
     return bolfi
 end
 
@@ -88,10 +96,9 @@ Uses the provided `AcquisitionMaximizer` to maximize the `BolfiAcquisition` func
 
 - `options::BolfiOptions`: Defines miscellaneous settings.
 """
-function BOSS.maximize_acquisition(bolfi::BolfiProblem, acquisition::BolfiAcquisition, acq_maximizer::AcquisitionMaximizer; options::BolfiOptions=BolfiOptions())
+function BOSS.maximize_acquisition(bolfi::BolfiProblem, acq_maximizer::AcquisitionMaximizer; options::BolfiOptions=BolfiOptions())
     boss_options = create_boss_options(options, bolfi)
-    boss_acq = AcqWrapper(acquisition, bolfi, options)
-    return maximize_acquisition(bolfi.problem, boss_acq, acq_maximizer; options=boss_options)
+    return maximize_acquisition(bolfi.problem, acq_maximizer; options=boss_options)
 end
 
 """

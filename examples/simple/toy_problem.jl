@@ -46,6 +46,8 @@ get_x_prior() = Product(fill(Normal(0., 5/3), x_dim()))
 
 # - - - HYPERPARAMETERS - - - - -
 
+get_acquisition() = PostVarAcq()
+
 get_kernel() = BOSS.Matern32Kernel()
 
 const λ_MIN = 0.05
@@ -95,6 +97,7 @@ function bolfi_problem(data::ExperimentData)
     return BolfiProblem(data;
         f = obj,
         bounds = get_bounds(),
+        acquisition = get_acquisition(),
         kernel = get_kernel(),
         lengthscale_priors = get_lengthscale_priors(),
         amplitude_priors = get_amplitude_priors(),

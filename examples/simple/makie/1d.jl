@@ -1,7 +1,7 @@
 
-function plot_state_1d(bolfi, new_datum; plt, acquisition, kwargs...)
+function plot_state_1d(bolfi, new_datum; plt, kwargs...)
     boss = bolfi.problem
-    acquisition = unwrap(acquisition)
+    acquisition = unwrap(bolfi.problem.acquisition)
 
     post_mean = posterior_mean(bolfi)
     post_var = posterior_variance(bolfi)
