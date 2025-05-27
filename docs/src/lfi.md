@@ -1,7 +1,7 @@
 
 # Likelihood-Free Inference Problem
 
-_TODO: The theory in this section has not been updated for the new modular likelihood. This section assumes the problem to be defined with `NormalLikelihood`._
+_TODO: This section needs a revision. The theory in this section has not been updated for the new modular likelihood. This section assumes the problem to be defined with `NormalLikelihood`._
 
 Likelihood-free inference (LFI), also known as simulation-based inference (SBI), is methodology used to solve the inverse problem in cases where the evaluation of the forward model is prohibitively expensive. Also, LFI methods aim to learn the posterior distribution of the parameters (the target of inference) instead of finding single "optimal" parameter values.
 

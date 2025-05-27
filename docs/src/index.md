@@ -1,11 +1,9 @@
 
 # BOLFI.jl
 
-BOLFI stands for "Bayesian Optimization Likelihood-Free Inference". BOLFI.jl provides a high-level algorithm, which uses Bayesian optimization-like procedure to solve likelihood-free inference problems. The package is inspired by the papers [1,2,3], which explored the idea of using Bayesian optimization for solving LFI problems.
+BOLFI stands for "Bayesian Optimization Likelihood-Free Inference". BOLFI.jl provides a general algorithm, which uses the Bayesian optimization procedure to solve simulation-based inference problems. The package is inspired by the papers [1,2,3], which explored the idea of using Bayesian optimization for solving LFI problems.
 
-Additionally, BOLFI.jl provides a method to solve likelihood-free sensor selection (LFSS) problems. This is a newly formulated problem based on LFI.
-
-The BOLFI method is based on Bayesian optimization. BOLFI.jl depends heavily on the BOSS.jl package which handles underlying Bayesian optimization. As such, the [BOSS.jl documentation](https://soldasim.github.io/BOSS.jl/stable/) can also be a useful resource when working with BOLFI.jl.
+The BOLFI method is based on Bayesian optimization. BOLFI.jl depends heavily on the BOSS.jl package which handles the underlying Bayesian optimization. As such, the [BOSS.jl documentation](https://soldasim.github.io/BOSS.jl/stable/) can also be a useful resource when working with BOLFI.jl.
 
 ## References
 

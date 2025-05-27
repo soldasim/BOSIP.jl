@@ -2,7 +2,7 @@
 
 # BOLFI (Bayesian Optimization Likelihood-Free Inference)
 
-The BOLFI method performs Likelihood-Free Inference by approximating the likelihood function with a Gaussian Process and greatly reduces the number of required evaluations by employing the Bayesian Optimization procedure to select new evaluation points.
+The BOLFI method performs Likelihood-Free Inference (also known as Simulation-Based Inference) by approximating the likelihood function with a Gaussian Process and greatly reduces the number of required evaluations by employing the Bayesian Optimization procedure to select new evaluation points.
 
 The BOLFI method has been introduced in [1]. Similar approaches have been discussed in [2], [3].
 
@@ -20,3 +20,7 @@ steels”. In: Computers & Structures 286 (2023), p. 107111.
 
 [3] Edward Meeds and Max Welling. “GPS-ABC: Gaussian process surrogate approxi-
 mate Bayesian computation”. In: arXiv preprint arXiv:1401.2838 (2014).
+
+# Citation
+
+If you use this package, please cite it using the provided `CITATION.cff` file.
