@@ -1,11 +1,16 @@
-include("likelihood/include.jl")
-include("problem/include.jl")
-include("callback.jl")
-include("options.jl")
+# Types
+include("types/include.jl")
+
+# Code
 include("utils/include.jl")
-include("acquisition/include.jl")
-include("term_cond/include.jl")
 include("posterior.jl")
 include("sampling.jl")
-include("plots.jl")
 include("main.jl")
+include("plots.jl")
+include("bi_acquisition.jl")
+include("subset_problem.jl")
+
+# Modules
+include("likelihoods/include.jl")
+include("acquisitions/include.jl")
+include("term_conds/include.jl")
