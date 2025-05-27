@@ -1,7 +1,7 @@
 name = "BOLFI"
 uuid = "631834c2-07fe-4b6b-876a-15b6a4e37445"
 authors = ["Šimon Soldát"]
-version = "0.2.0"
+version = "0.3.0"
 
 [deps]
 BOSS = "15052f3f-a82a-4ca3-bbc4-f478a3bd1ae2"
