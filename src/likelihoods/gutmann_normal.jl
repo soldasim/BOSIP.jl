@@ -45,8 +45,8 @@ function approx_likelihood(like::GutmannNormalLikelihood, bolfi, gp_post)
         throw(error("The simulator should return a positive scalar discrepancy for Gutmann's likelihood."))
     end
 
-    θ, λ, α, noise_std = bolfi.problem.data.params
-    std_obs = noise_std |> first
+    noise_std = get_params(bolfi.problem).σ
+    std_obs = noise_std[1]
     ϵ = like.ϵ
 
     function approx_like(x)
@@ -61,11 +61,11 @@ function likelihood_mean(like::GutmannNormalLikelihood, bolfi, gp_post)
         throw(error("The simulator should return a positive scalar discrepancy for Gutmann's likelihood."))
     end
 
-    θ, λ, α, noise_std = bolfi.problem.data.params
-    std_obs = noise_std |> first
+    noise_std = get_params(bolfi.problem).σ
+    std_obs = noise_std[1]
     ϵ = like.ϵ
 
-    function approx_like(x)
+    function like_mean(x)
         μ_z, std_z = gp_post(x) .|> first
         z_stat = (ϵ - μ_z) / sqrt(std_obs^2 + std_z^2)
         return normcdf(z_stat)
@@ -79,8 +79,8 @@ function sq_likelihood_mean(like::GutmannNormalLikelihood, bolfi, gp_post)
         throw(error("The simulator should return a positive scalar discrepancy for Gutmann's likelihood."))
     end
 
-    θ, λ, α, noise_std = bolfi.problem.data.params
-    std_obs = noise_std |> first
+    noise_std = get_params(bolfi.problem).σ
+    std_obs = noise_std[1]
     ϵ = like.ϵ
 
     function sq_like_mean(x)
