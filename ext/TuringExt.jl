@@ -3,39 +3,37 @@ module TuringExt
 using BOLFI
 using BOSS
 using Turing
+using Random
 
 """
-Implementation of the abstract `BOLFI.TuringOptions`. See the docs `? BOLFI.TuringOptions`.
+Implementation of the abstract `BOLFI.TuringSampler`. See the docs `? BOLFI.TuringSampler`.
 """
-@kwdef struct TuringOptions{S} <: BOLFI.TuringOptions
+@kwdef struct TuringSampler{S} <: BOLFI.TuringSampler
     sampler::S = NUTS(0, 0.65)
     warmup::Int = 1000
-    samples_in_chain::Int = 200
     chain_count::Int = 6
     leap_size::Int = 5
     parallel::Bool = true
 end
 
-BOLFI.TuringOptions(args...; kwargs...) = TuringOptions(args...; kwargs...)
+BOLFI.TuringSampler(args...; kwargs...) = TuringSampler(args...; kwargs...)
 
-function BOLFI.sample_approx_posterior(bolfi::BolfiProblem, options::TuringOptions = TuringOptions())
-    like = approx_likelihood(bolfi)
-    loglike_ = x -> log(like(x))
-    return BOLFI.sample_posterior(loglike_, bolfi.x_prior, options)
+function BOLFI.sample_posterior(sampler::TuringSampler, posterior::Function, domain::Domain, count::Int; kwargs...)
+    @assert !any(domain.discrete)
+    @assert isnothing(domain.cons)
+    
+    logpost(x) = log(posterior(x))
+    model = turing_model(logpost, domain.bounds)
+    return _sample_posterior_turing(model, sampler, count)
 end
-function BOLFI.sample_posterior_mean(bolfi::BolfiProblem, options::TuringOptions = TuringOptions())
-    like = likelihood_mean(bolfi)
-    loglike_ = x -> log(like(x))
-    return BOLFI.sample_posterior(loglike_, bolfi.x_prior, options)
-end
-
-function BOLFI.sample_posterior(logpost, bounds::AbstractBounds, options::TuringOptions = TuringOptions())
-    model = turing_model(logpost, bounds)
-    return sample_posterior_(model, options)
-end
-function BOLFI.sample_posterior(loglike, prior::MultivariateDistribution, options::TuringOptions = TuringOptions())
+function BOLFI.sample_posterior(sampler::TuringSampler, likelihood::Function, prior::MultivariateDistribution, domain::Domain, count::Int; kwargs...)
+    @assert !any(domain.discrete)
+    @assert isnothing(domain.cons)
+    @assert extrema(prior) == domain.bounds
+    
+    loglike(x) = log(likelihood(x))
     model = turing_model(loglike, prior)
-    return sample_posterior_(model, options)
+    return _sample_posterior_turing(model, sampler, count)
 end
 
 @model function turing_model(logpost, bounds::AbstractBounds)
@@ -47,22 +45,29 @@ end
     Turing.@addlogprob! loglike(x)
 end
 
-function sample_posterior_(model, options::TuringOptions = TuringOptions())
-    samples_in_chain = options.warmup + (options.leap_size * options.samples_in_chain)
-    if options.parallel
-        chains = Turing.sample(model, options.sampler, MCMCThreads(), samples_in_chain, options.chain_count; progress=false)
+function _sample_posterior_turing(model, sampler::TuringSampler, count::Int)
+    # This count will possibly result in a few extra samples. They are discarded later.
+    count_per_chain = (count / sampler.chain_count) |> ceil |> Int
+    samples_in_chain = sampler.warmup + (sampler.leap_size * count_per_chain)
+
+    if sampler.parallel
+        chains = Turing.sample(model, sampler.sampler, MCMCThreads(), samples_in_chain, sampler.chain_count; progress=false)
     else
-        chains = mapreduce(_ -> Turing.sample(model, options.sampler, samples_in_chain; progress=false), chainscat, 1:options.chain_count)
+        chains = mapreduce(_ -> Turing.sample(model, sampler.sampler, samples_in_chain; progress=false), chainscat, 1:sampler.chain_count)
     end
 
     # `samples_in_chain` × `x_dim` × `options.chain_count` matrix
     samples = group(chains, :x).value.data
     # skip warmup samples and leaps
-    samples = samples[options.warmup+options.leap_size:options.leap_size:end, :, :]
+    samples = samples[sampler.warmup+sampler.leap_size:sampler.leap_size:end, :, :]
     # concatenate chains
     samples = reduce(vcat, eachslice(samples; dims=3))
     # transpose
-    samples = samples' |> collect
+    samples = samples'
+
+    # shuffle & discard extra samples
+    keep = randperm(size(samples, 2))[1:count]
+    samples = samples[:, keep]
 
     return samples
 end

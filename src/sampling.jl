@@ -1,81 +1,43 @@
 
 """
-    TuringOptions(; kwargs...)
+    xs = sample_approx_posterior(bolfi::BolfiProblem, sampler::DistributionSampler, count::Int; kwargs...)
 
-Aggregates settings for the `sample_posterior` function, which uses the Turing.jl package.
+Sample `count` samples from the approximate posterior of the `BolfiProblem`
+using the specified `sampler`. Return a column-wise matrix of the drawn samples.
 
 # Keywords
-- `sampler::Any`: The sampling algorithm used to draw the samples.
-- `warmup::Int`: The amount of initial unused 'warmup' samples in each chain.
-- `samples_in_chain::Int`: The amount of samples used from each chain.
-- `chain_count::Int`: The amount of independent chains sampled.
-- `leap_size`: Every `leap_size`-th sample is used from each chain. (To avoid correlated samples.)
-- `parallel`: If `parallel=true` then the chains are sampled in parallel.
-
-# Sampling Process
-
-In each sampled chain;
-  - The first `warmup` samples are discarded.
-  - From the following `leap_size * samples_in_chain` samples each `leap_size`-th is kept.
-Then the samples from all chains are concatenated and returned.
-
-Total drawn samples:    'chain_count * (warmup + leap_size * samples_in_chain)'
-Total returned samples: 'chain_count * samples_in_chain'
-"""
-abstract type TuringOptions end
-
-"""
-    using Turing
-    xs = sample_approx_posterior(::BolfiProblem)
-    xs = sample_approx_posterior(::BolfiProblem, ::TuringOptions)
-
-Sample from the approximate posterior (`see approx_posterior`).
-
-The `TuringOptions` argument controls the hyperparameters of the sampling.
-It is an optional argument and defaults to `TuringOptions()` if not specified.
+- `options::BolfiOptions`: Miscellaneous preferences. Defaults to `BolfiOptions()`.
 
 # See Also
 
-[`sample_posterior_mean`](@ref),
+[`sample_expected_posterior`](@ref),
 [`sample_posterior`](@ref)
 """
-function sample_approx_posterior end
+function sample_approx_posterior(bolfi::BolfiProblem, sampler::DistributionSampler, count::Int;
+    options::BolfiOptions = BolfiOptions(),    
+)
+    like = approx_likelihood(bolfi)
+    return sample_posterior(sampler, like, bolfi.x_prior, count; options)
+end
 
 """
-    using Turing
-    xs = sample_posterior_mean(::BolfiProblem)
-    xs = sample_posterior_mean(::BolfiProblem, ::TuringOptions)
+    xs = sample_approx_posterior(bolfi::BolfiProblem, sampler::DistributionSampler, count::Int; kwargs...)
 
-Sample from the expected posterior (see `posterior_mean`).
+Sample `count` samples from the expected posterior (i.e. the posterior mean) of the `BolfiProblem`
+using the specified `sampler`. Return a column-wise matrix of the drawn samples.
 
-The `TuringOptions` argument controls the hyperparameters of the sampling.
-It is an optional argument and defaults to `TuringOptions()` if not specified.
+# Keywords
+- `options::BolfiOptions`: Miscellaneous preferences. Defaults to `BolfiOptions()`.
 
 # See Also
 
 [`sample_approx_posterior`](@ref),
 [`sample_posterior`](@ref)
 """
-function sample_posterior_mean end
+function sample_expected_posterior(bolfi::BolfiProblem, sampler::DistributionSampler, count::Int;
+    options::BolfiOptions = BolfiOptions(),    
+)
+    like = likelihood_mean(bolfi)
+    return sample_posterior(sampler, like, bolfi.x_prior, count; options)
+end
 
-"""
-    using Turing
-    xs = sample_posterior(logpost, bounds::AbstractBounds, options::TuringOptions)
-    xs = sample_posterior(loglike, prior::MultivariateDistribution, options::TuringOptions)
-
-Sample from the learned posterior stored in `problem`.
-
-Either provide the log-posterior (as a function) and the domain bounds.
-Or provide the log-likelihood (as a function) and the prior distribution.
-
-The last `options` argument controls the hyperparameters of the sampling.
-It is an optional argument and defaults to `TuringOptions()` if not specified.
-
-# See Also
-
-[`sample_approx_posterior`](@ref),
-[`sample_posterior_mean`](@ref)
-"""
-function sample_posterior end
-
-# The sampling is implemented in the `TuringExt` extension.
