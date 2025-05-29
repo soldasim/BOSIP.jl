@@ -69,14 +69,11 @@ We will query a few datapoints from the prior here using the following `get_init
 ```julia
 function get_init_data(count)
     X = reduce(hcat, (random_datapoint() for _ in 1:count))[:,:]
-    Y = reduce(hcat, (obj(x) for x in eachcol(X)))[:,:]
+    Y = reduce(hcat, (gp_objective(x) for x in eachcol(X)))[:,:]
     return BOSS.ExperimentDataPrior(X, Y)
 end
 
 function random_datapoint()
-    x_prior = get_x_prior()
-    bounds = get_bounds()
-
     x = rand(x_prior)
     while !BOSS.in_bounds(x, bounds)
         x = rand(x_prior)
@@ -125,17 +122,24 @@ noise_std_priors = fill(
 )
 ```
 
+Finally, we wrap all the model hyperparameters into the `GaussianProcess` structure.
+```julia
+model = GaussianProcess(;
+    kernel,
+    length_scale_priors,
+    amp_priors,
+    noise_std_priors,
+)
+```
+
 ## Instantiate `BolfiProblem`
 
 Now, we can instantiate the `BolfiProblem`.
 ```julia
 problem = BolfiProblem(init_data;
     f = gp_objective,
-    bounds,
-    kernel,
-    length_scale_priors,
-    amp_priors,
-    noise_std_priors,
+    domain = Domain(; bounds),
+    model,
     likelihood,
     x_prior,
 )

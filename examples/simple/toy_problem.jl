@@ -20,7 +20,7 @@ const y_obs = [1.]
 const y_dim = 1
 
 """observation noise std"""
-const σe = [0.5]
+const σe = [0.2]
 """simulation noise std"""
 const ω = fill(0., y_dim)
 
@@ -40,8 +40,19 @@ obj(x) = simulation(x)
 
 get_likelihood() = NormalLikelihood(; y_obs, std_obs=σe)
 
-# get_x_prior() = Product(fill(Uniform(-5., 5.), x_dim()))
-get_x_prior() = Product(fill(Normal(0., 5/3), x_dim()))
+# truncate the prior to the bounds
+function get_x_prior()
+    prior = _get_x_prior()
+    bounds = get_bounds()
+    return truncated(prior; lower=bounds[1], upper=bounds[2])
+end
+# _get_x_prior() = Product(fill(Uniform(-5., 5.), x_dim()))
+_get_x_prior() = Product(fill(Normal(0., 5/3), x_dim()))
+
+function Distributions.truncated(d::Product; lower, upper)
+    @assert length(d) == length(lower) == length(upper)
+    return Product([truncated(d.v[i]; lower=lower[i], upper=upper[i]) for i in 1:length(d)])
+end
 
 
 # - - - HYPERPARAMETERS - - - - -
@@ -68,24 +79,20 @@ function get_noise_std_priors()
     return fill(Dirac(0.), y_dim)
 end
 
+get_model() = GaussianProcess(;
+    kernel = get_kernel(),
+    lengthscale_priors = get_lengthscale_priors(),
+    amplitude_priors = get_amplitude_priors(),
+    noise_std_priors = get_noise_std_priors(),
+)
+
 
 # - - - INITIAL DATA - - - - -
 
 function get_init_data(count)
-    X = reduce(hcat, (random_datapoint() for _ in 1:count))[:,:]
+    X = rand(get_x_prior(), count)
     Y = reduce(hcat, (obj(x) for x in eachcol(X)))[:,:]
     return BOSS.ExperimentData(X, Y)
-end
-
-function random_datapoint()
-    x_prior = get_x_prior()
-    bounds = get_bounds()
-
-    x = rand(x_prior)
-    while !BOSS.in_bounds(x, bounds)
-        x = rand(x_prior)
-    end
-    return x
 end
 
 
@@ -96,15 +103,27 @@ bolfi_problem(init_data::Int) = bolfi_problem(get_init_data(init_data))
 function bolfi_problem(data::ExperimentData)
     return BolfiProblem(data;
         f = obj,
-        bounds = get_bounds(),
+        domain = Domain(; bounds=get_bounds()),
         acquisition = get_acquisition(),
-        kernel = get_kernel(),
-        lengthscale_priors = get_lengthscale_priors(),
-        amplitude_priors = get_amplitude_priors(),
-        noise_std_priors = get_noise_std_priors(),
+        model = get_model(),
         likelihood = get_likelihood(),
         x_prior = get_x_prior(),
     )
+end
+
+function true_post(x)
+    y = ToyProblem.simulation(x; noise_std=zeros(ToyProblem.y_dim))
+
+    ll = pdf(MvNormal(y, ToyProblem.σe), ToyProblem.y_obs)
+    pθ = pdf(ToyProblem.get_x_prior(), x)
+    return pθ * ll
+end
+function true_like(x)
+    y = ToyProblem.simulation(x; noise_std=zeros(ToyProblem.y_dim))
+
+    ll = pdf(MvNormal(y, ToyProblem.σe), ToyProblem.y_obs)
+    # pθ = pdf(ToyProblem.get_x_prior(), x)
+    return ll
 end
 
 end

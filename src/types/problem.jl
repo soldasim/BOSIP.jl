@@ -1,9 +1,7 @@
 
 """
     BolfiProblem(X, Y; kwargs...)
-    BolfiProblem(data::ExperimentData; kwargs...)
-    BolfiProblem(::BossProblem, ::Likelihood, x_prior::MultivariateDistribution)
-    BolfiProblem(::BossProblem, ::Likelihood, x_prior::MultivariateDistribution, y_sets::Matrix{Bool})
+    BolfiProblem(::ExperimentData; kwargs...)
 
 Defines the likelihood-free inference problem and stores all data.
 
@@ -17,27 +15,12 @@ Currently, at least one datapoint has to be provided (purely for implementation 
 # Kwargs
 
 - `f::Any`: The simulation to be queried for data.
-- `bounds::AbstractBounds`: The basic box-constraints on `x`. This field is mandatory.
-- `discrete::AbstractVector{<:Bool}`: Can be used to designate some dimensions
-        of the domain as discrete.
-- `cons::Union{Nothing, Function}`: Used to define arbitrary nonlinear constraints on `x`.
-        Feasible points `x` must satisfy `all(cons(x) .> 0.)`. An appropriate acquisition
-        maximizer which can handle nonlinear constraints must be used if `cons` is provided.
-        (See `BOSS.AcquisitionMaximizer`.)
+- `domain::Domain`: The parameter domain of the problem.
 - `acquisition::BolfiAcquisition`: Defines the acquisition function.
-- `kernel::Kernel`: The kernel used in the GP. Defaults to the `Matern32Kernel()`.
-- `lengthscale_priors::AbstractVector{<:MultivariateDistribution}`: The prior distributions
-        for the length scales of the GP. The `lengthscale_priors` should be a vector
-        of `y_dim` `x_dim`-variate distributions where `x_dim` and `y_dim` are
-        the dimensions of the input and output of the model respectively.
-- `amplitude_priors::AbstractVector{<:UnivariateDistribution}`: The prior distributions
-        for the amplitude hyperparameters of the GP. The `amplitude_priors` should be a vector
-        of `y_dim` univariate distributions.
-- `noise_std_priors::AbstractVector{<:UnivariateDistribution}`: The prior distributions
-        of the standard deviations the Gaussian simulator noise on each dimension of the output `y`.
+- `model::SurrogateModel`: The surrogate model to be used to model the proxy `δ`.
 - `likelihood::Likelihood`: The likelihood of the experiment observation `y_o`.
 - `x_prior::MultivariateDistribution`: The prior `p(x)` on the input parameters.
-- `y_sets::Matrix{Bool}`: Optional parameter intended for advanced usage.
+- `y_sets::Union{Nothing, Matrix{Bool}}`: Optional parameter intended for advanced usage.
         The binary columns define subsets `y_1, ..., y_m` of the observation dimensions within `y`.
         The algorithm then trains multiple posteriors `p(θ|y_1), ..., p(θ|y_m)` simultaneously.
         The posteriors can be compared after the run is completed to see which observation subsets are most informative.
@@ -69,31 +52,13 @@ struct DummyAcq <: AcquisitionFunction end
 
 function BolfiProblem(data::ExperimentData;
     f,
-    bounds,
-    discrete = fill(false, length(first(bounds))),
-    cons = nothing,
+    domain,
     acquisition = PostVarAcq(),
-    kernel = BOSS.Matern32Kernel(),
-    lengthscale_priors = BOSS.NoVal, length_scale_priors = BOSS.NoVal, # deprecated
-    amplitude_priors = BOSS.NoVal, amp_priors = BOSS.NoVal, # deprecated
-    noise_std_priors,
+    model,
     likelihood,
     x_prior,
     y_sets = nothing,
 )
-    domain = Domain(;
-        bounds,
-        discrete,
-        cons,
-    )
-
-    model = GaussianProcess(;
-        kernel,
-        amplitude_priors, amp_priors,
-        lengthscale_priors, length_scale_priors,
-        noise_std_priors,
-    )
-
     problem = BossProblem(;
         f,
         domain,
