@@ -5,7 +5,11 @@
 The observation is assumed to have been generated from a normal distribution
 as `y_o \\sim Normal(f(x), Diagonal(std_obs))`. We can use the simulator to query `z = f(x)`.
 
-This likelihood follows the equations from Gutmann et al. [1,2].
+This likelihood is an adaptation of the equations from Gutmann et al. [1,2]
+for the deterministic simulator considered in BOLFI.jl.
+The main difference to the original Gutmann's equations is that here
+the predefined observation std `std_δ` is used instead of the noise std `σ_n`
+used in the original paper, which is estimated as a GP hyperparameter.
 
 It is defined in a slightly different way than the other `Likelihood`s.
 Namely, this likelihood requires the simulator to return a _single_ non-negative scalar value,
@@ -22,6 +26,8 @@ The parameter `\\epsilon` is the acceptance threshold.
 
 # Kwargs
 - `ϵ::Float64`: The threshold for the discrepancy from the real observation.
+- `std_δ::Float64`: The standard deviation of the discrepancy `δ`
+    caused by the observation noise on `y_obs`.
 
 # References
 
@@ -30,7 +36,8 @@ The parameter `\\epsilon` is the acceptance threshold.
 [2] Järvenpää, Marko, et al. "Efficient acquisition rules for model-based approximate Bayesian computation." (2019): 595-622.
 """
 @kwdef struct GutmannNormalLikelihood <: Likelihood
-    ϵ::Float64
+    ϵ::Float64 = 0.
+    std_δ::Float64
 end
 
 """
@@ -45,13 +52,12 @@ function approx_likelihood(like::GutmannNormalLikelihood, bolfi, gp_post)
         throw(error("The simulator should return a positive scalar discrepancy for Gutmann's likelihood."))
     end
 
-    noise_std = get_params(bolfi.problem).σ
-    std_obs = noise_std[1]
     ϵ = like.ϵ
+    std_δ = like.std_δ
 
     function approx_like(x)
         μ_z, std_z = gp_post(x) .|> first
-        z_stat = (ϵ - μ_z) / std_obs
+        z_stat = (ϵ - μ_z) / std_δ
         return normcdf(z_stat)
     end
 end
@@ -61,13 +67,12 @@ function likelihood_mean(like::GutmannNormalLikelihood, bolfi, gp_post)
         throw(error("The simulator should return a positive scalar discrepancy for Gutmann's likelihood."))
     end
 
-    noise_std = get_params(bolfi.problem).σ
-    std_obs = noise_std[1]
     ϵ = like.ϵ
+    std_δ = like.std_δ
 
     function like_mean(x)
         μ_z, std_z = gp_post(x) .|> first
-        z_stat = (ϵ - μ_z) / sqrt(std_obs^2 + std_z^2)
+        z_stat = (ϵ - μ_z) / sqrt(std_z^2 + std_δ^2)
         return normcdf(z_stat)
     end
 end
@@ -79,14 +84,16 @@ function sq_likelihood_mean(like::GutmannNormalLikelihood, bolfi, gp_post)
         throw(error("The simulator should return a positive scalar discrepancy for Gutmann's likelihood."))
     end
 
-    noise_std = get_params(bolfi.problem).σ
-    std_obs = noise_std[1]
     ϵ = like.ϵ
+    std_δ = like.std_δ
 
+    # taken from the equation (34) in the appendix of the Jarvenpaa's
+    # "Efficient Acquisition Rules..." paper
     function sq_like_mean(x)
         μ_z, std_z = gp_post(x) .|> first
-        z_stat = (ϵ - μ_z) / sqrt(std_obs^2 + std_z^2)
-        return normcdf(z_stat) - 2 * owent(z_stat, std_obs / sqrt(std_obs^2 + 2 * std_z^2))
+        z_stat = (ϵ - μ_z) / sqrt(std_z^2 + std_δ^2)
+        ρ = std_z^2 / (std_δ^2 + std_z^2)
+        return normcdf(z_stat) - 2 * owent(z_stat, (1 - ρ) / sqrt(1 - ρ^2))
     end
 end
 
