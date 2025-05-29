@@ -14,10 +14,10 @@ end
 function get_subset(prob::BossProblem, y_set::AbstractVector{<:Bool})
     @assert prob.fitness isa NoFitness
     return BossProblem(
-        prob.fitness,
         (x) -> prob.f(x)[y_set],
         prob.domain,
         prob.y_max[y_set],
+        missing,
         get_subset(prob.model, y_set),
         get_subset(prob.params, y_set),
         get_subset(prob.data, y_set),
