@@ -42,3 +42,12 @@ end
 CallbackWrapper(cb::BossCallback, ::BolfiProblem) = cb
 
 (wrap::CallbackWrapper)(::BossProblem; kwargs...) = wrap.callback(wrap.bolfi; kwargs...)
+
+"""
+    NoCallback()
+
+A dummy `BolfiCallback` which does nothing.
+"""
+struct NoCallback <: BolfiCallback end
+
+function (::NoCallback)(::BolfiProblem; kwargs...) end

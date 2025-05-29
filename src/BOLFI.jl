@@ -23,7 +23,7 @@ export BinomialLikelihood
 
 export BolfiAcquisition, PostVarAcq, MWMVAcq
 export BolfiTermCond, AEConfidence, UBLBConfidence
-export BolfiCallback, CombinedCallback
+export BolfiCallback, CombinedCallback, NoCallback
 export BolfiOptions
 
 export DistributionSampler
