@@ -30,6 +30,7 @@ export BolfiOptions
 export DistributionSampler
 export TuringSampler
 export RejectionSampler, LikelihoodMaximizer
+export AMISSampler
 
 export DistributionMetric
 export MMDMetric
@@ -43,6 +44,7 @@ using Statistics
 using Optimization
 using ProgressMeter
 using ForwardDiff
+using ImportanceSampling
 
 using StatsFuns         # used in GutmannNormalLikelihood
 using SpecialFunctions  # used in utils/owent.jl: erfc
