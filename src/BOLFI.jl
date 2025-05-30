@@ -14,6 +14,7 @@ export calculate_metric
 export plot_marginals_int, plot_marginals_kde, PlotSettings
 export find_cutoff, approx_cutoff_area, set_iou
 export get_subset
+export approx_by_gauss_mix, GaussMixOptions
 
 export Likelihood
 export GutmannNormalLikelihood, GutmannGaussianLikelihood
@@ -41,6 +42,7 @@ using KernelFunctions
 using Statistics
 using Optimization
 using ProgressMeter
+using ForwardDiff
 
 using StatsFuns         # used in GutmannNormalLikelihood
 using SpecialFunctions  # used in utils/owent.jl: erfc
