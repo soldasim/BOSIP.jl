@@ -2,6 +2,8 @@
 # const GaussMix = MixtureModel{Multivariate, Distributions.Continuous, <:MvNormal}
 
 """
+    GaussMixOptions(; kwargs...)
+
 Contains all hyperparameters for the function `approx_by_gauss_mix`.
 
 # Kwargs
@@ -9,6 +11,8 @@ Contains all hyperparameters for the function `approx_by_gauss_mix`.
 - `multistart::Int`: Number of optimization restarts.
 - `parallel::Bool`: Controls whether the individual optimization runs
         are performed in paralell.
+- `static_schedule::Bool`: If `static_schedule=true` then the `:static` schedule is used for parallelization.
+        This is makes the parallel tasks sticky (non-migrating), but can decrease performance.
 - `autodiff::SciMLBase.AbstractADType`: Defines the autodiff library
         used for the optimization. (Only relevant if a gradient-based
         optimizer is set as `algorithm`.)
@@ -25,6 +29,7 @@ struct GaussMixOptions{
     algorithm::A
     multistart::Int
     parallel::Bool
+    static_schedule::Bool
     autodiff::SciMLBase.AbstractADType
     cluster_ϵs::Union{Nothing, Vector{Float64}}
     cons_atol::Real
@@ -35,12 +40,13 @@ GaussMixOptions(;
     algorithm,
     multistart = 200,
     parallel = true,
+    static_schedule = false,
     autodiff = AutoForwardDiff(),
     cluster_ϵs = nothing,
     cons_atol = 0.05,
     rel_min_weight = 1e-8,
     kwargs...
-) = GaussMixOptions(algorithm, multistart, parallel, autodiff, cluster_ϵs, cons_atol, rel_min_weight, kwargs)
+) = GaussMixOptions(algorithm, multistart, parallel, static_schedule, autodiff, cluster_ϵs, cons_atol, rel_min_weight, kwargs)
 
 cluster_ϵs(opt::GaussMixOptions, domain::Domain) =
     isnothing(opt.cluster_ϵs) ? _default_cluster_ϵs(domain) : opt.cluster_ϵs
@@ -104,7 +110,7 @@ function opt_for_modes(logpost, domain::Domain, opt::GaussMixOptions)
     end
 
     # --- MAIN ----
-    θs, vals = BOSS.optimize_multistart(optimize_, starts, opt.parallel, BossOptions(); return_all=true)
+    θs, vals = BOSS.optimize_multistart(optimize_, starts; opt.parallel, opt.static_schedule, return_all=true)
     θs = cluster_modes(θs, vals; opt.rel_min_weight, cluster_ϵs=cluster_ϵs(opt, domain))
     # θs = skip_boundaries(θs, domain; ϵs=cluster_ϵs(opt, domain), opt.cons_atol) # modes at boundaries are not true extrema
     return θs
