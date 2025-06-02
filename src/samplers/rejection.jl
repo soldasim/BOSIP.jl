@@ -10,21 +10,25 @@ likelihood value for the rejection process.
 - `algorithm::Any`: The optimization algorithm used to maximize the likelihood. 
 - `multistart::Int64`: The number of random starting points used in the optimization.
 - `parallel::Bool`: If `true`, the optimization is performed in parallel. Defaults to `true`.
+- `static_schedule::Bool`: If `static_schedule=true` then the `:static` schedule is used for parallelization.
+        This is makes the parallel tasks sticky (non-migrating), but can decrease performance.
 - `kwargs::Base.Pairs{Symbol, <:Any}`: Additional keyword arguments passed to the optimization algorithm.
 """
 struct LikelihoodMaximizer
     algorithm::Any
     multistart::Int64
     parallel::Bool
+    static_schedule::Bool
     kwargs::Base.Pairs{Symbol, <:Any}
 end
 function LikelihoodMaximizer(;
     algorithm,
     multistart,
     parallel = true,
+    static_schedule = false,
     kwargs...
 )
-    return LikelihoodMaximizer(algorithm, multistart, parallel, kwargs)
+    return LikelihoodMaximizer(algorithm, multistart, parallel, static_schedule, kwargs)
 end
 
 """
@@ -130,9 +134,9 @@ function opt_likelihood(opt::LikelihoodMaximizer, likelihood::Function, domain::
     starts = BOSS.generate_LHC(domain.bounds, opt.multistart)
     best_x, best_val = BOSS.optimize_multistart(
         optim,
-        starts,
+        starts;
         opt.parallel,
-        BossOptions();
+        opt.static_schedule,
     )
 
     return best_val
