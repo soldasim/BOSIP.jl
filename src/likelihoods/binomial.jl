@@ -26,9 +26,11 @@ The simulator should only return values between 0 and 1. The GP estimates are cl
 end
 
 function loglike(like::BinomialLikelihood, z::AbstractVector{<:Real})
-    if any(z .< 0.) || any(z .> 1.)
-        error("Called `loglike(::BinomialLikelihood, z)`, where `z = $z` is outside of range `[0, 1]`.")
-    end
+    # if any(z .< 0.) || any(z .> 1.)
+    #     @warn "Called `loglike(::BinomialLikelihood, z)`, where `z = $z` is outside of range `[0, 1]`."
+    #     z .= clamp.(z, 0., 1.)
+    # end
+    z .= clamp.(z, 0., 1.)
 
     # return sum(logpdf.(Binomial.(like.trials, z), like.y_obs))
     return mapreduce((t, z, y) -> logpdf(Binomial(t, z), y), +, like.trials, z, like.y_obs)
