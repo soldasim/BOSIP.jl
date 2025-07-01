@@ -87,10 +87,10 @@ function BOSS.estimate_parameters!(bolfi::BolfiProblem, model_fitter::ModelFitte
 end
 
 """
-    x = maximize_acquisition(::BolfiProblem, ::BolfiAcquisition, ::AcquisitionMaximizer)
+    x = maximize_acquisition(::BolfiProblem, ::AcquisitionMaximizer)
 
 Select parameters for the next simulation.
-Uses the provided `AcquisitionMaximizer` to maximize the `BolfiAcquisition` function and find the optimal candidate parameters.
+Uses the provided `AcquisitionMaximizer` to maximize the acquisition function and find the optimal candidate parameters.
 
 # Keywords
 
