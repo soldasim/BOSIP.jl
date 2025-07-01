@@ -10,7 +10,7 @@ between the two sample sets.
 - `kernel::Kernel`: The kernel used to calculate the MMD.
         It is important to choose appropriate lengthscales for the kernel.
 """
-@kwdef struct MMDMetric <: DistributionMetric
+@kwdef struct MMDMetric <: SampleMetric
     kernel::Kernel
 end
 

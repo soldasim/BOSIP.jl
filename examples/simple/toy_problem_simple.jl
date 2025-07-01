@@ -16,43 +16,49 @@ include("../ig.jl")
 # - - - PARAMETER DOMAIN - - - - -
 
 x_dim() = 2
-get_bounds() = (fill(-5., x_dim()), fill(5., x_dim()))
+get_bounds() = (fill(-16., x_dim()), fill(16., x_dim()))
 
 
 # - - - OBSERVATION - - - - -
 
 """observation"""
-const y_obs = [1.]
+const y_obs = [0.]
 const y_dim = 1
 
-"""observation noise std"""
-const σe = [0.2]
 """simulation noise std"""
-const ω = fill(0., y_dim)
+const ω = fill(1., y_dim)
 
 
 # - - - EXPERIMENT - - - - -
 
-f_(x) = prod(x)
+const ρ = 0.25
+const inv_S = inv([1.; ρ;; ρ; 1.;;])
+f_(x) = -(1/2) * x' * inv_S * x
 
-# TODO likelihood
-# The "simulation".
+# TODO sqrt
 # function simulation(x; noise_std=ω)
 #     y1 = f_(x) + rand(Normal(0., noise_std[1]))
 #     return [y1]
 # end
 function simulation(x; noise_std=ω)
     y1 = f_(x) + rand(Normal(0., noise_std[1]))
-    # return [logpdf(MvNormal([y1], diagm(σe)), y_obs)]
-    return [(-1/2) * sum((([y1] .- y_obs) ./ σe) .^ 2)]
+    return [sqrt((-2) * y1)]
 end
 
 # The objective for the GP.
 obj(x) = simulation(x)
 
-# TODO likelihood
-# get_likelihood() = NormalLikelihood(; y_obs, std_obs=σe)
-get_likelihood() = ExpLikelihood(;
+# TODO sqrt
+# get_likelihood() = ExpLikelihood(;
+#     opt = OptimizationAM(;
+#         algorithm = BOBYQA(),
+#         multistart = 24,
+#         parallel = true,
+#         static_schedule = true, # issues with PRIMA.jl
+#         rhoend = 1e-4,
+#     ),
+# )
+get_likelihood() = SqExpLikelihood(;
     opt = OptimizationAM(;
         algorithm = BOBYQA(),
         multistart = 24,
@@ -62,18 +68,10 @@ get_likelihood() = ExpLikelihood(;
     ),
 )
 
+
 # truncate the prior to the bounds
 function get_x_prior()
-    prior = _get_x_prior()
-    bounds = get_bounds()
-    return truncated(prior; lower=bounds[1], upper=bounds[2])
-end
-# _get_x_prior() = Product(fill(Uniform(-5., 5.), x_dim()))
-_get_x_prior() = Product(fill(Normal(0., 5/3), x_dim()))
-
-function Distributions.truncated(d::Product; lower, upper)
-    @assert length(d) == length(lower) == length(upper)
-    return Product([truncated(d.v[i]; lower=lower[i], upper=upper[i]) for i in 1:length(d)])
+    return Product(Uniform.(get_bounds()...))
 end
 
 
@@ -88,45 +86,32 @@ get_acquisition() = PostVarAcq()
 #         p_kernel = BOSS.GaussianKernel(),
 #     )
 
-get_kernel() = BOSS.Matern32Kernel()
+get_kernel() = BOSS.ExponentialKernel() # TODO ???
 
-const λ_MIN = 0.05
-const λ_MAX = 10.
-# get_lengthscale_priors() = fill(Product(fill(truncated(Normal(1., 10/3)), x_dim())), y_dim)
-get_lengthscale_priors() = fill(Product(fill(calc_inverse_gamma(λ_MIN, λ_MAX), x_dim())), y_dim)
+function get_lengthscale_priors()
+    ranges = (-1.) * .-(get_bounds()...)
+
+    d = TDist(4)
+    d = truncated(d; lower=0.)
+    ds = transformed.(Ref(d), Bijectors.Scale.(ranges ./ 2))
+
+    return fill(product_distribution(ds), y_dim)
+end
 
 function get_amplitude_priors()
-    # return fill(truncated(Normal(0., 5.); lower=0.), y_dim)
-    # return fill(calc_inverse_gamma(0.1, 20.), y_dim)
-
-    # TODO rem
-    # return fill(calc_inverse_gamma(0.1, 5000.), y_dim)
-    # return fill(Dirac(1.), y_dim)
-
-    # TODO likelihood
-    #
-    # According to Jarvenpaa & Gutmann
-    # They use the squred student t distribution
-    # with 4 degrees of freedom, with `\sigma^2 = 1000^2`
-    # as a prior for the squared amplitude `\alpha^2`.
-    #
-    # I define the prior for the amplitude `\alpha`,
-    # so I just truncate instead of squaring the variable.
-    # This should be equivalent.
-    #
-    d = TDist(4) # 4 degrees of freedom
+    d = TDist(4)
     d = truncated(d; lower=0.)
-    d = transformed(d, Bijectors.Scale(1000))
+    d = transformed(d, Bijectors.Scale(1000.))
     
     return fill(d, y_dim)
 end
 
 function get_noise_std_priors()
-    # μ_std = ω
-    # max_std = 10 * ω
-    # return [truncated(Normal(μ_std[i], max_std[i] / 3); lower=0.) for i in 1:y_dim]
-    # return [calc_inverse_gamma(0.1, ω[i]*100) for i in 1:y_dim]
-    return fill(Dirac(0.), y_dim)
+    d = TDist(4)
+    d = truncated(d; lower=0.)
+    d = transformed(d, Bijectors.Scale(50.))
+
+    return fill(d, y_dim)
 end
 
 get_model() = GaussianProcess(;
@@ -167,18 +152,24 @@ function true_post(x)
     return pθ * ll
 end
 
-# TODO likelihood
-# function true_like(x)
-#     y = ToyProblem.simulation(x; noise_std=zeros(ToyProblem.y_dim))
-
-#     ll = pdf(MvNormal(y, ToyProblem.σe), ToyProblem.y_obs)
-#     return ll
-# end
 function true_like(x)
     y = ToyProblem.simulation(x; noise_std=zeros(ToyProblem.y_dim))
-
     ll = exp(y[1]) # proportional
     return ll
+end
+
+function get_eval_grid()
+    iter = Iterators.product(range(-16, 16; length=75), range(-16, 16; length=75))
+    xs = mapreduce(x -> [x...], hcat, iter)
+    
+    lb, ub = get_bounds()
+    domain_area = prod(ub .- lb)
+    
+    # sampling probability of each sample is `1 / domain_area`
+    # the weights should be inverse of the sampling probability
+    ws = fill(domain_area, size(xs, 2))
+
+    return xs, ws
 end
 
 end

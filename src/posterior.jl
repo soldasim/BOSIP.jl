@@ -72,7 +72,11 @@ end
 
 function approx_likelihood(::Type{<:UniFittedParams}, bolfi::BolfiProblem)
     gp_post = BOSS.model_posterior(bolfi.problem)
-    return approx_likelihood(bolfi.likelihood, bolfi, gp_post)
+    approx_like = approx_likelihood(bolfi.likelihood, bolfi, gp_post)
+
+    # TODO log
+    # return approx_like
+    return x -> exp(approx_like(x))
 end
 function approx_likelihood(::Type{<:MultiFittedParams}, bolfi::BolfiProblem)
     gp_posts = BOSS.model_posterior(bolfi.problem)
@@ -81,7 +85,9 @@ function approx_likelihood(::Type{<:MultiFittedParams}, bolfi::BolfiProblem)
     approx_likes = approx_likelihood.(Ref(bolfi.likelihood), Ref(bolfi), gp_posts)
     
     function exp_approx_like(x)
-        return mapreduce(l -> l(x), +, approx_likes) / sample_count
+        # TODO log
+        # return mapreduce(l -> l(x), +, approx_likes) / sample_count
+        return mapreduce(l -> exp(l(x)), +, approx_likes) / sample_count
     end
 end
 
@@ -156,7 +162,11 @@ end
 
 function likelihood_mean(::Type{<:UniFittedParams}, bolfi::BolfiProblem)
     gp_post = BOSS.model_posterior(bolfi.problem)
-    return likelihood_mean(bolfi.likelihood, bolfi, gp_post)
+    loglike = likelihood_mean(bolfi.likelihood, bolfi, gp_post)
+
+    # TODO log
+    # return loglike
+    return x -> exp(loglike(x))
 end
 function likelihood_mean(::Type{<:MultiFittedParams}, bolfi::BolfiProblem)
     gp_posts = BOSS.model_posterior(bolfi.problem)
@@ -165,7 +175,9 @@ function likelihood_mean(::Type{<:MultiFittedParams}, bolfi::BolfiProblem)
     like_means = likelihood_mean.(Ref(bolfi.likelihood), Ref(bolfi), gp_posts)
     
     function exp_like_mean(x)
-        return mapreduce(l -> l(x), +, like_means) / sample_count
+        # TODO log
+        # return mapreduce(l -> l(x), +, like_means) / sample_count
+        return mapreduce(l -> exp(l(x)), +, like_means) / sample_count
     end
 end
 
@@ -203,8 +215,21 @@ function posterior_variance(bolfi::BolfiProblem; normalize=false, xs=nothing, sa
     x_prior = bolfi.x_prior
 
     like_var = likelihood_variance(bolfi)
-    post_var(x) = (pdf(x_prior, x) ^ 2) * like_var(x)
 
+    opt = OptimizationAM(;
+        algorithm = BOBYQA(),
+        multistart = 24,
+        parallel = true,
+        static_schedule = true,
+        rhoend = 1e-4,
+    )
+    M = _opt_func(bolfi, FAcq(x -> 2 * logpdf(x_prior, x)), opt)
+    # M = 0.
+
+    # TODO log
+    # post_var(x) = (pdf(x_prior, x) ^ 2) * like_var(x)
+    post_var(x) = exp( 2 * logpdf(x_prior, x) - M + log(like_var(x)) )
+    
     if normalize
         post_mean = posterior_mean(bolfi)
         py = evidence(post_mean, x_prior; xs, samples)
@@ -243,8 +268,26 @@ function likelihood_variance(::Type{<:UniFittedParams}, bolfi::BolfiProblem)
     like_mean = likelihood_mean(bolfi.likelihood, bolfi, gp_post)
     sq_like_mean = sq_likelihood_mean(bolfi.likelihood, bolfi, gp_post)
 
+    opt = OptimizationAM(;
+        algorithm = BOBYQA(),
+        multistart = 24,
+        parallel = true,
+        static_schedule = true,
+        rhoend = 1e-4,
+    )
+    max_ll = _opt_func(bolfi, FAcq(x -> 2 * like_mean(x)), opt)
+    max_sq_ll = _opt_func(bolfi, FAcq(sq_like_mean), opt)
+    M = max(max_ll, max_sq_ll)
+    # M = 0.
+
+    # TODO log
+    # function like_var(x)
+    #     return sq_like_mean(x) - (like_mean(x) ^ 2)
+    # end
     function like_var(x)
-        return sq_like_mean(x) - (like_mean(x) ^ 2)
+        a = sq_like_mean(x) - M
+        b = (2 * like_mean(x)) - M
+        return exp(a) - exp(b)
     end
 end
 function likelihood_variance(::Type{<:MultiFittedParams}, bolfi::BolfiProblem)
@@ -255,8 +298,11 @@ function likelihood_variance(::Type{<:MultiFittedParams}, bolfi::BolfiProblem)
     sq_like_means = sq_likelihood_mean.(Ref(bolfi.likelihood), Ref(bolfi), gp_posts)
 
     function like_var(x)
-        exp_like = mapreduce(l -> l(x), +, like_means) / sample_count
-        exp_sq_like = mapreduce(l -> l(x), +, sq_like_means) / sample_count
+        # TODO log
+        # exp_like = mapreduce(l -> l(x), +, like_means) / sample_count
+        # exp_sq_like = mapreduce(l -> l(x), +, sq_like_means) / sample_count
+        exp_like = mapreduce(l -> exp(l(x)), +, like_means) / sample_count
+        exp_sq_like = mapreduce(l -> exp(l(x)), +, sq_like_means) / sample_count
         return exp_sq_like - (exp_like ^ 2)
     end
 end

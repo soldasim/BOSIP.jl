@@ -1,12 +1,4 @@
 
-function true_post(x)
-    y = ToyProblem.simulation(x; noise_std=zeros(ToyProblem.y_dim))
-
-    ll = pdf(MvNormal(y, ToyProblem.σe), ToyProblem.y_obs)
-    pθ = pdf(ToyProblem.get_x_prior(), x)
-    return pθ * ll
-end
-
 function normalize_values!(vals::AbstractArray{<:Real})
     min, max = minimum(vals), maximum(vals)
     vals .-= min

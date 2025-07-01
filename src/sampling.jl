@@ -16,7 +16,11 @@ using the specified `sampler`. Return a column-wise matrix of the drawn samples.
 function sample_approx_posterior(bolfi::BolfiProblem, sampler::DistributionSampler, count::Int;
     options::BolfiOptions = BolfiOptions(),    
 )
-    like = approx_likelihood(bolfi)
+    # TODO log
+    loglike = approx_likelihood(bolfi)
+    # like = loglike
+    like(x) = exp(loglike(x))
+
     return sample_posterior(sampler, like, bolfi.x_prior, count; options)
 end
 
@@ -37,7 +41,10 @@ using the specified `sampler`. Return a column-wise matrix of the drawn samples.
 function sample_expected_posterior(bolfi::BolfiProblem, sampler::DistributionSampler, count::Int;
     options::BolfiOptions = BolfiOptions(),    
 )
-    like = likelihood_mean(bolfi)
+    loglike = likelihood_mean(bolfi)
+    # TODO log
+    # like = loglike
+    like(x) = exp(loglike(x))
     return sample_posterior(sampler, like, bolfi.x_prior, count; options)
 end
 
