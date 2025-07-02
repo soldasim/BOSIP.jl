@@ -27,7 +27,7 @@ TuringExt = "Turing"
 
 [compat]
 BOSS = "0.3.4, 0.4.0"
-CairoMakie = "0.12.18, 0.13"
+CairoMakie = "0.12.18, 0.13, 0.14, 0.15"
 Distributions = "0.25.112"
 ForwardDiff = "0.10.38, 1"
 ImportanceSampling = "0.1.0"
