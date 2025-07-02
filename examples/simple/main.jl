@@ -12,23 +12,33 @@ include("makie/makie.jl")
 
 function main(;
     init_data = 3,
-    plots = true,
+    kwargs...
 )
     problem = ToyProblem.bolfi_problem(init_data)
+    return main(problem; kwargs...)
+end
 
+function main(problem;
+    plots = true,
+    parallel = true,
+)
+
+    ### algorithms
     model_fitter = OptimizationMAP(;
         algorithm = NEWUOA(),
         multistart = 200,
-        parallel = false, # issues with PRIMA.jl
+        parallel,
+        rhoend = 1e-4,
     )
     acq_maximizer = OptimizationAM(;
         algorithm = BOBYQA(),
         multistart = 200,
-        parallel = false, # issues with PRIMA.jl
+        parallel,
         rhoend = 1e-4,
     )
     term_cond = IterLimit(25)
 
+    ### plotting
     plt = MakiePlots.PlotCallback(;
         title = "",
         plot_each = 5,
@@ -42,10 +52,13 @@ function main(;
         callback = plots ? plt : NoCallback(),
     )
 
+    # RUN
     MakiePlots.init_plotting(plt)
     bolfi!(problem; model_fitter, acq_maximizer, term_cond, options)
-    plots && MakiePlots.plot_final(plt; model_fitter, acq_maximizer, term_cond, options)
     
+    # final plot
+    plots && MakiePlots.plot_state(problem, nothing; plt, iter=term_cond.iter_max)
+
     # MakiePlots.plot_param_slices(plt, problem; options, samples=2_000)
     return problem
 end

@@ -21,7 +21,7 @@ re-fitted in each iteration.
 @kwdef struct AMISSampler <: DistributionSampler
     iters::Int
     proposal_fitter::DistributionFitter = AnalyticalFitter()
-    gauss_mix_options::Union{Nothing, GaussMixOptions} = nothing
+    gauss_mix_options::GaussMixOptions
 end
 
 function sample_posterior(sampler::AMISSampler, post::Function, domain::Domain, count::Int;
@@ -35,15 +35,9 @@ function sample_posterior(sampler::AMISSampler, post::Function, domain::Domain, 
     logpost = x -> log(post(x))
 
     # Initialize the proposal distribution
-    if isnothing(sampler.gauss_mix_options)
-        μs = opt_for_modes(logpost, domain, opt)
-        q = NormalProposal(laplace_approx(logpost, μs[1]; ϵ=0.))
-        init_q = nothing
-    else
-        x_dim_ = x_dim(domain)
-        q = NormalProposal(MvNormal(zeros(x_dim_), ones(x_dim_)))
-        init_q = approx_by_gauss_mix(logpost, domain, sampler.gauss_mix_options)
-    end
+    x_dim_ = x_dim(domain)
+    q = NormalProposal(MvNormal(zeros(x_dim_), ones(x_dim_)))
+    init_q = approx_by_gauss_mix(logpost, domain, sampler.gauss_mix_options)
 
     options = ISOptions(;
         info = true,
