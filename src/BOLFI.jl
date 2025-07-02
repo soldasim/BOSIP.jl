@@ -17,6 +17,7 @@ export get_subset
 export approx_by_gauss_mix, GaussMixOptions
 
 export Likelihood
+export ExpLikelihood, SqExpLikelihood
 export GutmannNormalLikelihood, GutmannGaussianLikelihood
 export NormalLikelihood, GaussianLikelihood
 export LogNormalLikelihood, LogGaussianLikelihood
@@ -32,8 +33,9 @@ export TuringSampler
 export RejectionSampler, LikelihoodMaximizer
 export AMISSampler
 
-export DistributionMetric
+export DistributionMetric, SampleMetric, PDFMetric
 export MMDMetric
+export TVMetric
 
 using BOSS
 using Distributions
