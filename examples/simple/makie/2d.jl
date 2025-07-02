@@ -122,7 +122,8 @@ function plot_posterior_samples!(ax, post, samples, bolfi)
                 algorithm = BOBYQA(),
             ),
         )
-        xs = BOLFI.sample_posterior(sampler, post, bolfi.problem.domain, 1000)
+        xs, ws = BOLFI.sample_posterior(sampler, post, bolfi.problem.domain, 10_000)
+        xs = resample(xs, ws, 1000)
     else
         xs = samples
     end

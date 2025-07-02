@@ -9,7 +9,7 @@ export approx_posterior, posterior_mean, posterior_variance
 export approx_likelihood, likelihood_mean, likelihood_variance
 export evidence
 export loglike
-export sample_approx_posterior, sample_expected_posterior, sample_posterior
+export sample_approx_posterior, sample_expected_posterior, sample_posterior, resample
 export calculate_metric
 export plot_marginals_int, plot_marginals_kde, PlotSettings
 export find_cutoff, approx_cutoff_area, set_iou
@@ -28,10 +28,11 @@ export BolfiTermCond, AEConfidence, UBLBConfidence
 export BolfiCallback, CombinedCallback, NoCallback
 export BolfiOptions
 
-export DistributionSampler
 export TuringSampler
 export RejectionSampler, LikelihoodMaximizer
 export AMISSampler
+export ProposalDistribution, NormalProposal
+export DistributionFitter, AnalyticalFitter, OptimizationFitter
 
 export DistributionMetric, SampleMetric, PDFMetric
 export MMDMetric
@@ -46,10 +47,12 @@ using Statistics
 using Optimization
 using ProgressMeter
 using ForwardDiff
-using ImportanceSampling
 
 using StatsFuns         # used in GutmannNormalLikelihood
 using SpecialFunctions  # used in utils/owent.jl: erfc
+
+import BOSS.x_dim
+import BOSS.y_dim
 
 include("include.jl")
 

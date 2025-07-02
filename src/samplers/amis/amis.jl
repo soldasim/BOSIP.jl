@@ -1,4 +1,13 @@
 
+include("proposal_distributions/abstract_distribution.jl")
+include("proposal_distributions/normal.jl")
+
+include("distribution_fitters/abstract_fitter.jl")
+include("distribution_fitters/analytical.jl")
+include("distribution_fitters/optimization.jl")
+
+include("amis_method.jl")
+
 """
     AMIS(; kwargs...)
 
@@ -39,23 +48,12 @@ function sample_posterior(sampler::AMISSampler, post::Function, domain::Domain, 
     q = NormalProposal(MvNormal(zeros(x_dim_), ones(x_dim_)))
     init_q = approx_by_gauss_mix(logpost, domain, sampler.gauss_mix_options)
 
-    options = ISOptions(;
-        info = true,
-        debug = false,
-    )
-
     amis = AMIS(;
         T = iters,
         N = samples_per_iter,
         init_q,
     )
-    # TODO
-    # xs, ws = amis(logpost, q, sampler.proposal_fitter; options)
-    xs, ws, qs = amis(logpost, q, sampler.proposal_fitter; options)
-
-    # TODO
-    xs_ = resample(xs[:,amis.N+1:end], ws[amis.N+1:end], count)
-    return xs_
-    # xs_ = resample(xs, ws, count)
-    # return xs_
+    xs, ws = amis(logpost, q, sampler.proposal_fitter; options)
+   
+    return xs, ws
 end

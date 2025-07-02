@@ -86,5 +86,5 @@ function BolfiProblem(data::ExperimentData;
     return bolfi
 end
 
-BOSS.x_dim(bolfi::BolfiProblem) = BOSS.x_dim(bolfi.problem)
-BOSS.y_dim(bolfi::BolfiProblem) = BOSS.y_dim(bolfi.problem)
+x_dim(bolfi::BolfiProblem) = x_dim(bolfi.problem)
+y_dim(bolfi::BolfiProblem) = y_dim(bolfi.problem)
