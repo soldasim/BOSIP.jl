@@ -233,7 +233,7 @@ uuid = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
 version = "0.4.7"
 
 [[deps.BOLFI]]
-deps = ["BOSS", "Distributions", "ForwardDiff", "ImportanceSampling", "KernelFunctions", "LinearAlgebra", "Optimization", "ProgressMeter", "Random", "SpecialFunctions", "Statistics", "StatsFuns"]
+deps = ["BOSS", "Distributions", "ForwardDiff", "KernelFunctions", "LinearAlgebra", "Optimization", "ProgressMeter", "Random", "SpecialFunctions", "Statistics", "StatsFuns"]
 path = ".."
 uuid = "631834c2-07fe-4b6b-876a-15b6a4e37445"
 version = "0.3.0"
@@ -1097,14 +1097,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl"]
 git-tree-sha1 = "0936ba688c6d201805a83da835b55c61a180db52"
 uuid = "905a6f67-0a94-5f89-b386-d35d92009cd1"
 version = "3.1.11+0"
-
-[[deps.ImportanceSampling]]
-deps = ["Distributions", "LinearAlgebra", "Optimization", "ProgressMeter"]
-git-tree-sha1 = "211c37731efb98aeb696e3f5ee210f8ce56e70ab"
-repo-rev = "experimental"
-repo-url = "https://github.com/soldasim/ImportanceSampling.jl"
-uuid = "4f2d446e-6089-4924-a007-48554a167aee"
-version = "0.1.0"
 
 [[deps.IndirectArrays]]
 git-tree-sha1 = "012e604e1c7458645cb8b436f8fba789a51b257f"

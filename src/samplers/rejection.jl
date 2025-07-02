@@ -94,7 +94,8 @@ function sample_posterior_rej(prior, likelihood, max_like, count)
     end
 
     @info "Rejection rate: $(rejected / (drawn + rejected))"
-    return xs
+    ws = fill(1 / size(xs, 2), size(xs, 2))
+    return xs, ws
 end
 
 # function _max_like(like::NormalLikelihood, bolfi)

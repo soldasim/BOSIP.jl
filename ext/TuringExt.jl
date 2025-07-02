@@ -69,7 +69,8 @@ function _sample_posterior_turing(model, sampler::TuringSampler, count::Int)
     keep = randperm(size(samples, 2))[1:count]
     samples = samples[:, keep]
 
-    return samples
+    ws = fill(1 / size(samples, 2), size(samples, 2))
+    return samples, ws
 end
 
 end # module TuringExt
