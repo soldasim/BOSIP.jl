@@ -5,6 +5,7 @@ version = "0.3.0"
 
 [deps]
 BOSS = "15052f3f-a82a-4ca3-bbc4-f478a3bd1ae2"
+Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 KernelFunctions = "ec8451be-7e33-11e9-00cf-bbf324bd1392"
@@ -27,6 +28,7 @@ TuringExt = "Turing"
 [compat]
 BOSS = "0.3.4, 0.4.0"
 CairoMakie = "0.12.18, 0.13, 0.14, 0.15"
+Distributed = "1.11.0"
 Distributions = "0.25.112"
 ForwardDiff = "0.10.38, 1"
 KernelFunctions = "0.10.64"

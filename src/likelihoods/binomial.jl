@@ -40,7 +40,7 @@ function approx_likelihood(like::BinomialLikelihood, bolfi, gp_post)
     y_obs = like.y_obs
     trials = like.trials
 
-    function approx_like(x)
+    function approx_like(x::AbstractVector{<:Real})
         μ_ps, _ = gp_post(x)
         ps = clamp.(μ_ps, Ref(0.), Ref(1.))
         return logpdf.(Binomial.(trials, ps), y_obs) |> sum |> exp
@@ -54,7 +54,7 @@ function likelihood_mean(like::BinomialLikelihood, bolfi, gp_post)
     ϵs = rand(Uniform(0, 1), like.int_grid_size)
 
     # TODO refactor
-    function like_mean(x)
+    function like_mean(x::AbstractVector{<:Real})
         ps_dists = truncated.(Normal.(gp_post(x)...); lower=0., upper=1.)
         
         ll = 0.
@@ -74,7 +74,7 @@ function sq_likelihood_mean(like::BinomialLikelihood, bolfi, gp_post)
     ϵs = rand(Uniform(0, 1), like.int_grid_size)
 
     # TODO refactor
-    function like_mean(x)
+    function like_mean(x::AbstractVector{<:Real})
         ps_dists = truncated.(Normal.(gp_post(x)...); lower=0., upper=1.)
         
         ll = 0.

@@ -31,38 +31,74 @@ function loglike(like::NormalLikelihood, z::AbstractVector{<:Real})
     return logpdf(MvNormal(z, like.std_obs), like.y_obs)
 end
 
-function approx_likelihood(like::NormalLikelihood, bolfi, gp_post)
+function approx_likelihood(like::NormalLikelihood, bolfi, model_post)
     y_obs = like.y_obs
     std_obs = _std_obs(like, bolfi)
 
-    function approx_like(x)
-        μ_z, _ = gp_post(x)
+    function approx_like(x::AbstractVector{<:Real})
+        μ_z = mean(model_post, x)
+        
         return pdf(MvNormal(μ_z, std_obs), y_obs)
     end
+    function approx_like(X::AbstractMatrix{<:Real})
+        μs_z = mean(model_post, X)
+        
+        # return pdf.(MvNormal.(eachrow(μs_z), Ref(Diagonal(std_obs))), Ref(y_obs))
+        σ_mat = repeat(std_obs', size(μs_z, 1))
+        y_mat = repeat(y_obs', size(μs_z, 1))
+        ll_mat = ((μ, σ, y) -> logpdf(Normal(μ, σ), y)).(μs_z, σ_mat, y_mat)
+        return exp.(sum(ll_mat; dims=2))
+    end
+    return approx_like
 end
 
-function likelihood_mean(like::NormalLikelihood, bolfi, gp_post)
+function likelihood_mean(like::NormalLikelihood, bolfi, model_post)
     y_obs = like.y_obs
     std_obs = _std_obs(like, bolfi)
 
-    function like_mean(x)
-        μ_z, std_z = gp_post(x)
+    function like_mean(x::AbstractVector{<:Real})
+        μ_z, std_z = mean_and_std(model_post, x)
+        
         std = sqrt.(std_obs.^2 .+ std_z.^2)
         return pdf(MvNormal(μ_z, std), y_obs)
     end
+    function like_mean(X::AbstractMatrix{<:Real})
+        μs_z, stds_z = mean_and_std(model_post, X)
+        
+        # return pdf.(MvNormal.(eachrow(μs_z), eachrow(stds_z)), Ref(y_obs))
+        std_obs_mat = repeat(std_obs', size(stds_z, 1))
+        std_mat = sqrt.(std_obs_mat.^2 .+ stds_z.^2)
+        y_mat = repeat(y_obs', size(μs_z, 1))
+        lls = ((μ, std, y) -> logpdf(Normal(μ, std), y)).(μs_z, std_mat, y_mat)
+        return exp.(sum(lls; dims=2))
+    end
+    return like_mean
 end
 
-function sq_likelihood_mean(like::NormalLikelihood, bolfi, gp_post)
+function sq_likelihood_mean(like::NormalLikelihood, bolfi, model_post)
     y_obs = like.y_obs
     std_obs = _std_obs(like, bolfi)
 
-    function sq_like_mean(x)
-        μ_z, std_z = gp_post(x)
+    function sq_like_mean(x::AbstractVector{<:Real})
+        μ_z, std_z = mean_and_std(model_post, x)
+        
         std = sqrt.((std_obs.^2 .+ (2 .* std_z.^2)) ./ 2)
         # C = 1 / prod(2 * sqrt(π) .* std_obs)
         C = exp((-1) * sum(log.(2 * sqrt(π) .* std_obs)))
         return C * pdf(MvNormal(μ_z, std), y_obs)
     end
+    function sq_like_mean(X::AbstractMatrix{<:Real})
+        μs_z, stds_z = mean_and_std(model_post, X)
+
+        std_obs_mat = repeat(std_obs', size(stds_z, 1))
+        std_mat = sqrt.((std_obs_mat.^2 .+ (2 .* stds_z.^2)) ./ 2)
+        y_mat = repeat(y_obs', size(μs_z, 1))
+        lls = ((μ, std, y) -> logpdf(Normal(μ, std), y)).(μs_z, std_mat, y_mat)
+        # C = 1 / prod(2 * sqrt(π) .* std_obs)
+        C = exp((-1) * sum(log.(2 * sqrt(π) .* std_obs)))
+        return C .* exp.(sum(lls; dims=2))
+    end
+    return sq_like_mean
 end
 
 function _std_obs(like::NormalLikelihood{Nothing}, bolfi)
