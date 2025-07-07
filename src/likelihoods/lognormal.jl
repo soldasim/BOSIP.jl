@@ -38,7 +38,7 @@ function approx_likelihood(like::LogNormalLikelihood, bolfi, gp_post)
     y_obs = like.y_obs
     std_obs = _std_obs(like, bolfi)
 
-    function approx_like(x)
+    function approx_like(x::AbstractVector{<:Real})
         μ_z, _ = gp_post(x)
         return pdf(MvLogNormal(μ_z, std_obs), y_obs)
     end
@@ -49,7 +49,7 @@ function likelihood_mean(like::LogNormalLikelihood, bolfi, gp_post)
     y_obs = like.y_obs
     std_obs = _std_obs(like, bolfi)
 
-    function like_mean(x)
+    function like_mean(x::AbstractVector{<:Real})
         μ_z, std_z = gp_post(x)
         std = sqrt.(std_obs.^2 .+ std_z.^2)
         return pdf(MvLogNormal(μ_z, std), y_obs)
@@ -61,7 +61,7 @@ function sq_likelihood_mean(like::LogNormalLikelihood, bolfi, gp_post)
     y_obs = like.y_obs
     std_obs = _std_obs(like, bolfi)
 
-    function sq_like_mean(x)
+    function sq_like_mean(x::AbstractVector{<:Real})
         μ_z, std_z = gp_post(x)
         std = sqrt.((std_obs.^2 .+ (2 .* std_z.^2)) ./ 2)
         # C = 1 / prod(2 * sqrt(π) .* std_obs .* y_obs)

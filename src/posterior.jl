@@ -36,7 +36,7 @@ function approx_posterior(bolfi::BolfiProblem; normalize=false, xs=nothing, samp
     x_prior = bolfi.x_prior
 
     approx_like = approx_likelihood(bolfi)
-    approx_post(x) = pdf(x_prior, x) * approx_like(x)
+    approx_post(x) = _prior(x_prior, x) .* approx_like(x)
 
     if normalize
         py = evidence(approx_post, x_prior; xs, samples)
@@ -71,14 +71,14 @@ function approx_likelihood(bolfi::BolfiProblem)
 end
 
 function approx_likelihood(::Type{<:UniFittedParams}, bolfi::BolfiProblem)
-    gp_post = BOSS.model_posterior(bolfi.problem)
-    return approx_likelihood(bolfi.likelihood, bolfi, gp_post)
+    model_post = BOSS.model_posterior(bolfi.problem)
+    return approx_likelihood(bolfi.likelihood, bolfi, model_post)
 end
 function approx_likelihood(::Type{<:MultiFittedParams}, bolfi::BolfiProblem)
-    gp_posts = BOSS.model_posterior(bolfi.problem)
-    sample_count = length(gp_posts)
+    model_posts = BOSS.model_posterior(bolfi.problem)
+    sample_count = length(model_posts)
     
-    approx_likes = approx_likelihood.(Ref(bolfi.likelihood), Ref(bolfi), gp_posts)
+    approx_likes = approx_likelihood.(Ref(bolfi.likelihood), Ref(bolfi), model_posts)
     
     function exp_approx_like(x)
         return mapreduce(l -> l(x), +, approx_likes) / sample_count
@@ -121,7 +121,7 @@ function posterior_mean(bolfi::BolfiProblem; normalize=false, xs=nothing, sample
     x_prior = bolfi.x_prior
 
     like_mean = likelihood_mean(bolfi)
-    post_mean(x) = pdf(x_prior, x) * like_mean(x)
+    post_mean(x) = _prior(x_prior, x) .* like_mean(x)
 
     if normalize
         py = evidence(post_mean, x_prior; xs, samples)
@@ -155,14 +155,14 @@ function likelihood_mean(bolfi::BolfiProblem)
 end
 
 function likelihood_mean(::Type{<:UniFittedParams}, bolfi::BolfiProblem)
-    gp_post = BOSS.model_posterior(bolfi.problem)
-    return likelihood_mean(bolfi.likelihood, bolfi, gp_post)
+    model_post = BOSS.model_posterior(bolfi.problem)
+    return likelihood_mean(bolfi.likelihood, bolfi, model_post)
 end
 function likelihood_mean(::Type{<:MultiFittedParams}, bolfi::BolfiProblem)
-    gp_posts = BOSS.model_posterior(bolfi.problem)
-    sample_count = length(gp_posts)
+    model_posts = BOSS.model_posterior(bolfi.problem)
+    sample_count = length(model_posts)
     
-    like_means = likelihood_mean.(Ref(bolfi.likelihood), Ref(bolfi), gp_posts)
+    like_means = likelihood_mean.(Ref(bolfi.likelihood), Ref(bolfi), model_posts)
     
     function exp_like_mean(x)
         return mapreduce(l -> l(x), +, like_means) / sample_count
@@ -203,7 +203,7 @@ function posterior_variance(bolfi::BolfiProblem; normalize=false, xs=nothing, sa
     x_prior = bolfi.x_prior
 
     like_var = likelihood_variance(bolfi)
-    post_var(x) = (pdf(x_prior, x) ^ 2) * like_var(x)
+    post_var(x) = (_prior(x_prior, x) .^ 2) .* like_var(x)
 
     if normalize
         post_mean = posterior_mean(bolfi)
@@ -238,21 +238,21 @@ function likelihood_variance(bolfi::BolfiProblem)
 end
 
 function likelihood_variance(::Type{<:UniFittedParams}, bolfi::BolfiProblem)
-    gp_post = BOSS.model_posterior(bolfi.problem)
+    model_post = BOSS.model_posterior(bolfi.problem)
     
-    like_mean = likelihood_mean(bolfi.likelihood, bolfi, gp_post)
-    sq_like_mean = sq_likelihood_mean(bolfi.likelihood, bolfi, gp_post)
+    like_mean = likelihood_mean(bolfi.likelihood, bolfi, model_post)
+    sq_like_mean = sq_likelihood_mean(bolfi.likelihood, bolfi, model_post)
 
     function like_var(x)
-        return sq_like_mean(x) - (like_mean(x) ^ 2)
+        return sq_like_mean(x) - (like_mean(x) .^ 2)
     end
 end
 function likelihood_variance(::Type{<:MultiFittedParams}, bolfi::BolfiProblem)
-    gp_posts = BOSS.model_posterior(bolfi.problem)
-    sample_count = length(gp_posts)
+    model_posts = BOSS.model_posterior(bolfi.problem)
+    sample_count = length(model_posts)
     
-    like_means = likelihood_mean.(Ref(bolfi.likelihood), Ref(bolfi), gp_posts)
-    sq_like_means = sq_likelihood_mean.(Ref(bolfi.likelihood), Ref(bolfi), gp_posts)
+    like_means = likelihood_mean.(Ref(bolfi.likelihood), Ref(bolfi), model_posts)
+    sq_like_means = sq_likelihood_mean.(Ref(bolfi.likelihood), Ref(bolfi), model_posts)
 
     function like_var(x)
         exp_like = mapreduce(l -> l(x), +, like_means) / sample_count
@@ -260,6 +260,9 @@ function likelihood_variance(::Type{<:MultiFittedParams}, bolfi::BolfiProblem)
         return exp_sq_like - (exp_like ^ 2)
     end
 end
+
+_prior(x_prior::MultivariateDistribution, x::AbstractVector{<:Real}) = pdf(x_prior, x)
+_prior(x_prior::MultivariateDistribution, X::AbstractMatrix{<:Real}) = pdf.(Ref(x_prior), eachcol(X))
 
 """
     evidence(post, x_prior; kwargs...)

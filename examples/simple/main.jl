@@ -36,12 +36,12 @@ function main(problem;
         parallel,
         rhoend = 1e-4,
     )
-    term_cond = IterLimit(25)
+    term_cond = IterLimit(50)
 
     ### plotting
     plt = MakiePlots.PlotCallback(;
         title = "",
-        plot_each = 5,
+        plot_each = 10,
         display = true,
         save_plots = true,
         plot_dir = "./examples/simple/plots/_new_",
@@ -49,7 +49,7 @@ function main(problem;
         step = 0.05,
     )
     options = BolfiOptions(;
-        callback = plots ? plt : NoCallback(),
+        callback = plots ? plt : BOSS.NoCallback(),
     )
 
     # RUN
@@ -58,6 +58,9 @@ function main(problem;
     
     # final plot
     plots && MakiePlots.plot_state(problem, nothing; plt, iter=term_cond.iter_max)
+
+    # marginals
+    plot_marginals_int(problem; func=posterior_mean, lhc_grid_size=20)
 
     # MakiePlots.plot_param_slices(plt, problem; options, samples=2_000)
     return problem

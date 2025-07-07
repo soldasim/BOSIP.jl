@@ -32,7 +32,7 @@ function plot_state_1d(bolfi, new_datum; plt, kwargs...)
     ax = Axis(f[2,1];
         title = "abs. val. of GP mean",
     )
-    plot_func_1d!(ax, x -> abs(gp_post([x])[1][1]), bolfi, new_datum; plt)
+    plot_func_1d!(ax, x -> abs(mean(gp_post, [x])[1]), bolfi, new_datum; plt)
     plot_data_1d!(ax, bolfi, new_datum; plt)
     # axislegend(ax; position = :rt)
 

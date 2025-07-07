@@ -51,7 +51,7 @@ function plot_state_2d(bolfi, new_datum;
     # ax = Axis(f[2,1];
     #     title = "abs. val. of GP mean",
     # )
-    # plot_func_2d!(ax, (x,y) -> abs(gp_post([x,y])[1][1]), bolfi, new_datum; plt)
+    # plot_func_2d!(ax, (x,y) -> abs(mean(gp_post, [x,y])[1]), bolfi, new_datum; plt)
     # plot_data_2d!(ax, bolfi, new_datum; plt)
     # # axislegend(ax; position = :rt)
 

@@ -46,6 +46,9 @@ Also provides an option to plot "marginals" of different functions by using the 
 - `plot_settings::PlotSettings`: Settings for the plotting.
 - `info::Bool`: Set to `false` to disable prints.
 - `display::Bool`: Set to `false` to not display the figure. It is still returned.
+- `matrix_ops::Bool`: Set to `false` to disable the use of matrix operations
+        for plotting the marginals is they are not supported for the given `func`.
+        Disabling matrix operations can significantly hinder performance.
 """
 function plot_marginals_int end
 

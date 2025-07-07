@@ -55,7 +55,7 @@ function approx_likelihood(like::GutmannNormalLikelihood, bolfi, gp_post)
     ϵ = like.ϵ
     std_δ = like.std_δ
 
-    function approx_like(x)
+    function approx_like(x::AbstractVector{<:Real})
         μ_z, std_z = gp_post(x) .|> first
         z_stat = (ϵ - μ_z) / std_δ
         return normcdf(z_stat)
@@ -70,7 +70,7 @@ function likelihood_mean(like::GutmannNormalLikelihood, bolfi, gp_post)
     ϵ = like.ϵ
     std_δ = like.std_δ
 
-    function like_mean(x)
+    function like_mean(x::AbstractVector{<:Real})
         μ_z, std_z = gp_post(x) .|> first
         z_stat = (ϵ - μ_z) / sqrt(std_z^2 + std_δ^2)
         return normcdf(z_stat)
@@ -89,7 +89,7 @@ function sq_likelihood_mean(like::GutmannNormalLikelihood, bolfi, gp_post)
 
     # taken from the equation (34) in the appendix of the Jarvenpaa's
     # "Efficient Acquisition Rules..." paper
-    function sq_like_mean(x)
+    function sq_like_mean(x::AbstractVector{<:Real})
         μ_z, std_z = gp_post(x) .|> first
         z_stat = (ϵ - μ_z) / sqrt(std_z^2 + std_δ^2)
         ρ = std_z^2 / (std_δ^2 + std_z^2)

@@ -37,6 +37,7 @@ function BOLFI.plot_marginals_int(bolfi::BolfiProblem;
     plot_settings = PlotSettings(),
     info = true,
     display = true,
+    matrix_ops = true,
 )
     info && @info "Generating a latin hypercube of parameter samples ..."
     xs = BOSS.generate_LHC(bolfi.problem.domain.bounds, lhc_grid_size)
@@ -45,7 +46,7 @@ function BOLFI.plot_marginals_int(bolfi::BolfiProblem;
     xs = xs[:, keep]
 
     info && @info "Plotting the marginals ..."
-    return plot_marginals_int(bolfi, xs; func, normalize, plot_settings, display)
+    return plot_marginals_int(bolfi, xs; func, normalize, plot_settings, display, matrix_ops)
 end
 
 function BOLFI.plot_marginals_kde(bolfi::BolfiProblem;
@@ -69,6 +70,7 @@ function plot_marginals_int(bolfi::BolfiProblem, grid::AbstractMatrix{<:Real};
     normalize,
     plot_settings,
     display,
+    matrix_ops,
     kwargs...
 )
     x_dim = BOLFI.x_dim(bolfi)
@@ -76,7 +78,7 @@ function plot_marginals_int(bolfi::BolfiProblem, grid::AbstractMatrix{<:Real};
     bounds = bolfi.problem.domain.bounds
     f = func(bolfi)
     X = bolfi.problem.data.X
-    
+
     grid_size = plot_settings.grid_size
     steps = plot_steps(grid_size, bounds)
 
@@ -91,15 +93,22 @@ function plot_marginals_int(bolfi::BolfiProblem, grid::AbstractMatrix{<:Real};
     tmp_row_b = zeros(count)
 
     # single parameter marginals (diagonal)
-    for dim in 1:x_dim
+    dims = 1:x_dim
+
+    for dim in dims
         tmp_row_a .= grid[dim,:]
 
-        xs = range(bounds[1][dim], bounds[2][dim]; length=grid_size) |> collect
+        xs = range(bounds[1][dim], bounds[2][dim]; length=grid_size)
         ys = zeros(length(xs))
         
-        for i in eachindex(xs)
-            grid[dim,:] .= xs[i]
-            ys[i] = mean(f.(eachcol(grid)))
+        for (i, x_) in enumerate(xs)
+            grid[dim,:] .= x_
+
+            if matrix_ops
+                ys[i] = mean(f(grid))
+            else
+                ys[i] = mean(f.(eachcol(grid)))
+            end
         end
         normalize && normalize_prob_vals!(ys, steps[dim])
 
@@ -113,40 +122,44 @@ function plot_marginals_int(bolfi::BolfiProblem, grid::AbstractMatrix{<:Real};
     end
 
     # pair marginals
-    for dim_a in 1:x_dim
-        for dim_b in dim_a+1:x_dim
-            tmp_row_a .= grid[dim_a,:]
-            tmp_row_b .= grid[dim_b,:]
+    pairs = [(dim_a, dim_b) for dim_a in 1:x_dim for dim_b in dim_a+1:x_dim]
 
-            xs_a = range(bounds[1][dim_a], bounds[2][dim_a]; length=grid_size)
-            xs_b = range(bounds[1][dim_b], bounds[2][dim_b]; length=grid_size)
-            xs = Iterators.product(xs_a, xs_b) |> collect
-            ys = zeros(size(xs))
-            
-            for i in eachindex(xs)
-                x_ = xs[i]
-                grid[dim_a,:] .= x_[1]
-                grid[dim_b,:] .= x_[2]
+    for (dim_a, dim_b) in pairs
+        tmp_row_a .= grid[dim_a,:]
+        tmp_row_b .= grid[dim_b,:]
+
+        xs_a = range(bounds[1][dim_a], bounds[2][dim_a]; length=grid_size)
+        xs_b = range(bounds[1][dim_b], bounds[2][dim_b]; length=grid_size)
+        xs = Iterators.product(xs_a, xs_b)
+        ys = zeros(size(xs))
+        
+        for (i, x_) in enumerate(xs)
+            grid[dim_a,:] .= x_[1]
+            grid[dim_b,:] .= x_[2]
+
+            if matrix_ops
+                ys[i] = mean(f(grid))
+            else
                 ys[i] = mean(f.(eachcol(grid)))
             end
-            normalize && normalize_prob_vals!(ys, steps[dim_a], steps[dim_b])
+        end
+        normalize && normalize_prob_vals!(ys, steps[dim_a], steps[dim_b])
 
-            ax = Axis(fig[dim_b, dim_a]; xlabel=labels[dim_a], ylabel=labels[dim_b])
-            contourf!(ax, xs_a, xs_b, ys)
-            plot_settings.plot_data && scatter!(ax, X[dim_a,:], X[dim_b,:];
+        ax = Axis(fig[dim_b, dim_a]; xlabel=labels[dim_a], ylabel=labels[dim_b])
+        contourf!(ax, xs_a, xs_b, ys)
+        plot_settings.plot_data && scatter!(ax, X[dim_a,:], X[dim_b,:];
+            DATA_SCATTER_KWARGS...
+        )
+        if plot_settings.full_matrix
+            ax_t = Axis(fig[dim_a, dim_b]; xlabel=labels[dim_b], ylabel=labels[dim_a])
+            contourf!(ax_t, xs_b, xs_a, ys')
+            plot_settings.plot_data && scatter!(ax_t, X[dim_b,:], X[dim_a,:];
                 DATA_SCATTER_KWARGS...
             )
-            if plot_settings.full_matrix
-                ax_t = Axis(fig[dim_a, dim_b]; xlabel=labels[dim_b], ylabel=labels[dim_a])
-                contourf!(ax_t, xs_b, xs_a, ys')
-                plot_settings.plot_data && scatter!(ax_t, X[dim_b,:], X[dim_a,:];
-                    DATA_SCATTER_KWARGS...
-                )
-            end
-
-            grid[dim_a,:] .= tmp_row_a
-            grid[dim_b,:] .= tmp_row_b
         end
+
+        grid[dim_a,:] .= tmp_row_a
+        grid[dim_b,:] .= tmp_row_b
     end
 
     display && CairoMakie.display(fig)
