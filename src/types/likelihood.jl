@@ -4,13 +4,24 @@ Represents the assumed likelihood of the experiment observation ``y_o``.
 
 # Defining a Custom Likelihood
 
-To define a custom likelihood, create a new struct `CustomLike <: Likelihood` and implement the following methods;
+To define a custom likelihood, create a new subtype of `Likelihood`
+and implement the following API;
 
-- `loglike(::CustomLike, z::AbstractVector{<:Real})` where `z` is the simulator output
-- `approx_likelihood(::CustomLike, bolfi, gp_post)`: Necessary to be able to use `approx_posterior`.
-- `likelihood_mean(::CustomLike, bolfi, gp_post)`: Necessary to be able to use `posterior_mean`.
-- `sq_likelihood_mean(::CustomLike, bolfi, gp_post)`: Necessary to be able to use `posterior_variance`.
-- `get_subset(::CustomLike, y_set::AsbtractVector{<:Bool})`: Necessary for `BolfiProblem`s where `!isnothing(problem.y_sets)`.
+Each subtype of `Likelihood` *should* implement:
+- `loglike(::Likelihood, z::AbstractVector{<:Real})` where `z` is the simulator output
+- `log_approx_likelihood(::Likelihood, ::BolfiProblem, ::ModelPosterior)`
+- `log_likelihood_mean(::Likelihood, ::BolfiProblem, ::ModelPosterior)`
+
+Each subtype of `Likelihood` *should* implement *at least one* of:
+- `log_sq_likelihood_mean(::Likelihood, ::BolfiProblem, ::ModelPosterior)`
+- `log_likelihood_variance(::Likelihood, ::BolfiProblem, ::ModelPosterior)`
+
+Additionally, the following method is also necessary to implement
+if `BolfiProblem` where `!isnothing(problem.y_sets)` is used:
+- `get_subset(::Likelihood, y_set::AsbtractVector{<:Bool})`:
+
+The following additional methods are provided by default and *need not be implemented*:
+- `like(::Likelihood, z::AbstractVector{<:Real})`
 """
 abstract type Likelihood end
 
@@ -31,27 +42,36 @@ function like(l::Likelihood, z::AbstractVector{<:Real})
 end
 
 """
-    approx_likelihood(::Likelihood, bolfi, gp_post)
+    log_approx_likelihood(::Likelihood, ::BolfiProblem, ::ModelPosterior)
 
-Returns a function mapping ``x`` to ``\\hat{p}(y_o|x)``.
+Returns a function mapping ``x`` to ``log \\hat{p}(y_o|x)``.
 """
-function approx_likelihood end
-
-"""
-    likelihood_mean(::Likelihood, bolfi, gp_post)
-
-Returns a function mapping ``x`` to ``\\mathbb{E}[ \\hat{p}(y_o|x) | GP ]``.
-"""
-function likelihood_mean end
+function log_approx_likelihood end
 
 """
-    sq_likelihood_mean(::Likelihood, bolfi, gp_post)
+    log_likelihood_mean(::Likelihood, ::BolfiProblem, ::ModelPosterior)
 
-Returns a function mapping ``x`` to ``\\mathbb{E}[ \\hat{p}(y_o|x)^2 | GP ]``.
+Returns a function mapping ``x`` to ``log \\mathbb{E}[ \\hat{p}(y_o|x) | GP ]``.
 """
-function sq_likelihood_mean end
+function log_likelihood_mean end
 
 """
-    like_ = get_subset(like::Likelihood, y_set::AbstractVector{<:Bool})
+    log_sq_likelihood_mean(::Likelihood, ::BolfiProblem, ::ModelPosterior)
+
+Returns a function mapping ``x`` to ``log \\mathbb{E}[ \\hat{p}(y_o|x)^2 | GP ]``.
+"""
+function log_sq_likelihood_mean end
+
+"""
+    log_likelihood_variance(::Likelihood, ::BolfiProblem, ::ModelPosterior)
+
+Return a function mapping ``x`` to ``log \\mathbb{V}[ \\hat{p}(y_o|x) | GP ]``.
+"""
+function log_likelihood_variance end
+
+"""
+    get_subset(::Likelihood, y_set::AbstractVector{<:Bool}) -> ::Likelihood
+
+Construct the likelihood of the observation dimensions specified by `y_set`.
 """
 function get_subset end

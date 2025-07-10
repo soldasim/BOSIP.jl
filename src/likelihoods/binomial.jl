@@ -36,26 +36,26 @@ function loglike(like::BinomialLikelihood, z::AbstractVector{<:Real})
     return mapreduce((t, z, y) -> logpdf(Binomial(t, z), y), +, like.trials, z, like.y_obs)
 end
 
-function approx_likelihood(like::BinomialLikelihood, bolfi, gp_post)
+function log_approx_likelihood(like::BinomialLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
     y_obs = like.y_obs
     trials = like.trials
 
-    function approx_like(x::AbstractVector{<:Real})
-        μ_ps, _ = gp_post(x)
+    function log_approx_like(x::AbstractVector{<:Real})
+        μ_ps = mean(model_post, x)
         ps = clamp.(μ_ps, Ref(0.), Ref(1.))
-        return logpdf.(Binomial.(trials, ps), y_obs) |> sum |> exp
+        return logpdf.(Binomial.(trials, ps), y_obs) |> sum
     end
 end
 
-function likelihood_mean(like::BinomialLikelihood, bolfi, gp_post)
+function log_likelihood_mean(like::BinomialLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
     y_obs = like.y_obs
     trials = like.trials
 
     ϵs = rand(Uniform(0, 1), like.int_grid_size)
 
     # TODO refactor
-    function like_mean(x::AbstractVector{<:Real})
-        ps_dists = truncated.(Normal.(gp_post(x)...); lower=0., upper=1.)
+    function log_like_mean(x::AbstractVector{<:Real})
+        ps_dists = truncated.(Normal.(mean_and_std(model_post, x)...); lower=0., upper=1.)
         
         ll = 0.
         for i in eachindex(y_obs)
@@ -63,19 +63,19 @@ function likelihood_mean(like::BinomialLikelihood, bolfi, gp_post)
             vals = pdf.(Binomial.(Ref(trials[i]), zs), Ref(y_obs[i]))
             ll += log(mean(vals))
         end
-        return exp(ll)
+        return ll
     end
 end
 
-function sq_likelihood_mean(like::BinomialLikelihood, bolfi, gp_post)
+function log_sq_likelihood_mean(like::BinomialLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
     y_obs = like.y_obs
     trials = like.trials
 
     ϵs = rand(Uniform(0, 1), like.int_grid_size)
 
     # TODO refactor
-    function like_mean(x::AbstractVector{<:Real})
-        ps_dists = truncated.(Normal.(gp_post(x)...); lower=0., upper=1.)
+    function log_like_mean(x::AbstractVector{<:Real})
+        ps_dists = truncated.(Normal.(mean_and_std(model_post, x)...); lower=0., upper=1.)
         
         ll = 0.
         for i in eachindex(y_obs)
@@ -83,7 +83,7 @@ function sq_likelihood_mean(like::BinomialLikelihood, bolfi, gp_post)
             vals = pdf.(Binomial.(Ref(trials[i]), zs), Ref(y_obs[i])) .^ 2
             ll += log(mean(vals))
         end
-        return exp(ll)
+        return ll
     end
 end
 

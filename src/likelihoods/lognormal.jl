@@ -34,39 +34,39 @@ function loglike(like::LogNormalLikelihood, z::AbstractVector{<:Real})
     return logpdf(MvLogNormal(z, like.std_obs), like.y_obs)
 end
 
-function approx_likelihood(like::LogNormalLikelihood, bolfi, gp_post)
+function log_approx_likelihood(like::LogNormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
     y_obs = like.y_obs
     std_obs = _std_obs(like, bolfi)
 
-    function approx_like(x::AbstractVector{<:Real})
-        μ_z, _ = gp_post(x)
-        return pdf(MvLogNormal(μ_z, std_obs), y_obs)
+    function log_approx_like(x::AbstractVector{<:Real})
+        μ_z = mean(model_post, x)
+        return logpdf(MvLogNormal(μ_z, std_obs), y_obs)
     end
 end
 
 # Identical to `likelihood_mean(::GaussianLikelihood)`, just swapped `MvNormal` for `MvLogNormal`
-function likelihood_mean(like::LogNormalLikelihood, bolfi, gp_post)
+function log_likelihood_mean(like::LogNormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
     y_obs = like.y_obs
     std_obs = _std_obs(like, bolfi)
 
-    function like_mean(x::AbstractVector{<:Real})
-        μ_z, std_z = gp_post(x)
+    function log_like_mean(x::AbstractVector{<:Real})
+        μ_z, std_z = mean_and_std(model_post, x)
         std = sqrt.(std_obs.^2 .+ std_z.^2)
-        return pdf(MvLogNormal(μ_z, std), y_obs)
+        return logpdf(MvLogNormal(μ_z, std), y_obs)
     end
 end
 
 # Identical to `sq_likelihood_mean(::GaussianLikelihood)`, just swapped `MvNormal` for `MvLogNormal`
-function sq_likelihood_mean(like::LogNormalLikelihood, bolfi, gp_post)
+function log_sq_likelihood_mean(like::LogNormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
     y_obs = like.y_obs
     std_obs = _std_obs(like, bolfi)
 
-    function sq_like_mean(x::AbstractVector{<:Real})
-        μ_z, std_z = gp_post(x)
+    function log_sq_like_mean(x::AbstractVector{<:Real})
+        μ_z, std_z = mean_and_std(model_post, x)
         std = sqrt.((std_obs.^2 .+ (2 .* std_z.^2)) ./ 2)
-        # C = 1 / prod(2 * sqrt(π) .* std_obs .* y_obs)
+        # log_C = log( 1 / prod(2 * sqrt(π) .* std_obs .* y_obs) )
         log_C = (-1) * sum(log.(2 * sqrt(π) .* std_obs .* y_obs))
-        return exp(log_C + logpdf(MvLogNormal(μ_z, std), y_obs))
+        return log_C + logpdf(MvLogNormal(μ_z, std), y_obs)
     end
 end
 

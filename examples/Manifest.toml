@@ -2,7 +2,7 @@
 
 julia_version = "1.11.5"
 manifest_format = "2.0"
-project_hash = "2319b139aec02742635caa9a8a8a3c34bd11ae1c"
+project_hash = "b8ba7099cb3a6b29386d05c6f812ded47fdac77a"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "be7ae030256b8ef14a441726c4c37766b90b93a3"
@@ -44,9 +44,9 @@ version = "5.6.3"
 
 [[deps.AbstractPPL]]
 deps = ["AbstractMCMC", "Accessors", "DensityInterface", "JSON", "Random", "StatsBase"]
-git-tree-sha1 = "fc3a433ade4210c5c82d8454ff060014ed94d6f0"
+git-tree-sha1 = "478b0b6176125cf0a5e6e9fd69fdd0923754531c"
 uuid = "7a57a42e-76ec-4ea3-a279-07e840d6d9cf"
-version = "0.11.0"
+version = "0.12.0"
 
 [[deps.AbstractTrees]]
 git-tree-sha1 = "2d9c9a55f9c93e8887ad391fbae72f8ef55e1177"
@@ -245,11 +245,9 @@ weakdeps = ["CairoMakie", "Turing"]
 
 [[deps.BOSS]]
 deps = ["AbstractGPs", "Bijectors", "Distributed", "Distributions", "InteractiveUtils", "InverseFunctions", "LatinHypercubeSampling", "LinearAlgebra", "Optimization", "Random"]
-git-tree-sha1 = "eeeb2bdbb5bdfb4939d9640dbf51002c48c83f53"
-repo-rev = "dev"
-repo-url = "https://github.com/soldasim/BOSS.jl"
+git-tree-sha1 = "608e7c1b9b5614e2469e9582ffd1d9d159869699"
 uuid = "15052f3f-a82a-4ca3-bbc4-f478a3bd1ae2"
-version = "0.4.0"
+version = "0.5.0"
 weakdeps = ["Turing"]
 
     [deps.BOSS.extensions]
@@ -599,9 +597,9 @@ version = "1.15.1"
 
 [[deps.DifferentiationInterface]]
 deps = ["ADTypes", "LinearAlgebra"]
-git-tree-sha1 = "210933c93f39f832d92f9efbbe69a49c453db36d"
+git-tree-sha1 = "c092fd1dd0d94e609cd0d29e13897b2825c804bb"
 uuid = "a0c0ee7d-e4b9-4e03-894e-1c5f64a51d63"
-version = "0.7.1"
+version = "0.7.2"
 
     [deps.DifferentiationInterface.extensions]
     DifferentiationInterfaceChainRulesCoreExt = "ChainRulesCore"
@@ -705,9 +703,9 @@ version = "1.6.0"
 
 [[deps.DynamicPPL]]
 deps = ["ADTypes", "AbstractMCMC", "AbstractPPL", "Accessors", "BangBang", "Bijectors", "Chairmarks", "Compat", "ConstructionBase", "DifferentiationInterface", "Distributions", "DocStringExtensions", "InteractiveUtils", "LinearAlgebra", "LogDensityProblems", "MacroTools", "OrderedCollections", "Random", "Requires", "Statistics", "Test"]
-git-tree-sha1 = "c0c401d6a2a9750dce4d75c7c32517696cf71bfb"
+git-tree-sha1 = "07218fc45d4f1abc9de4498e8cf966b6672c84f0"
 uuid = "366bfd00-2699-11ea-058f-f148b4cae6d8"
-version = "0.36.14"
+version = "0.36.15"
 
     [deps.DynamicPPL.extensions]
     DynamicPPLChainRulesCoreExt = ["ChainRulesCore"]
@@ -2561,9 +2559,9 @@ version = "0.1.0"
 
 [[deps.Turing]]
 deps = ["ADTypes", "AbstractMCMC", "AbstractPPL", "Accessors", "AdvancedHMC", "AdvancedMH", "AdvancedPS", "AdvancedVI", "BangBang", "Bijectors", "Compat", "DataStructures", "Distributions", "DistributionsAD", "DocStringExtensions", "DynamicPPL", "EllipticalSliceSampling", "ForwardDiff", "Libtask", "LinearAlgebra", "LogDensityProblems", "MCMCChains", "NamedArrays", "Optimization", "OptimizationOptimJL", "OrderedCollections", "Printf", "Random", "Reexport", "SciMLBase", "SpecialFunctions", "Statistics", "StatsAPI", "StatsBase", "StatsFuns"]
-git-tree-sha1 = "a2f0daaef3563e3e4fb94ced7cb22b7a0e18912f"
+git-tree-sha1 = "ed8145c83b824e67a94b5bbe5be231991deda154"
 uuid = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
-version = "0.39.3"
+version = "0.39.4"
 
     [deps.Turing.extensions]
     TuringDynamicHMCExt = "DynamicHMC"
@@ -2640,10 +2638,10 @@ uuid = "a44049a8-05dd-5a78-86c9-5fde0876e88c"
 version = "1.3.243+0"
 
 [[deps.Wayland_jll]]
-deps = ["Artifacts", "EpollShim_jll", "Expat_jll", "JLLWrappers", "Libdl", "Libffi_jll", "XML2_jll"]
-git-tree-sha1 = "9300077d83c9eccfcac6a18b442d857d7e4f1684"
+deps = ["Artifacts", "EpollShim_jll", "Expat_jll", "JLLWrappers", "Libdl", "Libffi_jll"]
+git-tree-sha1 = "96478df35bbc2f3e1e791bc7a3d0eeee559e60e9"
 uuid = "a2964d1f-97da-50d4-b82a-358c7fce9d89"
-version = "1.23.1+2"
+version = "1.24.0+0"
 
 [[deps.WebP]]
 deps = ["CEnum", "ColorTypes", "FileIO", "FixedPointNumbers", "ImageCore", "libwebp_jll"]
@@ -2662,12 +2660,6 @@ deps = ["LinearAlgebra", "SparseArrays"]
 git-tree-sha1 = "c1a7aa6219628fcd757dede0ca95e245c5cd9511"
 uuid = "efce3f68-66dc-5838-9240-27a6d6f5f9b6"
 version = "1.0.0"
-
-[[deps.XML2_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Zlib_jll"]
-git-tree-sha1 = "b8b243e47228b4a3877f1dd6aee0c5d56db7fcf4"
-uuid = "02c8fc9c-b97f-50b9-bbe4-9be30ff0a78a"
-version = "2.13.6+1"
 
 [[deps.XZ_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
