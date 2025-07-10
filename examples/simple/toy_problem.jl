@@ -118,7 +118,7 @@ function true_post(x)
 end
 function true_like(x)
     y = ToyProblem.simulation(x; noise_std=zeros(ToyProblem.y_dim))
-    ll = pdf(MvNormal(y, ToyProblem.σe), ToyProblem.y_obs)
+    ll = like(get_likelihood(), y)
     return ll
 end
 
