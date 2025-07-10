@@ -1,113 +1,92 @@
 
 # Likelihood-Free Inference Problem
 
-_TODO: This section needs a revision. The theory in this section has not been updated for the new modular likelihood. This section assumes the problem to be defined with `NormalLikelihood`._
-
-Likelihood-free inference (LFI), also known as simulation-based inference (SBI), is methodology used to solve the inverse problem in cases where the evaluation of the forward model is prohibitively expensive. Also, LFI methods aim to learn the posterior distribution of the parameters (the target of inference) instead of finding single "optimal" parameter values.
+Likelihood-free inference (LFI), also known as simulation-based inference (SBI), is methodology used to solve the inverse problem in cases where the evaluation of the forward model is prohibitively expensive (and usually realized by a simulator). LFI methods aim to learn the posterior distribution of the parameters (the target of inference) instead of finding single MAP parameter estimator.
 
 This section formally introduces the general LFI problem as considered in BOLFI.jl.
 
-## Definitions
+| | | | | |
+| --- | --- | --- | --- | --- |
+| | | ![BOSBI](img/bosbi.drawio.png) | | |
+| | | | | |
 
-Let ``\theta \in \mathbb{R}^n`` be parameters of interest, and ``y \in \mathbb{R}^m`` be some observable quantities.
+## Problem Definition
 
-Let the noisy experiment ``f`` be defined as
+The goal is to learn the posterior distribution
 ```math
-f(\theta) = f_t(\theta) + \epsilon_f = y \;.
+p(x|z_o) = \frac{p(z_o|x) p(x)}{p(z_o)} \propto p(z_o|x) p(x)
 ```
-The experiment consists of a deterministic mapping ``f_t: \mathbb{R}^n \rightarrow \mathbb{R}^m``, and a random observation noise ``\epsilon_f \sim \mathcal{N}(0, \Sigma_f)``.
+to find which parameter values ``x`` could have produced the observation ``z_o``.
 
-Let the simulator ``g`` be defined as
+The likelihood
 ```math
-g(\theta) = g_t(\theta) + \epsilon_g = y \;.
+p(z_o|x) = p(z_o|y=f(x))
 ```
-The simulator consists of a deterministic mapping ``g_t: \mathbb{R}^n \rightarrow \mathbb{R}^m``, and a random simulation noise ``\epsilon_g \sim \mathcal{N}(0, \Sigma_g)``. We assume that the simulator approximates the generative model up to the noise, i.e.
+is composed of two parts; the observation likelihood ``p(z|y)`` available in a closed form describes the uncertainty of the observation ``z_o``, and the mapping ``y = f(x)`` describes the studied system.
+
+The user-defined prior ``p(x)`` is used to encode expert knowledge about the parameters.
+
+## Problem Inputs
+
+The following are considered as inputs of the problem:
+
+- the parameter prior ``p(x)`` together with the parameter domain ``\mathcal{D} \subset \mathbb{R}^{d_x}``
+- the real-world observation ``z_o \sim p(z_o|y_{true}=f(x_{true}))``
+- the observation likelihood ``p(z|y)`` in a closed form
+- a prohibitively expensive (noisy) blackbox simulator ``y = f(x) + \epsilon``
+
+## Problem Output
+
+The goal is to learn an approximation of the posterior ``p(x|z_o)``, describing not only a MAP estimate of the parameters ``x``, but the whole distribution of likely values.
+
+# The BOLFI Method
+
+BOLFI.jl uses the Bayesian optimization (BO) procedure, handled by the BOSS.jl package, to efficiently train an approximation of the parameter posterior while minimizing the number of required expensive simulations.
+
+The three key parts of the method are; *the acquisition function* used to sequentially select candidate parameters for simulations, *the probabilistic surrogate model* used to obtain a cheap approximation of the simulator together with uncertainty estimates, and *the proxy variable ``\delta``* defining the exact quantitiy modeled by the surrogate model.
+
+## The Proxy Variable
+
+The user must decide, which exact quantities are to be modeled by the surrogate model as a function of the parameters ``x``. This choice is largely problem dependent and can have significant impact on the performance of the method.
+
+The expensive simulator realizes the mapping ``y = f(x)``, and the observation likelihood ``p(z|y)`` provides a closed form expression for mapping the simulation output ``y`` to the likelihood value ``\ell(x) = p(z_o|y=f(x))``. In general, the surrogate model can be used to model any quantity "between" the simulation ``y`` and the likelihood value ``\ell``. This way, the model can be used to estimate the likelihood ``\ell(x)`` while avoiding the need to evaluate the expensive simulator ``f(x)``.
+
+In general, it is not always reasonable to model the simulation outputs ``y(x)`` directly. For example, if the simulation output ``y`` has a huge dimensionality, modeling it will be inefficient. The other extreme is modeling the scalar log-likelihood ``\log \ell(x)``. This, on the other hand, often discards too much information obtained from the simulator by compressing the output into a single value.
+
+It is upon the user to define a suitable proxy variable ``\delta = \phi(y)`` to be modeled by the surrogate model. The uncertainty of the modeled proxy variable ``\delta(x)`` is then propagated into the uncertainty in the estimate of the likelihood value ``\ell(x) = p(z_o|x)``.
+
+Some examples of setting up BOLFI.jl to model different quantities are described below.
+
+### Modeling the Simulation Output
+
+To model the simulation output, one should provide the black-box simulator directly as the ``f`` function of the [`BolfiProblem`](@ref) structure, and use a suitable [`Likelihood`](@ref), which defines the whole mapping from ``y`` to ``\ell = p(z_o|y)``. For example, one may use the [`NormalLikelihood`](@ref) if the observation noise ``p(z|y)`` is assumed to be normal.
+
+This way, BOLFI.jl will use the surrogate model to model the whole simulation output ``y \in \mathbb{R}^{d_y}``.
+
+### Modeling the Log-Likelihood
+
+To model the log-likelihood, one should compose the simulator with a subsequent mapping ``\phi`` into a single function ``f`` and provide it to the [`BolfiProblem`](@ref) structure. The mapping ``\phi`` should be defined as the log-pdf of the observation likelihood ``p(z|y)``. I.e. the provided function ``f`` will take the parameters ``x`` as the input, evaluate the expensive simulation ``y = f(x)``, and then map the simulation outputs ``y`` to a scalar log-likelihood value ``\log\ell = p(z_o|y)``. In this case, the [`ExpLikelihood`](@ref) should be provided as the [`Likelihood`](@ref), which then only exponentiates the log-likelihood.
+
+This way, BOLFI.jl will use the surrogate model to model the scalar log-likelihood ``\log p(z_o|x)``.
+
+### Modeling Arbitrary Proxy Variable
+
+To model any arbitrary proxy variable ``\delta`` by the surrogate model, do the following. Define a mapping ``\phi``, which maps the simulation outputs ``y`` to your proxy variable ``\delta`` by realizing *a part of* the observation likelihood pdf ``p(z_o|y)``. Then define a second mapping ``\psi``, such that ``(\psi \circ \phi)(y) = p(z_o|y)``. In other words, the mapping ``\psi`` realized the *remaining part* of the observation likelihood pdf.
+
+Compose the expensive simulator ``y = f(x)`` and the mapping ``\psi`` into a single function `f` and provide it to the [`BolfiProblem`](@ref). Define a custom [`Likelihood`](@ref), which realizes the remaining mapping ``\psi`` and provide it to the [`BolfiProblem`](@ref) as the `likelihood`.
+
+## Surrogate Model
+
+The probabilistic surrogate model is used to approximate the expensive simulator based on the data from previous simulations. It models the proxy variable ``\delta`` as a function of the parameters ``x``. It provides a posterior predictive distribution ``p(\delta|x)``, which describes the current estimate of ``\delta`` for the given ``x`` together with the uncertainty in that estimate.
+
+The default choice for the surrogate model is the `GaussianProcess` model.
+
+## Acquisition Function
+
+The acquisition function ``\alpha: \mathbb{R}^{d_x} \rightarrow \mathbb{R}`` is maximized in each iteration in order to select the most promising candidate parameters
 ```math
-g_t(\theta) \approx f_t(\theta) \;.
+x \in \arg\max \alpha(x)
 ```
+for the next simulation. The current surrogate model is used to calculate the acquisition values ``\alpha(x)``, thus avoiding the need for the expensive simulator when evaluating the acquisition function.
 
-## The Problem
-
-The problem is defined as follows. We have performed the experiment
-```math
-f(\theta^*) = y^* + \epsilon_f = y_o \;,
-```
-and obtained a noisy observation ``y_o``. Our goal is to infer the unknown parameters ``\theta^*``. Even better, we would like to learn the whole posterior parameter distribution ``p(\theta|y_o)``.
-
-## Assumptions
-
-We assume;
-- The simulator approximates the experiment: ``g_t(\theta) \approx f_t(\theta)``.
-- The observation dimensions to be independent. I.e. the noise covariance matrices ``\Sigma_f, \Sigma_g`` are diagonal. _(This is an additional assumption required by BOLFI.jl, which may often not hold. In case the observation dimensions are dependent, one could construct some summary statistics for each set of dependent dimensions in order to obtain fewer independent observations.)_
-- Both the experiment noise and simulation noise to be Gaussian and homoscedastic.
-
-We do not know;
-- The true mappings ``f_t, g_t``.
-
-We know;
-- We can point-wise evaluate the simulator ``g``.
-- The experiment noise covariances ``\Sigma_f``.
-- The parameter prior ``p(\theta)``. _(Usually it is reasonable to use a weak prior. In case we have substantial expert knowledge about the domain, we can provide it via a stronger prior.)_
-
-We may know;
-- The simulation noise covariances ``\Sigma_g``. _(They can be estimated by BOLFI.jl, or provided.)_
-
-## The BOLFI Method
-
-Our goal is to learn the parameter posterior ``p(\theta|y_o)``. The posterior can be expressed using the likelihood ``p(y_o|\theta)``, prior ``p(\theta)``, and evidence ``p(y_o)`` via the Bayes' rule as
-```math
-p(\theta|y_o) = \frac{p(y_o|\theta) p(\theta)}{p(y_o)} \;.
-```
-The prior ``p(\theta)`` is known. The evidence ``p(y_o)`` is just a normalization constant, and is often unimportant. We mainly need to learn the likelihood
-```math
-p(y_o|\theta) = \mathcal{N}(f_t(\theta), \Sigma_f)|_{y_o} \;.
-```
-The covariances ``\Sigma_f`` are known, but we need to learn the mapping ``f_t``. We will approximate it based on data queried from the simulator ``g``, using the assumption ``g_t(\theta) \approx f_t(\theta)``. This way, we obtain an approximate posterior up to the normalization constant.
-
-First, we rewrite the likelihood by abusing the assumption of a diagonal covariance matrix ``\Sigma_f`` as a product of the likelihoods of the individual observation dimensions ``j = 1,...,m``. This gives
-```math
-p(y_o|\theta) = \prod\limits_{j=1}^{m} \mathcal{N}(f_t(\theta)^{[j]} - y_o^{[j]}, (\sigma_f^{[j]})^2)|_0 \;,
-```
-where the superscript ``[j]`` refers to the ``j``-th observation dimension. (For example, ``y_o^{[j]} \in \mathbb{R}`` is the ``j``-th element of the vector ``y_o``.)
-
-In order to approximate the likelihood we train ``m`` Gaussian processes to predict the discrepancies
-```math
-\delta^{[j]}(\theta) = g_t^{[j]}(\theta) - y_o^{[j]} \approx f_t^{[j]}(\theta) - y_o^{[j]}\;.
-```
-The newly defined stochastic functions ``\delta^{[j]}`` can be queried for new data as
-```math
-\delta(\theta) = g(\theta) - y_o \;,
-```
-by using the noisy simulator ``g``.
-
-Given _infinite_ data, the predictive distribution of the ``j``-th GP would converge to
-```math
-\mathcal{N}(\mu_\delta^{[j]}(\theta), (\sigma_\delta^{[j]}(\theta))^2) \approx \mathcal{N}(g_t^{[j]}(\theta) - y_o, (\sigma_g^{[j]})^2) \;.
-```
-In other words, the predictive mean would approximate the true simulator outputs as
-```math
-\mu_\delta^{[j]}(\theta) \approx g_t^{[j]}(\theta) - y_o \;,
-```
-and the predictive deviation would approximate the simulation noise deviation as
-```math
-\sigma_\delta^{[j]}(\theta) \approx \sigma_g^{[j]} \;.
-```
-Thus we could approximate the likelihood by substituting ``\mu_\delta^{[j]}(\theta)`` into the equiation as
-```math
-p(y_o|\theta) \approx \prod\limits_{j=1}^{m} \mathcal{N}(\mu_\delta^{[j]}(\theta), (\sigma_f^{[j]})^2)|_0 \;,
-```
-because
-```math
-\mu_\delta^{[j]}(\theta) \approx g_t(\theta)^{[j]} - y_o^{[j]} \approx f_t(\theta)^{[j]} - y_o^{[j]}
-```
-holds. _(This posterior approximation can be obtained by calling the `approx_posterior` function.)_
-
-However, we do not have infinite data. In case we have only a small dataset, the predictive deviation ``\sigma_\delta^{[j]}`` is not converged to the true experiment noise ``\sigma_g^{[j]}(\theta)``, as it also "contains" our uncertainty about the prediction ``\mu_\delta^{[j]}(\theta)``. Thus a more meaningful estimate of the likelihood is achieved by taking in consideration the uncertainty, and calculating the expected likelihood values
-```math
-\mathbb{E}\left[ p(y_o|\theta) \right] \approx \prod\limits_{j=1}^{m} \mathcal{N}(\mu_\delta^{[j]}(\theta), (\sigma_f^{[j]})^2 + (\sigma_\delta^{[j]}(\theta))^2)|_0 \;.
-```
-_(The derivation of the expression is skipped here. It can be, however, derived easily. This approximation of the posterior can be obtained by calling the `posterior_mean` function.)_
-
-Then we obtain the expected parameter posterior ``\mathbb{E}\left[p(\theta|y_o)\right]`` (up to a normalization constant) simply by multiplying this expectation with the known prior ``p(\theta)``.
-
-Similarly, we can estimate the uncertainty of our posterior approximation as the variance ``\mathbb{V}\left[p(\theta|y_o)\right]``, which can be used as a primitive acquisition function used to select new data. _(The derivation is skipped here. The posterior variance can be obtained by calling the `posterior_variance` function.)_
+The most basic [`BolfiAcquisition`](@ref) is the [`PostVarAcq`](@ref), which selects the point of maximal variance of the current posterior approximation as the next evalation point, effectively exploring the areas with the highest model uncertainty.

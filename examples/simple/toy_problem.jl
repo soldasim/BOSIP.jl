@@ -16,7 +16,7 @@ get_bounds() = (fill(-5., x_dim()), fill(5., x_dim()))
 # - - - OBSERVATION - - - - -
 
 """observation"""
-const y_obs = [1.]
+const z_obs = [1.]
 const y_dim = 1
 
 """observation noise std"""
@@ -38,7 +38,7 @@ end
 # The objective for the GP.
 obj(x) = simulation(x)
 
-get_likelihood() = NormalLikelihood(; y_obs, std_obs=σe)
+get_likelihood() = NormalLikelihood(; z_obs=z_obs, std_obs=σe)
 
 # truncate the prior to the bounds
 function get_x_prior()

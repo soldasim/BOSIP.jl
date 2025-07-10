@@ -10,34 +10,34 @@ BolfiProblem
 
 ## Likelihood
 
-The abstract type `Likelihood` represents the likelihood distribution of the observation `y_o`.
+The abstract type `Likelihood` represents the likelihood distribution of the observation `z_o`.
 
 ```@docs
 Likelihood
 ```
 
-The `NormalLikelihood` assumes that the observation `y_o` has been drawn from a Gaussian distribution with a known diagonal covariance matrix with the `std_obs` values on the diagonal. The simulator is used to learn the mean function.
+The `NormalLikelihood` assumes that the observation `z_o` has been drawn from a Gaussian distribution with a known diagonal covariance matrix with the `std_obs` values on the diagonal. The simulator is used to learn the mean function.
 
 ```@docs
 NormalLikelihood
 ```
 
-The `LogNormalLikelihood` assumes that the observation `y_o` has been drawn from a log-normal distribution with a known diagonal covariance matrix with the `std_obs` values on the diagonal. The simulator is used to learn the mean function.
+The `LogNormalLikelihood` assumes that the observation `z_o` has been drawn from a log-normal distribution with a known diagonal covariance matrix with the `std_obs` values on the diagonal. The simulator is used to learn the mean function.
 
 ```@docs
 LogNormalLikelihood
 ```
 
-The `BinomialLikelihood` assumes that the observation `y_o` has been drawn from a Binomial distribution with a known number `trials`. The simulator is used to learn the probability parameter `p` as a function of the input parameters. The expectation over this likelihood (in case one wants to use `posterior_mean` and/or `posterior_variance`) is calculated via simple numerical integration on a predefined grid.
+The `BinomialLikelihood` assumes that the observation `z_o` has been drawn from a Binomial distribution with a known number `trials`. The simulator is used to learn the probability parameter `p` as a function of the input parameters. The expectation over this likelihood (in case one wants to use `posterior_mean` and/or `posterior_variance`) is calculated via simple numerical integration on a predefined grid.
 
 ```@docs
 BinomialLikelihood
 ```
 
-The `GutmannNormalLikelihood` is implemented according to the equations of Gutmann et al. in [1,2]. It is defined in a different way to the other `Likelihood`s. It is provided mainly for a comparison with `NormalLikelihood`.
+The `ExpLikelihood` assumes that the function `f` of the [`BolfiProblem`](@ref) already maps the parameters ``x`` to the log-likelihood ``\log p(z_o|y)``. Thus, the `ExpLikelihood` only exponentiates the surrogate model output ``\delta`` to obtain the likelihood value.
 
 ```@docs
-GutmannNormalLikelihood
+ExpLikelihood
 ```
 
 ## Acquisition Function
@@ -93,6 +93,39 @@ For an example usage of this functionality, see the [example](https://github.com
 
 ```@docs
 BolfiCallback
+```
+
+## Samplers
+
+The subtypes of `DistributionSampler` can be used to draw samples from the trained parameter posterior distribution.
+
+```@docs
+DistributionSampler
+```
+
+In particular, the following distribution samplers are currently provided.
+
+```@docs
+RejectionSampler
+TuringSampler
+AMISSampler
+```
+
+## Evaluation Metric
+
+The subtypes of `DistributionMetric` can be used to evaluate the quality of the learned parameter posterior distribution.
+
+```@docs
+DistributionMetric
+SampleMetric
+PDFMetric
+```
+
+In particular, the following metrics are currently provided.
+
+```@docs
+MMDMetric
+TVMetric
 ```
 
 # References

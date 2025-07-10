@@ -6,19 +6,25 @@ It is important to define reasonable values and priors for the hyperparameters. 
 
 The parameter prior describes our expert knowledge about the domain. If we have limited knowledge about the parameters, the uniform prior can be used, which will not affect the optimization at all. Or one might for example use a zero-centered multivariate normal prior to suppress parameters with too large absolute values.
 
-## Likelihood
+## Observation Likelihood
 
-The likelihood ``p(y_o|x)`` describes the stochastic process which generated the real experiment observation ``y_o``. In general, the likelihood somehow depends on the simulator output ``y = g(x)``. In most cases, one can view the simulator as an oracle providing the true value ``y = g(x) \approx f_t(x)`` and the likelihood describes the nature of the noise of the real observation ``y_o \sim p(y_o|f_t(x))`.
+The observation likelihood ``p(z_o|y)`` describes the uncertainty of the real-world observation ``z_o``.
 
-In the case of the `NormalLikelihood`, one needs to define the observation noise deviation ``\sigma_f``. This deviation has to be estimated by the user and provided as a vector-valued constant. It should reflect the measurement precision in the real experiment used to obtain the observation ``y_o``. The value of ``\sigma_f`` greatly affects the width of the resulting posterior. Thus some care should be taken with its choice.
+The simulator realizes the mapping ``y = f(x)`` composed with the user defined mapping ``\delta = \phi(y)``. The [`Likelihood`](@ref) provided to [`BolfiProblem`](@ref) should map the modeled proxy variable ``\delta`` to the likelihood value ``p(z_o|y)``.
 
-## Kernel
+In many cases, it is reasonable to assume the observation noise to be Gaussian and model the simulation outputs ``y`` directly. Then one can use the [`NormalLikelihood`](@ref). The only hyperparemter for the normal likelihood is the observation noise deviation ``\sigma_f``. This deviation has to be estimated by the user. It should reflect the measurement precision in the real experiment used to obtain the observation ``z_o``. The value of ``\sigma_f`` greatly affects the width of the resulting posterior. Thus some care should be taken with its choice.
+
+## Surrogate Model
+
+Different surrogate models may be used to learn the mapping from the parameters ``x`` to the proxy variable ``\delta``. The default choice is the `GaussianProcess` model. The Gaussian process has several hyperparameters described below.
+
+### Kernel
 
 The kernel is a hyperparameter of the Gaussian process. It controls how the data affect the predictions of the GP in different parts of the domain. I recommend using one of the Matérn kernels, for example the Matérn``\frac{3}{2}`` kernel. The Matérn kernels are a common choice in Bayesian optimization.
 
-## Length Scales
+### Length Scales
 
-The length scales control the distance withing the parameter domain, at which the data sitll affect the prediction of the GP. Given that we have ``n`` parameters and ``m`` observation dimensions, there are in total ``n \times m`` length scales. For each observation dimension ``1,...,m``, we need to define a separate ``n``-variate length scale prior.
+The length scales control the distance withing the parameter domain, at which the data sitll affect the prediction of the GP. Given that the model inputs and outputs have the dimensionalities ``d_x`` and ``d_\delta``, there are in total ``d_x \times d_\delta`` length scales. For each output dimension ``1,...,d_\delta``, we need to define a separate ``d_x``-variate length scale prior.
 
 To define a weak length scale prior, it is reasonable to use the half-normal distribution
 ```math
@@ -40,7 +46,7 @@ where ``\lambda_{min}, \lambda_{max}`` are the minimum and maximum allowed lengt
 
 ## Amplitude
 
-The amplitude is another hyperparameter of the Gaussian process. It controls the expected degree of fluctation of the predicted values. We need to define a univariate prior for each observation dimension.
+The amplitude is another hyperparameter of the Gaussian process. It controls the expected degree of fluctation of the predicted values. We need to define a univariate prior for each output dimension ``1,...,d_\delta``.
 
 We usually do not know the exact range of function values a priori. Thus, we should be cautious with the prior. If we expect to observe values in range ``\left< y_{min}, y_{max} \right>``, a reasonable prior could a half-normal distribution
 ```math
@@ -52,13 +58,13 @@ Again, one might also construct an inverse gamma prior to additionally suppress 
 
 ## Simulation Noise
 
-We do not have to define the simulation noise deviations as exact values, as in the case of the observation noise. It is sufficient to provide priors, and BOLFI.jl will estimate the simulation noise by itself.
+We do not have to define the simulation noise deviations as exact values. It is sufficient to provide priors, and BOLFI.jl will estimate the simulation noise by itself.
 
 We can use a more or less weak prior, depending on our confidence in estimating the simulation noise. Again, a reasonable choice is to use etiher the half-normal distribution to suppress exceedingly large noise deviations, or the inverse gamma distribution to also suppress small deviations.
 
 ## Sub-Algorithms
 
-We also need to define which algorithms should be used to estimate the model hyperparameters and maximize the acquisition function.
+We can also define which algorithms are used to perform the sub-tasks of estimating the model hyperparameters and maximizing the acquisition function.
 
 For simple toy experiment, I recommend using the `BOSS.SamplingMAP` model fitter, and the `BOSS.SamplingAM` or `BOSS.GridAM` acquisition maximizers.
 

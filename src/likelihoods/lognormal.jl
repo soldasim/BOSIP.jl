@@ -1,16 +1,16 @@
 
 """
-    LogNormalLikelihood(; y_obs, std_obs)
+    LogNormalLikelihood(; z_obs, std_obs)
 
 The observation is assumed to have been generated from a normal distribution
-as `y_o \\sim LogNormal(f(x), Diagonal(std_obs))`. We can use the simulator to query `z = f(x)`.
+as `z_o \\sim LogNormal(f(x), Diagonal(std_obs))`. We can use the simulator to query `z = f(x)`.
 
 In many cases, one may want to take the logarithm of the output of the simulator.
 Meaning, if one has simulator `z = sim(x)`, one would define `f` as `y = f(x) = log(sim(x))`.
 This way, the `y` values with high likelihood will have similar values to the `z` values.
 
 # Kwargs
-- `y_obs::Vector{Float64}`: The observed values from the real experiment.
+- `z_obs::Vector{Float64}`: The observed values from the real experiment.
 - `std_obs::Vector{Float64}`: The standard deviations of the LogNormal observation noise.
         (If the observation is considered to be generated from the simulator and not some "real" experiment,
         provide `std_obs = nothing`` and the adaptively trained simulation noise deviation will be used
@@ -19,54 +19,54 @@ This way, the `y` values with high likelihood will have similar values to the `z
 @kwdef struct LogNormalLikelihood{
     S<:Union{Vector{Float64}, Nothing},
 } <: Likelihood
-    y_obs::Vector{Float64}
+    z_obs::Vector{Float64}
     std_obs::S
 end
 
 """
-    LogGaussianLikelihood(; y_obs, std_obs)
+    LogGaussianLikelihood(; z_obs, std_obs)
 
 Alias for [`LogNormalLikelihood`](@ref).
 """
 const LogGaussianLikelihood = LogNormalLikelihood
 
-function loglike(like::LogNormalLikelihood, z::AbstractVector{<:Real})
-    return logpdf(MvLogNormal(z, like.std_obs), like.y_obs)
+function loglike(like::LogNormalLikelihood, δ::AbstractVector{<:Real})
+    return logpdf(MvLogNormal(δ, like.std_obs), like.z_obs)
 end
 
 function log_approx_likelihood(like::LogNormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
-    y_obs = like.y_obs
+    z_obs = like.z_obs
     std_obs = _std_obs(like, bolfi)
 
     function log_approx_like(x::AbstractVector{<:Real})
-        μ_z = mean(model_post, x)
-        return logpdf(MvLogNormal(μ_z, std_obs), y_obs)
+        μ_δ = mean(model_post, x)
+        return logpdf(MvLogNormal(μ_δ, std_obs), z_obs)
     end
 end
 
 # Identical to `likelihood_mean(::GaussianLikelihood)`, just swapped `MvNormal` for `MvLogNormal`
 function log_likelihood_mean(like::LogNormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
-    y_obs = like.y_obs
+    z_obs = like.z_obs
     std_obs = _std_obs(like, bolfi)
 
     function log_like_mean(x::AbstractVector{<:Real})
-        μ_z, std_z = mean_and_std(model_post, x)
-        std = sqrt.(std_obs.^2 .+ std_z.^2)
-        return logpdf(MvLogNormal(μ_z, std), y_obs)
+        μ_δ, std_δ = mean_and_std(model_post, x)
+        std = sqrt.(std_obs.^2 .+ std_δ.^2)
+        return logpdf(MvLogNormal(μ_δ, std), z_obs)
     end
 end
 
 # Identical to `sq_likelihood_mean(::GaussianLikelihood)`, just swapped `MvNormal` for `MvLogNormal`
 function log_sq_likelihood_mean(like::LogNormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
-    y_obs = like.y_obs
+    z_obs = like.z_obs
     std_obs = _std_obs(like, bolfi)
 
     function log_sq_like_mean(x::AbstractVector{<:Real})
-        μ_z, std_z = mean_and_std(model_post, x)
-        std = sqrt.((std_obs.^2 .+ (2 .* std_z.^2)) ./ 2)
-        # log_C = log( 1 / prod(2 * sqrt(π) .* std_obs .* y_obs) )
-        log_C = (-1) * sum(log.(2 * sqrt(π) .* std_obs .* y_obs))
-        return log_C + logpdf(MvLogNormal(μ_z, std), y_obs)
+        μ_δ, std_δ = mean_and_std(model_post, x)
+        std = sqrt.((std_obs.^2 .+ (2 .* std_δ.^2)) ./ 2)
+        # log_C = log( 1 / prod(2 * sqrt(π) .* std_obs .* z_obs) )
+        log_C = (-1) * sum(log.(2 * sqrt(π) .* std_obs .* z_obs))
+        return log_C + logpdf(MvLogNormal(μ_δ, std), z_obs)
     end
 end
 
@@ -80,13 +80,13 @@ end
 
 function get_subset(like::LogNormalLikelihood{Nothing}, y_set::AbstractVector{<:Bool})
     return LogNormalLikelihood(
-        like.y_obs[y_set],
+        like.z_obs[y_set],
         nothing,
     )
 end
 function get_subset(like::LogNormalLikelihood, y_set::AbstractVector{<:Bool})
     return LogNormalLikelihood(
-        like.y_obs[y_set],
+        like.z_obs[y_set],
         like.std_obs[y_set],
     )
 end

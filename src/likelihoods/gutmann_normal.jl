@@ -3,7 +3,7 @@
     GutmannNormalLikelihood(; std_obs::Vector{Float64})
 
 The observation is assumed to have been generated from a normal distribution
-as `y_o \\sim Normal(f(x), Diagonal(std_obs))`. We can use the simulator to query `z = f(x)`.
+as `z_o \\sim Normal(f(x), Diagonal(std_obs))`. We can use the simulator to query `z = f(x)`.
 
 This likelihood is an adaptation of the equations from Gutmann et al. [1,2]
 for the deterministic simulator considered in BOLFI.jl.
@@ -15,8 +15,8 @@ It is defined in a slightly different way than the other `Likelihood`s.
 Namely, this likelihood requires the simulator to return a _single_ non-negative scalar value,
 describing the discrepancy `\\delta` of the simulator outcome from the real observation.
 
-(See that the real observation `y_obs` is _not_ provided as a parameter to `GutmannNormalLikelihood`
-as in the case of other `Likelihood`s. Instead, the observation `y_obs` should be used
+(See that the real observation `z_obs` is _not_ provided as a parameter to `GutmannNormalLikelihood`
+as in the case of other `Likelihood`s. Instead, the observation `z_obs` should be used
 to calculate the discrepancy `\\delta` in the simulator `f` provided to `BolfiProblem`.
 The simulator should return the discrepancy as a vector `[\\delta]` of length 1.)
 
@@ -27,7 +27,7 @@ The parameter `\\epsilon` is the acceptance threshold.
 # Kwargs
 - `ϵ::Float64`: The threshold for the discrepancy from the real observation.
 - `std_δ::Float64`: The standard deviation of the discrepancy `δ`
-    caused by the observation noise on `y_obs`.
+    caused by the observation noise on `z_obs`.
 
 # References
 
@@ -41,7 +41,7 @@ The parameter `\\epsilon` is the acceptance threshold.
 end
 
 """
-    GutmannGaussianLikelihood(; y_obs, std_obs)
+    GutmannGaussianLikelihood(; z_obs, std_obs)
 
 Alias for [`GutmannNormalLikelihood`](@ref).
 """
@@ -56,8 +56,9 @@ function log_approx_likelihood(like::GutmannNormalLikelihood, bolfi::BolfiProble
     std_δ = like.std_δ
 
     function log_approx_like(x::AbstractVector{<:Real})
-        μ_z = mean(model_post, x)[1]
-        z_stat = (ϵ - μ_z) / std_δ
+        μ_δ = mean(model_post, x)[1]
+
+        z_stat = (ϵ - μ_δ) / std_δ
         return normcdf(z_stat) |> log
     end
 end
@@ -71,8 +72,9 @@ function log_likelihood_mean(like::GutmannNormalLikelihood, bolfi::BolfiProblem,
     std_δ = like.std_δ
 
     function log_like_mean(x::AbstractVector{<:Real})
-        μ_z, std_z = mean_and_std(model_post, x) .|> first
-        z_stat = (ϵ - μ_z) / sqrt(std_z^2 + std_δ^2)
+        μ_δ, std_δ = mean_and_std(model_post, x) .|> first
+
+        z_stat = (ϵ - μ_δ) / sqrt(std_δ^2 + std_δ^2)
         return normcdf(z_stat) |> log
     end
 end
@@ -90,9 +92,10 @@ function log_sq_likelihood_mean(like::GutmannNormalLikelihood, bolfi::BolfiProbl
     # taken from the equation (34) in the appendix of the Jarvenpaa's
     # "Efficient Acquisition Rules..." paper
     function log_sq_like_mean(x::AbstractVector{<:Real})
-        μ_z, std_z = mean_and_std(model_post, x) .|> first
-        z_stat = (ϵ - μ_z) / sqrt(std_z^2 + std_δ^2)
-        ρ = std_z^2 / (std_δ^2 + std_z^2)
+        μ_δ, std_δ = mean_and_std(model_post, x) .|> first
+
+        z_stat = (ϵ - μ_δ) / sqrt(std_δ^2 + std_δ^2)
+        ρ = std_δ^2 / (std_δ^2 + std_δ^2)
         return ( normcdf(z_stat) - 2 * owent(z_stat, (1 - ρ) / sqrt(1 - ρ^2)) ) |> log
     end
 end

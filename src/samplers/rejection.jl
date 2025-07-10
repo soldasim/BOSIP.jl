@@ -100,22 +100,22 @@ end
 
 # function _max_like(like::NormalLikelihood, bolfi)
 #     std_obs = BOLFI._std_obs(like, bolfi)
-#     y_obs = like.y_obs
+#     z_obs = like.z_obs
 
-#     return pdf(MvNormal(y_obs, std_obs), y_obs)
+#     return pdf(MvNormal(z_obs, std_obs), z_obs)
 # end
 # function _max_like(like::LogNormalLikelihood, bolfi)
 #     std_obs = like.std_obs
-#     y_obs = like.y_obs
+#     z_obs = like.z_obs
 
-#     return pdf(MvLogNormal(y_obs, std_obs), y_obs)
+#     return pdf(MvLogNormal(z_obs, std_obs), z_obs)
 # end
 # function _max_like(like::BinomialLikelihood, bolfi)
 #     trials = like.trials
-#     y_obs = like.y_obs
+#     z_obs = like.z_obs
 
-#     ps = y_obs ./ trials
-#     return logpdf.(Binomial.(trials, ps), y_obs) |> sum |> exp
+#     ps = z_obs ./ trials
+#     return logpdf.(Binomial.(trials, ps), z_obs) |> sum |> exp
 # end
 
 function opt_likelihood(opt::LikelihoodMaximizer, likelihood::Function, domain::Domain)

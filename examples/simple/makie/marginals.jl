@@ -23,7 +23,7 @@ function plot_param_post(bolfi::BolfiProblem, param_idx::Int, param_samples::Abs
     # true posterior
     function true_post(x)
         y = ToyProblem.experiment(x; noise_std=zeros(ToyProblem.y_dim))
-        ll = pdf(MvNormal(y, ToyProblem.σe_true), ToyProblem.y_obs)
+        ll = pdf(MvNormal(y, ToyProblem.σe_true), ToyProblem.z_obs)
         pθ = pdf(x_prior, x)
         return pθ * ll
     end

@@ -7,25 +7,26 @@ The example requires the following packages to be loaded.
 using BOLFI
 using BOSS
 using Distributions
+using OptimizationPRIMA
 ```
 
 ## Problem Definition
 
-In our toy problem, our goal is to infer two parameters ``x \in \mathbb{R}^2``. We defined the true _unknown_ mapping ``f_t(\theta) = g_t(\theta) = \prod\theta``.
+In our toy problem, our goal is to infer two parameters ``x \in \mathbb{R}^2``. We defined the true _unknown_ mapping ``f_t(x) = g_t(x) = \prod x``.
 ```julia
 f_(x) = x[1] * x[2]
 ```
 
-_(Note that we refer to the parameters as `x` here, inteas of ``\theta``, to be consistent with the source code of BOLFI.jl.)_
+_(Note that we refer to the parameters as `x` here, inteas of ``x``, to be consistent with the source code of BOLFI.jl.)_
 
-We have observed the single observation ``\prod\theta = 1.``.
+We have observed the single observation ``\prod x = 1.``.
 ```julia
-y_obs = [1.]
+z_obs = [1.]
 ```
 
 The experiment is assumed to follow a Normal likelihood with observation noise deviation ``\sigma_f = 0.5``.
 ```julia
-likelihood = NormalLikelihood(; y_obs, obs_std=[0.5])
+likelihood = NormalLikelihood(; z_obs, obs_std=[0.5])
 ```
 
 We define the noisy simulation function ``g(x)``. The _unknown_ simulation noise deviatoin is set to ``\sigma_g = 0.001``.
@@ -36,12 +37,12 @@ function simulation(x; noise_std=0.001)
 end
 ```
 
-Then we need to define the objective function for the Gaussian processes to query data from. This function should take a vector of parameters ``\theta`` as the input, and return the simulated outputs ``y(\theta)``.
+Then we need to define the objective function for the Gaussian processes to query data from. This function should take a vector of parameters ``x`` as the input, and return the simulated outputs ``y(x)``.
 ```julia
 gp_objective(x) = simulation(x)
 ```
 
-We will limit the domain to a ``\theta \in [-5,5]^2``.
+We will limit the domain to a ``x \in [-5,5]^2``.
 ```julia
 bounds = ([-5, -5], [5, 5])
 ```
@@ -70,7 +71,7 @@ We will query a few datapoints from the prior here using the following `get_init
 function get_init_data(count)
     X = reduce(hcat, (random_datapoint() for _ in 1:count))[:,:]
     Y = reduce(hcat, (gp_objective(x) for x in eachcol(X)))[:,:]
-    return BOSS.ExperimentDataPrior(X, Y)
+    return BOSS.ExperimentData(X, Y)
 end
 
 function random_datapoint()
@@ -100,7 +101,7 @@ We define the length-scale priors so that they suppress any length scales below 
     2, # x dimension
 ))
 
-length_scale_priors = fill(
+lengthscale_priors = fill(
     λ_prior,
     1, # y dimension
 )
@@ -108,7 +109,7 @@ length_scale_priors = fill(
 
 We define the amplitude priors to suppress amplitudes below ``0.1`` or above ``20``. The amplitude priors should be defined as a vector of univariate distributions.
 ```julia
-amp_priors = fill(
+amplitude_priors = fill(
     calc_inverse_gamma(0.1, 20.),
     1, # y dimension
 )
@@ -126,10 +127,17 @@ Finally, we wrap all the model hyperparameters into the `GaussianProcess` struct
 ```julia
 model = GaussianProcess(;
     kernel,
-    length_scale_priors,
-    amp_priors,
+    lengthscale_priors,
+    amplitude_priors,
     noise_std_priors,
 )
+```
+
+## Acquisition Function
+
+We need to define the acquisition function. The next evaluation point in each iteration is selected by maximizing this function. We will select new data by maximizing the posterior variance ``\mathbb{V}\left[ p(x|z_o) \right]``.
+```julia
+acquisition = PostVarAcq()
 ```
 
 ## Instantiate `BolfiProblem`
@@ -139,6 +147,7 @@ Now, we can instantiate the `BolfiProblem`.
 problem = BolfiProblem(init_data;
     f = gp_objective,
     domain = Domain(; bounds),
+    acquisition
     model,
     likelihood,
     x_prior,
@@ -149,12 +158,7 @@ problem = BolfiProblem(init_data;
 
 Before we run the BOLFI method, we need to define the methods used during the individual steps of the algorithm.
 
-We need to define the acquisition function. The next evaluation point in each iteration is selected by maximizing this function. We will select new data by maximizing the posterior variance ``\mathbb{V}\left[ p(\theta|y_o) \right]``.
-```julia
-acquisition = PostVarAcq()
-```
-
-Then we need to define the algorithms used to estimate the model (hyper)parameters and maximize the acquisition. See the [BOSS.jl](https://soldasim.github.io/BOSS.jl/stable/) package for more information about available model fitters and/or acquisition maximizers.
+We need to define the algorithms used to estimate the model (hyper)parameters and maximize the acquisition. See the [BOSS.jl](https://soldasim.github.io/BOSS.jl/stable/) package for more information about available model fitters and/or acquisition maximizers.
 ```julia
 model_fitter = OptimizationMAP(;
     algorithm = NEWUOA(),
@@ -181,7 +185,7 @@ options = BolfiOptions(;
 
 Now, we have everything we need and we can call the main function `bolfi!`.
 ```julia
-bolfi!(problem; acquisition, model_fitter, acq_maximizer, term_cond, options)
+bolfi!(problem; model_fitter, acq_maximizer, term_cond, options)
 ```
 
 # Plots
