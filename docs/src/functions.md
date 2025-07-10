@@ -37,6 +37,7 @@ The `approx_posterior` function can be used to obtain the (un)normalized approxi
 
 ```@docs
 approx_posterior
+log_approx_posterior
 ```
 
 The `posterior_mean` function can be used to obtain the expected value of the (un)normalized posterior
@@ -45,6 +46,7 @@ obtained by analytically integrating over the uncertainty of the GPs and the sim
 
 ```@docs
 posterior_mean
+log_posterior_mean
 ```
 
 The `posterior_variance` function can be used to obtain the variance of the (un)normalized posterior
@@ -53,6 +55,7 @@ obtained by analytically integrating over the uncertainty of the GPs and the sim
 
 ```@docs
 posterior_variance
+log_posterior_variance
 ```
 
 The `approx_likelihood` function can be used to obtain the approximate likelihood ``p(y_o|\theta)``
@@ -60,6 +63,7 @@ obtained by substituting the predictive means of the GPs directly as the discrep
 
 ```@docs
 approx_likelihood
+log_approx_likelihood
 ```
 
 The `likelihood_mean` function can be used to obtain the expected value of the likelihood
@@ -68,6 +72,7 @@ of the GPs and the simulator.
 
 ```@docs
 likelihood_mean
+log_likelihood_mean
 ```
 
 The `likelihood_variance` function can be used to obtain the variance of the likelihood
@@ -76,6 +81,7 @@ of the GPs and the simulator.
 
 ```@docs
 likelihood_variance
+log_likelihood_variance
 ```
 
 The `evidence` function can be used to approximate the evidence ``p(y_o)``

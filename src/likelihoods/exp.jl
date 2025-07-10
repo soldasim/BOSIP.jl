@@ -18,35 +18,55 @@ function loglike(::ExpLikelihood, z::AbstractVector{<:Real})
     return z[1]
 end
 
-function approx_likelihood(::ExpLikelihood, bolfi::BolfiProblem, gp_post)
+function log_approx_likelihood(::ExpLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
     mid = mean(bolfi.problem.domain.bounds)
-    @assert gp_post(mid)[1] |> length == 1
+    @assert mean(model_post, mid) |> length == 1
 
-    function approx_like(x)
-        μ_z, std_z = gp_post(x)
+    function log_approx_like(x)
+        μ_z = mean(model_post, x)
         μ = μ_z[1]
-        return exp(μ)
+
+        # return log( exp(μ) )
+        return μ
     end
 end
 
-function likelihood_mean(::ExpLikelihood, bolfi::BolfiProblem, gp_post)
+function log_likelihood_mean(::ExpLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
     mid = mean(bolfi.problem.domain.bounds)
-    @assert gp_post(mid)[1] |> length == 1
+    @assert mean(model_post, mid) |> length == 1
 
-    function like_mean(x)
-        μ_z, std_z = gp_post(x)
-        μ, σ = μ_z[1], std_z[1]
-        return exp(μ + 0.5 * σ^2)
+    function log_like_mean(x)
+        μ_z, σ2_z = mean_and_var(model_post, x)
+        μ, σ2 = μ_z[1], σ2_z[1]
+
+        # return log( exp(μ + 0.5 * σ2) )
+        return μ + 0.5 * σ2
     end
 end
 
-function sq_likelihood_mean(::ExpLikelihood, bolfi::BolfiProblem, gp_post)
-    mid = mean(bolfi.problem.domain.bounds)
-    @assert gp_post(mid)[1] |> length == 1
+# function log_sq_likelihood_mean(::ExpLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
+#     mid = mean(bolfi.problem.domain.bounds)
+#     @assert mean(model_post, mid) |> length == 1
 
-    function sq_like_mean(x)
-        μ_z, std_z = gp_post(x)
-        μ, σ = μ_z[1], std_z[1]
-        return exp(2 * μ + 2 * σ^2)
+#     function log_sq_like_mean(x)
+#         μ_z, σ2_z = mean_and_var(model_post, x)
+#         μ, σ2 = μ_z[1], σ2_z[1]
+
+#         # return log( exp(2 * μ + 2 * σ2) )
+#         return 2 * μ + 2 * σ2
+#     end
+# end
+
+# This is a more numerically stable version, than using the `log_sq_likelihood_mean` function above.
+function log_likelihood_variance(::ExpLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
+    mid = mean(bolfi.problem.domain.bounds)
+    @assert mean(model_post, mid) |> length == 1
+
+    function log_like_var(x::AbstractVector{<:Real})
+        μ_z, σ2_z = mean_and_var(model_post, x)
+        μ, σ2 = μ_z[1], σ2_z[1]
+
+        # return log( exp(2 * (μ + σ2) + log(1 - exp(-σ2))) )
+        return 2 * (μ + σ2) + log(1 - exp(-σ2))
     end
 end

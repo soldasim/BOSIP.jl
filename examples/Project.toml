@@ -1,6 +1,7 @@
 [deps]
 BOLFI = "631834c2-07fe-4b6b-876a-15b6a4e37445"
 BOSS = "15052f3f-a82a-4ca3-bbc4-f478a3bd1ae2"
+Bijectors = "76274a88-744f-5084-9051-94815aaf08c4"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"

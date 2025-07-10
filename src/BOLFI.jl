@@ -7,8 +7,10 @@ export x_dim, y_dim
 
 export approx_posterior, posterior_mean, posterior_variance
 export approx_likelihood, likelihood_mean, likelihood_variance
+export log_approx_posterior, log_posterior_mean, log_posterior_variance
+export log_approx_likelihood, log_likelihood_mean, log_likelihood_variance
 export evidence
-export loglike
+export loglike, like
 export sample_approx_posterior, sample_expected_posterior, sample_posterior, resample
 export calculate_metric
 export plot_marginals_int, plot_marginals_kde, PlotSettings
@@ -28,9 +30,8 @@ export BolfiTermCond, AEConfidence, UBLBConfidence
 export BolfiCallback, CombinedCallback, NoCallback
 export BolfiOptions
 
-export TuringSampler
-export RejectionSampler, LikelihoodMaximizer
-export AMISSampler
+export DistributionSampler, TuringSampler, RejectionSampler, AMISSampler
+export LikelihoodMaximizer
 export ProposalDistribution, NormalProposal
 export DistributionFitter, AnalyticalFitter, OptimizationFitter
 

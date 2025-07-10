@@ -26,7 +26,7 @@ CairoExt = "CairoMakie"
 TuringExt = "Turing"
 
 [compat]
-BOSS = "0.3.4, 0.4.0"
+BOSS = "0.5"
 CairoMakie = "0.12.18, 0.13, 0.14, 0.15"
 Distributed = "1.11.0"
 Distributions = "0.25.112"

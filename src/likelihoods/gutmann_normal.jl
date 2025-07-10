@@ -47,7 +47,7 @@ Alias for [`GutmannNormalLikelihood`](@ref).
 """
 const GutmannGaussianLikelihood = GutmannNormalLikelihood
 
-function approx_likelihood(like::GutmannNormalLikelihood, bolfi, gp_post)
+function log_approx_likelihood(like::GutmannNormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
     if (y_dim(bolfi) != 1) || any(bolfi.problem.data.Y .< 0.)
         throw(error("The simulator should return a positive scalar discrepancy for Gutmann's likelihood."))
     end
@@ -55,14 +55,14 @@ function approx_likelihood(like::GutmannNormalLikelihood, bolfi, gp_post)
     ϵ = like.ϵ
     std_δ = like.std_δ
 
-    function approx_like(x::AbstractVector{<:Real})
-        μ_z, std_z = gp_post(x) .|> first
+    function log_approx_like(x::AbstractVector{<:Real})
+        μ_z = mean(model_post, x)[1]
         z_stat = (ϵ - μ_z) / std_δ
-        return normcdf(z_stat)
+        return normcdf(z_stat) |> log
     end
 end
 
-function likelihood_mean(like::GutmannNormalLikelihood, bolfi, gp_post)
+function log_likelihood_mean(like::GutmannNormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
     if (y_dim(bolfi) != 1) || any(bolfi.problem.data.Y .< 0.)
         throw(error("The simulator should return a positive scalar discrepancy for Gutmann's likelihood."))
     end
@@ -70,16 +70,16 @@ function likelihood_mean(like::GutmannNormalLikelihood, bolfi, gp_post)
     ϵ = like.ϵ
     std_δ = like.std_δ
 
-    function like_mean(x::AbstractVector{<:Real})
-        μ_z, std_z = gp_post(x) .|> first
+    function log_like_mean(x::AbstractVector{<:Real})
+        μ_z, std_z = mean_and_std(model_post, x) .|> first
         z_stat = (ϵ - μ_z) / sqrt(std_z^2 + std_δ^2)
-        return normcdf(z_stat)
+        return normcdf(z_stat) |> log
     end
 end
 
 # The derivation can be found in the supplementary material of the
 # "Efficient Acquisition Rules for Model-Based Approximate Bayesian Computation" paper.
-function sq_likelihood_mean(like::GutmannNormalLikelihood, bolfi, gp_post)
+function log_sq_likelihood_mean(like::GutmannNormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
     if (y_dim(bolfi) != 1) || any(bolfi.problem.data.Y .< 0.)
         throw(error("The simulator should return a positive scalar discrepancy for Gutmann's likelihood."))
     end
@@ -89,11 +89,11 @@ function sq_likelihood_mean(like::GutmannNormalLikelihood, bolfi, gp_post)
 
     # taken from the equation (34) in the appendix of the Jarvenpaa's
     # "Efficient Acquisition Rules..." paper
-    function sq_like_mean(x::AbstractVector{<:Real})
-        μ_z, std_z = gp_post(x) .|> first
+    function log_sq_like_mean(x::AbstractVector{<:Real})
+        μ_z, std_z = mean_and_std(model_post, x) .|> first
         z_stat = (ϵ - μ_z) / sqrt(std_z^2 + std_δ^2)
         ρ = std_z^2 / (std_δ^2 + std_z^2)
-        return normcdf(z_stat) - 2 * owent(z_stat, (1 - ρ) / sqrt(1 - ρ^2))
+        return ( normcdf(z_stat) - 2 * owent(z_stat, (1 - ρ) / sqrt(1 - ρ^2)) ) |> log
     end
 end
 

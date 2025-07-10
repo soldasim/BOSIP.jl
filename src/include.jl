@@ -3,7 +3,7 @@ include("types/include.jl")
 
 # Code
 include("utils/include.jl")
-include("posterior.jl")
+include("posterior/include.jl")
 include("sampling.jl")
 include("main.jl")
 include("plots.jl")
