@@ -2,7 +2,7 @@
 """
     log_approx_posterior(::BolfiProblem)
 
-Return *the log of* the unnormalized approximate posterior ``\\hat{p}(y_o|x) p(x)`` as a function of `x`.
+Return *the log of* the unnormalized approximate posterior ``\\hat{p}(z_o|x) p(x)`` as a function of `x`.
 
 # See Also
 
@@ -22,7 +22,7 @@ end
 """
     log_approx_likelihood(::BolfiProblem)
 
-Return *the log of* the approximate likelihood ``\\hat{p}(y_o|x)`` as a function of `x`.
+Return *the log of* the approximate likelihood ``\\hat{p}(z_o|x)`` as a function of `x`.
 
 # See Also
 
@@ -46,7 +46,7 @@ end
 """
     log_posterior_mean(::BolfiProblem)
 
-Return *the log of* the expectation of the unnormalized posterior ``\\mathbb{E}[\\hat{p}(y_o|x) p(x)]`` as a function of ``x``.
+Return *the log of* the expectation of the unnormalized posterior ``\\mathbb{E}[\\hat{p}(z_o|x) p(x)]`` as a function of ``x``.
 
 # See Also
 
@@ -66,7 +66,7 @@ end
 """
     log_likelihood_mean(::BolfiProblem)
 
-Return *the log of* the expectation of the likelihood approximation ``\\mathbb{E}[\\hat{p}(y_o|x)]`` as a function of ``x``.
+Return *the log of* the expectation of the likelihood approximation ``\\mathbb{E}[\\hat{p}(z_o|x)]`` as a function of ``x``.
 
 # See Also
 
@@ -90,7 +90,7 @@ end
 """
     log_posterior_variance(::BolfiProblem)
 
-Return *the log of* the variance of the unnormalized posterior ``\\mathbb{V}[\\hat{p}(y_o|x) p(x)]`` as a function of ``x``.
+Return *the log of* the variance of the unnormalized posterior ``\\mathbb{V}[\\hat{p}(z_o|x) p(x)]`` as a function of ``x``.
 
 # See Also
 
@@ -110,7 +110,7 @@ end
 """
     log_likelihood_variance(::BolfiProblem)
 
-Return *the log of* the variance of the likelihood approximation ``\\mathbb{V}[\\hat{p}(y_o|x)]`` as a function of ``x``.
+Return *the log of* the variance of the likelihood approximation ``\\mathbb{V}[\\hat{p}(z_o|x)]`` as a function of ``x``.
 
 # See Also
 

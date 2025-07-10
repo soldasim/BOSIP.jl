@@ -1,6 +1,6 @@
 
 """
-Represents the assumed likelihood of the experiment observation ``y_o``.
+Represents the assumed likelihood of the experiment observation ``z_o``.
 
 # Defining a Custom Likelihood
 
@@ -26,46 +26,46 @@ The following additional methods are provided by default and *need not be implem
 abstract type Likelihood end
 
 """
-    loglike(::Likelihood, z::AbstractVector{<:Real})
+    loglike(::Likelihood, δ::AbstractVector{<:Real})
 
-Return the log-likelihood of the observation given the simulator output `z`.
+Return the log-likelihood of the observation given the simulator output `δ`.
 """
 function loglike end
 
 """
-    pdf(::Likelihood, z::AbstractVector{<:Real})
+    pdf(::Likelihood, δ::AbstractVector{<:Real})
 
-Return the likelihood of the observation given the simulator output `z`.
+Return the likelihood of the observation given the model output `δ`.
 """
-function like(l::Likelihood, z::AbstractVector{<:Real})
-    return exp(loglike(l, z))
+function like(l::Likelihood, δ::AbstractVector{<:Real})
+    return exp(loglike(l, δ))
 end
 
 """
     log_approx_likelihood(::Likelihood, ::BolfiProblem, ::ModelPosterior)
 
-Returns a function mapping ``x`` to ``log \\hat{p}(y_o|x)``.
+Returns a function mapping ``x`` to ``log \\hat{p}(z_o|x)``.
 """
 function log_approx_likelihood end
 
 """
     log_likelihood_mean(::Likelihood, ::BolfiProblem, ::ModelPosterior)
 
-Returns a function mapping ``x`` to ``log \\mathbb{E}[ \\hat{p}(y_o|x) | GP ]``.
+Returns a function mapping ``x`` to ``log \\mathbb{E}[ \\hat{p}(z_o|x) | GP ]``.
 """
 function log_likelihood_mean end
 
 """
     log_sq_likelihood_mean(::Likelihood, ::BolfiProblem, ::ModelPosterior)
 
-Returns a function mapping ``x`` to ``log \\mathbb{E}[ \\hat{p}(y_o|x)^2 | GP ]``.
+Returns a function mapping ``x`` to ``log \\mathbb{E}[ \\hat{p}(z_o|x)^2 | GP ]``.
 """
 function log_sq_likelihood_mean end
 
 """
     log_likelihood_variance(::Likelihood, ::BolfiProblem, ::ModelPosterior)
 
-Return a function mapping ``x`` to ``log \\mathbb{V}[ \\hat{p}(y_o|x) | GP ]``.
+Return a function mapping ``x`` to ``log \\mathbb{V}[ \\hat{p}(z_o|x) | GP ]``.
 """
 function log_likelihood_variance end
 

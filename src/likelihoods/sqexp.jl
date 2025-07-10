@@ -13,9 +13,9 @@ Squares and then exponentiates the model prediction to obtain the likelihood.
     opt::AcquisitionMaximizer
 end
 
-function loglike(::SqExpLikelihood, z::AbstractVector{<:Real})
-    @assert length(z) == 1
-    return z[1]^2
+function loglike(::SqExpLikelihood, δ::AbstractVector{<:Real})
+    @assert length(δ) == 1
+    return δ[1]^2
 end
 
 function log_approx_likelihood(::SqExpLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
@@ -23,8 +23,8 @@ function log_approx_likelihood(::SqExpLikelihood, bolfi::BolfiProblem, model_pos
     @assert mean(model_post, mid) |> length == 1
 
     function log_approx_like(x)
-        μ_z, std_z = mean_and_std(model_post, x)
-        μ = μ_z[1]
+        μ_δ, std_δ = mean_and_std(model_post, x)
+        μ = μ_δ[1]
 
         # return log( exp(μ^2) )
         return μ^2
@@ -36,8 +36,8 @@ function log_likelihood_mean(::SqExpLikelihood, bolfi::BolfiProblem, model_post:
     @assert mean(model_post, mid) |> length == 1
 
     function log_like_mean(x)
-        μ_z, std_z = mean_and_std(model_post, x)
-        μ, σ = μ_z[1], std_z[1]
+        μ_δ, std_δ = mean_and_std(model_post, x)
+        μ, σ = μ_δ[1], std_δ[1]
 
         # return log( (1 / sqrt(1 + σ^2)) * exp(-(1/2) * (μ^2 / (1 + σ^2))) )
         return (-(1/2) * log(1 + σ^2)) + (-(1/2) * (μ^2 / (1 + σ^2)))
@@ -49,8 +49,8 @@ function log_sq_likelihood_mean(::SqExpLikelihood, bolfi::BolfiProblem, model_po
     @assert mean(model_post, mid) |> length == 1
 
     function log_sq_like_mean(x)
-        μ_z, std_z = mean_and_std(model_post, x)
-        μ, σ = μ_z[1], std_z[1]
+        μ_δ, std_δ = mean_and_std(model_post, x)
+        μ, σ = μ_δ[1], std_δ[1]
 
         # return log( (1 / sqrt(1 + 2 * σ^2)) * exp(-(1/2) * (μ^2 / (σ^2 * (1 + 2 * σ^2)))) )
         return (-(1/2) * log(1 + 2 * σ^2)) + (-(1/2) * (μ^2 / (σ^2 * (1 + 2 * σ^2))))

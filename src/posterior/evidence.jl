@@ -2,11 +2,11 @@
 """
     evidence(post, x_prior; kwargs...)
 
-Return the estimated evidence ``\\hat{p}(y_o)``.
+Return the estimated evidence ``\\hat{p}(z_o)``.
 
 # Arguments
 - `post`: A function `::AbstractVector{<:Real} -> ::Real`
-        representing the posterior ``p(x|y_o)``.
+        representing the posterior ``p(x|z_o)``.
 - `x_prior`: A multivariate distribution
         representing the prior ``p(x)``.
 

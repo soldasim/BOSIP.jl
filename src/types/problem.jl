@@ -18,7 +18,7 @@ Currently, at least one datapoint has to be provided (purely for implementation 
 - `domain::Domain`: The parameter domain of the problem.
 - `acquisition::BolfiAcquisition`: Defines the acquisition function.
 - `model::SurrogateModel`: The surrogate model to be used to model the proxy `δ`.
-- `likelihood::Likelihood`: The likelihood of the experiment observation `y_o`.
+- `likelihood::Likelihood`: The likelihood of the experiment observation `z_o`.
 - `x_prior::MultivariateDistribution`: The prior `p(x)` on the input parameters.
 - `y_sets::Union{Nothing, Matrix{Bool}}`: Optional parameter intended for advanced usage.
         The binary columns define subsets `y_1, ..., y_m` of the observation dimensions within `y`.

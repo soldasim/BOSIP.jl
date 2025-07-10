@@ -10,7 +10,7 @@ Call the main function `bolfi!` to run the BOLFI procedure, which sequentially q
 bolfi!
 ```
 
-Call the function `estimate_parameters!` to fit the model hyperparameters according to the current dataset. One can also call `bolfi!` with `term_cond = IterLimit(0)` to fit the hyperparameters without running any simulations. This will additionally only refit the model if the dataset changed since the last parameter estimation. In contrast, calling `estimate_parameters!` will always re-run the parameter estimation.
+Call the function `estimate_parameters!` to fit the model hyperparameters according to the current dataset. (One can also call `bolfi!` with `term_cond = IterLimit(0)` to fit the hyperparameters without running any simulations. This will additionally only refit the model if the dataset changed since the last parameter estimation. In contrast, calling `estimate_parameters!` will always re-run the parameter estimation.)
 
 ```@docs
 estimate_parameters!
@@ -28,12 +28,12 @@ Call the function `eval_objective!` to start a simulation run.
 eval_objective!
 ```
 
-## Parameter Posterior
+## Parameter Posterior & Likelihood
 
 This section contains function used to obtain the trained parameter posterior/likelihood approximations.
 
 The `approx_posterior` function can be used to obtain the (un)normalized approximate posterior
-``p(\theta|y_o) \propto p(y_o|\theta) p(\theta)`` obtained by substituting the predictive means of the GPs directly as the discrepancies from the true observation.
+``p(x|z_o) \propto p(z_o|x) p(x)`` obtained by substituting the predictive means of the GPs directly as the discrepancies from the true observation.
 
 ```@docs
 approx_posterior
@@ -41,7 +41,7 @@ log_approx_posterior
 ```
 
 The `posterior_mean` function can be used to obtain the expected value of the (un)normalized posterior
-``\mathbb{E}\left[p(\theta|y_o)\right] \propto \mathbb{E}\left[p(y_o|\theta)p(\theta)\right]``
+``\mathbb{E}\left[p(x|z_o)\right] \propto \mathbb{E}\left[p(z_o|x)p(x)\right]``
 obtained by analytically integrating over the uncertainty of the GPs and the simulator.
 
 ```@docs
@@ -50,7 +50,7 @@ log_posterior_mean
 ```
 
 The `posterior_variance` function can be used to obtain the variance of the (un)normalized posterior
-``\mathbb{V}\left[p(\theta|y_o)\right] \propto \mathbb{V}\left[p(y_o|\theta)p(\theta)\right]``
+``\mathbb{V}\left[p(x|z_o)\right] \propto \mathbb{V}\left[p(z_o|x)p(x)\right]``
 obtained by analytically integrating over the uncertainty of the GPs and the simulator.
 
 ```@docs
@@ -58,7 +58,7 @@ posterior_variance
 log_posterior_variance
 ```
 
-The `approx_likelihood` function can be used to obtain the approximate likelihood ``p(y_o|\theta)``
+The `approx_likelihood` function can be used to obtain the approximate likelihood ``p(z_o|x)``
 obtained by substituting the predictive means of the GPs directly as the discrepancies from the true observation.
 
 ```@docs
@@ -67,7 +67,7 @@ log_approx_likelihood
 ```
 
 The `likelihood_mean` function can be used to obtain the expected value of the likelihood
-``\mathbb{E}\left[p(y_o|\theta)\right]`` obtained by analytically integrating over the uncertainty
+``\mathbb{E}\left[p(z_o|x)\right]`` obtained by analytically integrating over the uncertainty
 of the GPs and the simulator.
 
 ```@docs
@@ -76,7 +76,7 @@ log_likelihood_mean
 ```
 
 The `likelihood_variance` function can be used to obtain the variance of the likelihood
-``\mathbb{V}\left[p(y_o|\theta)\right]`` obtained by analytically integrating over the uncertainty
+``\mathbb{V}\left[p(z_o|x)\right]`` obtained by analytically integrating over the uncertainty
 of the GPs and the simulator.
 
 ```@docs
@@ -84,7 +84,7 @@ likelihood_variance
 log_likelihood_variance
 ```
 
-The `evidence` function can be used to approximate the evidence ``p(y_o)``
+The `evidence` function can be used to approximate the evidence ``p(z_o)``
 of a given posterior function by sampling. It is advisable to use this
 estimate only in low parameter dimensions, as it will require many samples
 to achieve reasonable precision on high-dimensional domains.
@@ -96,6 +96,8 @@ The `evidence` function is used to normalize the posterior if one calls
 ```@docs
 evidence
 ```
+
+The functions `like` and `loglike` can be used to evaluate the likelihood value
 
 ## Sampling from the Posterior
 
@@ -143,4 +145,13 @@ The function `plot_marginals_int` approximates the marginals by numerical integr
 ```@docs
 plot_marginals_int
 plot_marginals_kde
+```
+
+# Utils
+
+The function `approx_by_gauss_mix` together with the structure `GaussMixOptions` can be used to obtain a Gaussian mixture approximation the provided probability density function.
+
+```@docs
+approx_by_gauss_mix
+GaussMixOptions
 ```
