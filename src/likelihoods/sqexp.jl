@@ -4,14 +4,8 @@
 
 Assumes the model approximates the square root of the log-likelihood (as a scalar).
 Squares and then exponentiates the model prediction to obtain the likelihood.
-
-# Keywords
-- `opt`: An `AcquisitionMaximizer` used to maximizer the log-likelihood
-        needed for GP posterior normalization.
 """
-@kwdef struct SqExpLikelihood <: Likelihood
-    opt::AcquisitionMaximizer
-end
+@kwdef struct SqExpLikelihood <: Likelihood end
 
 function loglike(::SqExpLikelihood, δ::AbstractVector{<:Real})
     @assert length(δ) == 1
