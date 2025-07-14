@@ -89,4 +89,4 @@ x \in \arg\max \alpha(x)
 ```
 for the next simulation. The current surrogate model is used to calculate the acquisition values ``\alpha(x)``, thus avoiding the need for the expensive simulator when evaluating the acquisition function.
 
-The most basic [`BolfiAcquisition`](@ref) is the [`PostVarAcq`](@ref), which selects the point of maximal variance of the current posterior approximation as the next evalation point, effectively exploring the areas with the highest model uncertainty.
+The most basic [`BolfiAcquisition`](@ref) is the [`MaxVar`](@ref), which selects the point of maximal variance of the current posterior approximation as the next evalation point, effectively exploring the areas with the highest model uncertainty.

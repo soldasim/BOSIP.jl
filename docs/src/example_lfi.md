@@ -137,7 +137,7 @@ model = GaussianProcess(;
 
 We need to define the acquisition function. The next evaluation point in each iteration is selected by maximizing this function. We will select new data by maximizing the posterior variance ``\mathbb{V}\left[ p(x|z_o) \right]``.
 ```julia
-acquisition = PostVarAcq()
+acquisition = MaxVar()
 ```
 
 ## Instantiate `BolfiProblem`

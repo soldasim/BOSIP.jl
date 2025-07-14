@@ -25,7 +25,7 @@ export NormalLikelihood, GaussianLikelihood
 export LogNormalLikelihood, LogGaussianLikelihood
 export BinomialLikelihood
 
-export BolfiAcquisition, PostVarAcq, MWMVAcq
+export BolfiAcquisition, MaxVar, LogMaxVar, MWMV, EIIG
 export BolfiTermCond, AEConfidence, UBLBConfidence
 export BolfiCallback, CombinedCallback, NoCallback
 export BolfiOptions
@@ -48,6 +48,7 @@ using KernelFunctions
 using Statistics
 using Optimization
 using ProgressMeter
+using DifferentiationInterface
 using ForwardDiff
 
 using StatsFuns         # used in GutmannNormalLikelihood

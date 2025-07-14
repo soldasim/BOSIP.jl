@@ -53,7 +53,7 @@ struct DummyAcq <: AcquisitionFunction end
 function BolfiProblem(data::ExperimentData;
     f,
     domain,
-    acquisition = PostVarAcq(),
+    acquisition = MaxVar(),
     model,
     likelihood,
     x_prior,

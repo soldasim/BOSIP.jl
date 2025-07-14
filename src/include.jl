@@ -16,3 +16,6 @@ include("acquisitions/include.jl")
 include("term_conds/include.jl")
 include("samplers/include.jl")
 include("metrics/include.jl")
+
+# Other
+include("deprecated.jl")
