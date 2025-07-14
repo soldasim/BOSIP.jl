@@ -44,22 +44,27 @@ ExpLikelihood
 
 The abstract type `BolfiAcquisition` represents the acquisition function.
 
-PostVarAcq, MWMVAcq, InfoGain
-
 ```@docs
 BolfiAcquisition
 ```
 
-The `PostVarAcq` can be used to solve LFI problems. It maximizes the posterior variance to select the next evaluation point.
+The `MaxVar` can be used to solve LFI problems. It maximizes the posterior variance to select the next evaluation point.
 
 ```@docs
-PostVarAcq
+MaxVar
+LogMaxVar
 ```
 
-The `MWMVAcq` can be used to solve LFSS problems. It maximizes the "mass-weighted mean variance" of the posteriors given by the different sensor sets.
+The `EIIG` acquisition maximizes the Expected Integrated Information Gain. That is; it attempts to minimize the entropy of the current distribution over the possible parameter posteriors (which is implicitly given by the explicit surrogate model posterior).
 
 ```@docs
-MWMVAcq
+EIIG
+```
+
+The `MWMV` can be used to solve LFSS problems. It maximizes the "mass-weighted mean variance" of the posteriors given by the different sensor sets.
+
+```@docs
+MWMV
 ```
 
 ## Termination Condition
