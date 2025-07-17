@@ -101,6 +101,8 @@ The subtypes of `DistributionSampler` can be used to draw samples from the train
 
 ```@docs
 DistributionSampler
+PureSampler
+WeightedSampler
 ```
 
 In particular, the following distribution samplers are currently provided.

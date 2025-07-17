@@ -1,5 +1,7 @@
 
 """
+    DistributionSampler
+
 Subtypes of `DistributionSampler` are used to sample from a probability distribution.
 
 Each subtype of `DistributionSampler` *should* implement:
@@ -7,8 +9,26 @@ Each subtype of `DistributionSampler` *should* implement:
 
 Each subtype of `DistributionSampler` *may* additionally implement:
 - `sample_posterior(::DistributionSampler, likelihood::Function, prior::MultivariateDistribution, domain::Domain, count::Int; kwargs...) -> (X, ws)`
+
+See also: [`PureSampler`](@ref), [`WeightedSampler`](@ref)
 """
 abstract type DistributionSampler end
+
+"""
+    PureSampler <: DistributionSampler
+
+A `DistributionSampler` which samples directly from the provided pdf,
+and always returns samples with uniform weights.
+"""
+abstract type PureSampler <: DistributionSampler end
+
+"""
+    WeightedSampler <: DistributionSampler
+
+A `DistributionSampler` which does not sample directly from the pdf,
+but instead returns samples with non-uniform weights correcting for the sampling bias.
+"""
+abstract type WeightedSampler <: DistributionSampler end
 
 """
     sample_posterior(::DistributionSampler, posterior::Function, domain::Domain, count::Int; kwargs...)

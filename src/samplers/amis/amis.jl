@@ -27,7 +27,7 @@ re-fitted in each iteration.
 - `gauss_mix_options::Union{Nothing, GaussMixOptions}`: Options for the Gaussian mixture approximation
         used for the 0th iteration. Defaults to `nothing`, which means the Laplace approximation is used instead.
 """
-@kwdef struct AMISSampler <: DistributionSampler
+@kwdef struct AMISSampler <: WeightedSampler
     iters::Int
     proposal_fitter::DistributionFitter = AnalyticalFitter()
     gauss_mix_options::GaussMixOptions
