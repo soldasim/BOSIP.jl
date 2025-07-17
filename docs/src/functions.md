@@ -107,6 +107,7 @@ The `sample_approx_posterior`, `sample_expected_posterior`, and `sample_posterio
 sample_approx_posterior
 sample_expected_posterior
 sample_posterior
+resample
 ```
 
 The sampling is performed via the Turing.jl package. The Turing.jl package is a quite heavy dependency, so it is not loaded by default. To sample from the posterior, one has to first load Turing.jl as `using Turing`, which will also compile the `sample_posterior` function.

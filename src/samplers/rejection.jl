@@ -39,7 +39,7 @@ A sampler that uses trivial rejection sampling to draw samples from the posterio
 # Keywords
 - `likelihood_maximizer::LikelihoodMaximizer`: The optimizer used to find the maximum likelihood value.
 """
-@kwdef struct RejectionSampler <: DistributionSampler
+@kwdef struct RejectionSampler <: PureSampler
     likelihood_maximizer::LikelihoodMaximizer
 end
 

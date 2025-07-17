@@ -21,6 +21,6 @@ Then the samples from all chains are concatenated and returned.
 Total drawn samples:    'chain_count * (warmup + leap_size * samples_in_chain)'
 Total returned samples: 'chain_count * samples_in_chain'
 """
-abstract type TuringSampler <: DistributionSampler end
+abstract type TuringSampler <: PureSampler end
 
 # The sampling is implemented in the `TuringExt` extension.

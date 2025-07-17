@@ -30,7 +30,8 @@ export BolfiTermCond, AEConfidence, UBLBConfidence
 export BolfiCallback, CombinedCallback, NoCallback
 export BolfiOptions
 
-export DistributionSampler, RejectionSampler, TuringSampler, AMISSampler
+export DistributionSampler, PureSampler, WeightedSampler
+export RejectionSampler, TuringSampler, AMISSampler
 export LikelihoodMaximizer
 export ProposalDistribution, NormalProposal
 export DistributionFitter, AnalyticalFitter, OptimizationFitter
