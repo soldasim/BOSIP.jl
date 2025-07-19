@@ -157,7 +157,9 @@ euclidean(a, b) = sqrt(sum((b .- a) .^ 2))
 function laplace_approx(logpost, μ, bounds; ϵ=0.)
     # @info "Laplace approx. for sampling: μ = $μ"
 
-    second_derivative = ForwardDiff.jacobian(x -> ForwardDiff.gradient(logpost, x), μ)
+    # second_derivative = ForwardDiff.jacobian(x -> ForwardDiff.gradient(logpost, x), μ)
+    second_derivative = hessian(logpost, AutoForwardDiff(), μ)
+
     if any(isnan.(second_derivative)) || any(isinf.(second_derivative)) || (det((-1) * second_derivative) ≈ 0)
         @warn "Laplace approx. failed! NaNs in the second derivative."
         # return nothing
