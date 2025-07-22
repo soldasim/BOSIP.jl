@@ -29,3 +29,9 @@ create_boss_options(opt::BolfiOptions, bolfi::BolfiProblem) = BOSS.BossOptions(
     opt.parallel_evals,
     CallbackWrapper(opt.callback, bolfi),
 )
+create_boss_options(opt::BolfiOptions) = BOSS.BossOptions(
+    opt.info,
+    opt.debug,
+    opt.parallel_evals,
+    BOSS.NoCallback(),
+)
