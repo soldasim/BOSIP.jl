@@ -25,7 +25,7 @@ export NormalLikelihood, GaussianLikelihood
 export LogNormalLikelihood, LogGaussianLikelihood
 export BinomialLikelihood
 
-export BolfiAcquisition, MaxVar, LogMaxVar, MWMV, EIIG
+export BolfiAcquisition, MaxVar, LogMaxVar, MWMV, EIIG, EIV
 export BolfiTermCond, AEConfidence, UBLBConfidence
 export BolfiCallback, CombinedCallback, NoCallback
 export BolfiOptions
@@ -50,6 +50,7 @@ using Optimization
 using ProgressMeter
 using DifferentiationInterface
 using ForwardDiff
+using LazyArrays
 
 using StatsFuns         # used in GutmannNormalLikelihood
 using SpecialFunctions  # used in utils/owent.jl: erfc
