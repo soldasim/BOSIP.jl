@@ -64,18 +64,20 @@ function approx_by_gauss_mix(logpost, domain::Domain, opt::GaussMixOptions)
 
     gausses = laplace_approx.(Ref(logpost), μs, Ref(domain.bounds))
     gausses = [filter(!isnothing, gausses)...]
-    if isempty(gausses)
-        @error "All Laplace approximations failed! (of all found modes)"
-        @assert false
-    end
-    weights = exp.(logpost.(getfield.(gausses, Ref(:μ))))
 
     if isempty(gausses)
-        @warn "Approximation by a Gaussian mixture failed! No extrema found in the domain."
-        return nothing
-    else
-        return MixtureModel(gausses, weights ./ sum(weights))
+        @warn "No mode found! Falling back on `μ = mean(bounds)` and `Σ = ((ub .- lb) ./ 5) * I`."
+        lb, ub = domain.bounds
+        μ = mean(domain.bounds)
+        Σ = Diagonal((ub .- lb) ./ 5)
+        return MvNormal(μ, Σ)
     end
+
+    log_weights = logpost.(getfield.(gausses, Ref(:μ)))
+    log_weights .-= maximum(log_weights)
+    weights = exp.(log_weights)
+    
+    return MixtureModel(gausses, weights ./ sum(weights))
 end
 
 function opt_for_modes(logpost, domain::Domain, opt::GaussMixOptions)
@@ -117,6 +119,8 @@ function opt_for_modes(logpost, domain::Domain, opt::GaussMixOptions)
 end
 
 function cluster_modes(θs::AbstractVector{<:AbstractVector{<:Real}}, vals::AbstractVector{<:Real}; rel_min_weight::Real, cluster_ϵs::AbstractVector{<:Real})
+    isempty(θs) && return θs  # no modes found
+    
     # sort by descending posterior value
     score = sortperm(vals; rev=true)
     θs = θs[score]
@@ -155,31 +159,28 @@ end
 euclidean(a, b) = sqrt(sum((b .- a) .^ 2))
 
 function laplace_approx(logpost, μ, bounds; ϵ=0.)
-    # @info "Laplace approx. for sampling: μ = $μ"
-
-    # second_derivative = ForwardDiff.jacobian(x -> ForwardDiff.gradient(logpost, x), μ)
     second_derivative = hessian(logpost, AutoForwardDiff(), μ)
 
-    if any(isnan.(second_derivative)) || any(isinf.(second_derivative)) || (det((-1) * second_derivative) ≈ 0)
-        @warn "Laplace approx. failed! NaNs in the second derivative."
-        # return nothing
-        @warn "Falling back on `Σ = ((ub .- lb) ./ 5) * I`."
-        lb, ub = bounds
-        Σ = Diagonal((ub .- lb) ./ 5)
-    else
-        Σ = inv((-1) * second_derivative)
+    if any(isnan.(second_derivative)) || any(isinf.(second_derivative))
+        @warn "Laplace approx.: Failed due to numerical issues in Hessian."
+        return nothing
     end
+    
+    # construct Σ
+    Σ = (-1) * second_derivative
+    if (det(Σ) ≈ 0)
+        @warn "Laplace approx.: Hessian is singular! Using diagonal covariance matrix instead."
+        Σ = Diagonal(Σ)
+    end
+    Σ = inv(Σ)
 
     # solve numerical issues
     #   - Σ should already be symmetric, but might not be due to small numerical imprecisions
     Σ = Symmetric(Σ) + (ϵ * I) # add a small diagonal matrix to ensure positive definiteness
     
     if !isposdef(Σ)
-        @warn "Laplace approx. failed! Covariance matrix is not positive definite."
-        # return nothing
-        @warn "Falling back on `Σ = ((ub .- lb) ./ 5) * I`."
-        lb, ub = bounds
-        Σ = Diagonal((ub .- lb) ./ 5)
+        @warn "Laplace approx.: Failed due to the covariance matrix not being positive definite."
+        return nothing
     end
 
     return MvNormal(μ, Σ)

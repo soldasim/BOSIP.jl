@@ -40,10 +40,10 @@ function fit_distribution!(opt::OptimizationFitter, dist::ProposalDistribution, 
         return params, loglike
     end
 
-    θ_opt, _ = optimize_multistart(optimize, init_θs;
+    θ_opt, _ = BOSS.optimize_multistart(optimize, init_θs;
         opt.parallel,
         opt.static_schedule,
-        options,
+        options = create_boss_options(options),
     )
     set_params!(dist, θ_opt)
 end

@@ -54,7 +54,7 @@ function (amis::AMIS)(log_π, q::ProposalDistribution, fitter::DistributionFitte
     # t = 1,...,T
     for t in 2:T+1
         # fit the next proposal distribution based on all the samples drawn so far
-        fit_distribution!(fitter, qs[t], collect_samples(xs, 1:t-1), collect_weights(log_Ω, 1:t-1) |> exp_weights; options)
+        fit_distribution!(fitter, qs[t], collect_samples(xs, 1:t-1), get_weights(log_Ω, Δ, 1:t-1); options)
 
         # draw new samples
         xs[:, :, t] = rand(qs[t], N)
@@ -76,7 +76,7 @@ function (amis::AMIS)(log_π, q::ProposalDistribution, fitter::DistributionFitte
     end
 
     xs_ = collect_samples(xs, 2:T+1)
-    ws_ = collect_weights(log_Ω, 2:T+1) |> exp_weights
+    ws_ = get_weights(log_Ω, Δ, 2:T+1)
     return xs_, ws_
 end
 
@@ -97,10 +97,32 @@ function collect_weights(Ω::AbstractArray{<:Real, 2}, ts::UnitRange)
 end
 
 """
+Get weights of the samples from the iteration `ts`.
+
+Fall back to uniform sampling if all weights are zero.
+(That is, return the inverse proposal probabilities of the samples as weights.)
+"""
+function get_weights(log_Ω::AbstractArray{<:Real, 2}, Δ::AbstractArray{<:Real, 2}, ts::UnitRange)
+    log_ws = collect_weights(log_Ω, ts)
+    
+    if all(log_ws .== -Inf)
+        @warn "All weights are zero. Falling back to uniform sampling."
+        log_ws = 0. .- log.(collect_weights(Δ, ts))
+    end
+
+    ws = exp_weights(log_ws)
+    return ws
+end
+
+"""
 Exponentiate the given weights in a numerically stable way.
 """
 function exp_weights(log_ws)
-    log_ws .-= maximum(log_ws)
+    M = maximum(log_ws)
+    (M == -Inf) && throw(ErrorException("Sampling failed due to numerical issues with sample weights."))
+
+    log_ws .-= M
     ws = exp.(log_ws)
+    ws ./= sum(ws)
     return ws
 end

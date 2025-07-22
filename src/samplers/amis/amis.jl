@@ -45,7 +45,11 @@ function sample_posterior(sampler::AMISSampler, post::Function, domain::Domain, 
 
     # Initialize the proposal distribution
     x_dim_ = x_dim(domain)
-    q = NormalProposal(MvNormal(zeros(x_dim_), ones(x_dim_)))
+    lb, ub = domain.bounds
+    μ = mean(domain.bounds)
+    Σ = Diagonal((ub .- lb) ./ 5)
+    # the initial parameters `μ, Σ` are important if `approx_by_gauss_mix` returns `nothing`
+    q = NormalProposal(MvNormal(μ, Σ))
     init_q = approx_by_gauss_mix(logpost, domain, sampler.gauss_mix_options)
 
     amis = AMIS(;
