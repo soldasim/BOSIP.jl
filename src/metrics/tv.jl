@@ -17,13 +17,16 @@ based on a precomputed parameter grid.
     ws::Vector{Float64}
 end
 
-function calculate_metric(tv::TVMetric, true_post::Function, approx_post::Function;
+function calculate_metric(tv::TVMetric, true_logpost::Function, approx_logpost::Function;
     options::BolfiOptions = BolfiOptions(),    
 )
-    return calc_tv(tv.grid, tv.ws, true_post, approx_post)
+    return calc_tv(tv.grid, tv.ws, true_logpost, approx_logpost)
 end
 
-function calc_tv(grid::AbstractMatrix{<:Real}, ws::AbstractVector{<:Real}, true_post::Function, approx_post::Function)
+function calc_tv(grid::AbstractMatrix{<:Real}, ws::AbstractVector{<:Real}, true_logpost::Function, approx_logpost::Function)
+    true_post(x) = exp(true_logpost(x))
+    approx_post(x) = exp(approx_logpost(x))
+    
     # pdf values on grid
     true_vals = true_post.(eachcol(grid))
     approx_vals = approx_post.(eachcol(grid))

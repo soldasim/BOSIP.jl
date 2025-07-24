@@ -18,20 +18,18 @@ end
 
 BOLFI.TuringSampler(args...; kwargs...) = TuringSampler(args...; kwargs...)
 
-function BOLFI.sample_posterior(sampler::TuringSampler, posterior::Function, domain::Domain, count::Int; kwargs...)
+function BOLFI.sample_posterior(sampler::TuringSampler, logpost::Function, domain::Domain, count::Int; kwargs...)
     @assert !any(domain.discrete)
     @assert isnothing(domain.cons)
     
-    logpost(x) = log(posterior(x))
     model = turing_model(logpost, domain.bounds)
     return _sample_posterior_turing(model, sampler, count)
 end
-function BOLFI.sample_posterior(sampler::TuringSampler, likelihood::Function, prior::MultivariateDistribution, domain::Domain, count::Int; kwargs...)
+function BOLFI.sample_posterior(sampler::TuringSampler, loglike::Function, prior::MultivariateDistribution, domain::Domain, count::Int; kwargs...)
     @assert !any(domain.discrete)
     @assert isnothing(domain.cons)
     @assert extrema(prior) == domain.bounds
     
-    loglike(x) = log(likelihood(x))
     model = turing_model(loglike, prior)
     return _sample_posterior_turing(model, sampler, count)
 end

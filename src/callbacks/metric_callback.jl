@@ -1,7 +1,7 @@
 
 @kwdef mutable struct MetricCallback <: BolfiCallback
-    reference::Any #::Union{Function, Matrix{Float64}} true likelihood or reference samples
-    posterior_estimator::Function = posterior_mean
+    reference::Any #::Union{Function, Matrix{Float64}} true logpost or reference samples
+    logpost_estimator::Function = log_posterior_mean
     metric::DistributionMetric
     sampler::DistributionSampler
     sample_count::Int
@@ -20,9 +20,9 @@ function (cb::MetricCallback)(problem::BolfiProblem; kwargs...)
         true_samples = cb.reference
     end
 
-    est_post = cb.posterior_estimator(problem; normalize=true, samples=cb.sample_count)
-    approx_samples = pure_sample_posterior(cb.sampler, est_post, domain, cb.sample_count) 
-    
+    est_logpost = cb.logpost_estimator(problem)
+    approx_samples = pure_sample_posterior(cb.sampler, est_logpost, domain, cb.sample_count)
+
     cb.true_samples = true_samples
     cb.approx_samples = approx_samples
 

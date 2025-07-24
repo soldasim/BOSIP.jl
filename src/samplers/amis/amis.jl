@@ -33,15 +33,13 @@ re-fitted in each iteration.
     gauss_mix_options::GaussMixOptions
 end
 
-function sample_posterior(sampler::AMISSampler, post::Function, domain::Domain, count::Int;
+function sample_posterior(sampler::AMISSampler, logpost::Function, domain::Domain, count::Int;
     options::BolfiOptions = BolfiOptions(),
 )
     iters = sampler.iters
     samples_total = iters * count # more samples than needed to allow for efficient down-sampling
     samples_per_iter = samples_total / iters |> ceil |> Int
     (samples_per_iter < 50) && @warn "AMIS: Low sample count ($samples_per_iter) per iteration!"
-
-    logpost = x -> log(post(x))
 
     # Initialize the proposal distribution
     x_dim_ = x_dim(domain)

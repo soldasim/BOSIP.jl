@@ -19,10 +19,10 @@ abstract type SampleMetric <: DistributionMetric end
 
 """
 `PDFMetric` is a subtype of `DistributionMetric` that evaluates the quality of the posterior approximation
-based on the probability density functions (pdfs) of the true and approximate posteriors.
+based on the log-probability density functions (logpdfs) of the true and approximate posteriors.
 
 Each subtype of `PDFMetric` *should* implement:
-- `calculate_metric(::DistributionMetric, true_post::Function, approx_post::Function; kwargs...) -> ::Real`
+- `calculate_metric(::DistributionMetric, true_logpost::Function, approx_logpost::Function; kwargs...) -> ::Real`
 
 See also: [`DistributionMetric`](@ref), [`SampleMetric`](@ref)
 """
@@ -30,7 +30,7 @@ abstract type PDFMetric <: DistributionMetric end
 
 """
     score = calculate_metric(::SampleMetric, true_samples::AbstractMatrix{<:Real}, approx_samples::AbstractMatrix{<:Real}; kwargs...)
-    score = calculate_metric(::PDFMetric, true_post::Function, approx_post::Function; kwargs...)
+    score = calculate_metric(::PDFMetric, true_logpost::Function, approx_logpost::Function; kwargs...)
 
 Evaluate the accuracy of the approximate parameter posterior.
 

@@ -32,7 +32,7 @@ export BolfiOptions
 
 export DistributionSampler, PureSampler, WeightedSampler
 export RejectionSampler, TuringSampler, AMISSampler
-export LikelihoodMaximizer
+export LogpdfMaximizer
 export ProposalDistribution, NormalProposal
 export DistributionFitter, AnalyticalFitter, OptimizationFitter
 
