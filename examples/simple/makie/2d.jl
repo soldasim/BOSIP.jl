@@ -10,14 +10,18 @@ function plot_state_2d(bolfi, new_datum;
     boss = bolfi.problem
     acquisition = unwrap(bolfi.problem.acquisition)
 
+    logpost_est = log_posterior_estimate()
     approx_post = approx_posterior(bolfi)
     post_mean = posterior_mean(bolfi)
+    log_approx_post = log_approx_posterior(bolfi)
+    log_post_mean = log_posterior_mean(bolfi)
     post_var = posterior_variance(bolfi)
     gp_post = BOSS.model_posterior(boss)
+    like = approx_likelihood(bolfi)
+    loglike = log_approx_likelihood(bolfi)
 
-    acq_samples = 1
-    acqs = [acquisition(bolfi, BolfiOptions()) for _ in 1:acq_samples]
-    
+    acq = acquisition(bolfi, BolfiOptions())
+
     # --- PLOTS ---
     f = Figure(;
         # size = (1440, 810),
@@ -27,68 +31,48 @@ function plot_state_2d(bolfi, new_datum;
     ax = Axis(f[1,1];
         title = "true posterior",
     )
-    plot_func_2d!(ax, (x,y) -> ToyProblem.true_post([x,y]), bolfi, new_datum; plt)
-    isfalse(sample_reference) || plot_posterior_samples!(ax, ToyProblem.true_post, sample_reference, bolfi)
+    plot_func_2d!(ax, (x,y) -> exp(ToyProblem.true_logpost([x,y])), bolfi, new_datum; plt)
+    isfalse(sample_reference) || plot_posterior_samples!(ax, ToyProblem.true_logpost, plt.sampler, sample_reference, bolfi)
     plot_data_2d!(ax, bolfi, new_datum; plt)
     # axislegend(ax; position = :rt)
 
-    # TODO
-    # ax = Axis(f[1,2];
-    #     title = "posterior mean",
-    # )
-    # plot_func_2d!(ax, (x,y) -> post_mean([x,y]), bolfi, new_datum; plt)
-    # isfalse(sample_posterior) || plot_posterior_samples!(ax, approx_post, sample_posterior, bolfi)
-    # plot_data_2d!(ax, bolfi, new_datum; plt)
-    # # axislegend(ax; position = :rt)
     ax = Axis(f[1,2];
-        title = "posterior median",
+        title = "posterior mean",
     )
-    plot_func_2d!(ax, (x,y) -> approx_post([x,y]), bolfi, new_datum; plt)
-    isfalse(sample_posterior) || plot_posterior_samples!(ax, approx_post, sample_posterior, bolfi)
+    plot_func_2d!(ax, (x,y) -> post_mean([x,y]), bolfi, new_datum; plt)
+    isfalse(sample_posterior) || plot_posterior_samples!(ax, log_post_mean, plt.sampler, sample_posterior, bolfi)
     plot_data_2d!(ax, bolfi, new_datum; plt)
     # axislegend(ax; position = :rt)
-
-    # ax = Axis(f[2,1];
-    #     title = "abs. val. of GP mean",
-    # )
-    # plot_func_2d!(ax, (x,y) -> abs(mean(gp_post, [x,y])[1]), bolfi, new_datum; plt)
-    # plot_data_2d!(ax, bolfi, new_datum; plt)
-    # # axislegend(ax; position = :rt)
-
-    # TODO rem
-    function safe_acq(x)
-        v = NaN
-        try
-            v = acqs[1](x)
-        catch e
-        end
-        return v
-    end
 
     ax = Axis(f[2,1];
-        title = "acquisition",
+        title = "abs. val. of GP mean",
     )
-    plot_func_2d!(ax, (x,y) -> safe_acq([x,y]), bolfi, new_datum; plt)
+    plot_func_2d!(ax, (x,y) -> abs(mean(gp_post, [x,y])[1]), bolfi, new_datum; plt)
     plot_data_2d!(ax, bolfi, new_datum; plt)
-    # axislegend(ax; position = :rt)
 
     ax = Axis(f[2,2];
         title = "posterior variance",
     )
-    plot_func_2d!(ax, (x,y) -> post_var([x,y]), bolfi, new_datum; plt, label="posterior variance", grid=plt.acq_grid)
+    plot_func_2d!(ax, (x,y) -> post_var([x,y]), bolfi, new_datum; plt, grid=plt.acq_grid)
     plot_data_2d!(ax, bolfi, new_datum; plt)
     # axislegend(ax; position = :rt)
 
     return f
 end
 
-function plot_func_2d!(ax, func, bolfi, new_datum; plt, label=nothing, grid=nothing, normalize=false, kwargs...)
-    xs, ys = isnothing(grid) ? get_xs_2d(bolfi; plt) : (grid, grid)
+function plot_func_2d!(ax, func, bolfi, new_datum; plt, step=plt.step, label=nothing, grid=nothing, normalize=false, log_scale=false, kwargs...)
+    xs, ys = isnothing(grid) ? get_xs_2d(bolfi; step) : (grid, grid)
     
     if plt.parallel
         vals = calculate_values(t -> func(t...), Iterators.product(xs, ys))
     else
         vals = map(t -> func(t...), Iterators.product(xs, ys))
+    end
+
+    if log_scale
+        M = minimum(vals)
+        vals .+= M + 1.
+        vals = log.(vals)
     end
 
     normalize && normalize_values!(vals)
@@ -111,19 +95,13 @@ function plot_data_2d!(ax, bolfi, new_datum; plt)
     )
 end
 
-function plot_posterior_samples!(ax, post, samples, bolfi)
-    bounds = bolfi.problem.domain.bounds
+function plot_posterior_samples!(ax, logpost, sampler, samples, bolfi)
+    domain = bolfi.problem.domain
+    bounds = domain.bounds
 
     if samples isa Bool
         @assert samples
-        sampler = AMISSampler(;
-            iters = 10,
-            gauss_mix_options = GaussMixOptions(;
-                algorithm = BOBYQA(),
-            ),
-        )
-        xs, ws = BOLFI.sample_posterior(sampler, post, bolfi.problem.domain, 10_000)
-        xs = resample(xs, ws, 1000)
+        xs = BOLFI.pure_sample_posterior(sampler, logpost, domain, 1000)
     else
         xs = samples
     end
@@ -141,8 +119,8 @@ function plot_posterior_samples!(ax, post, samples, bolfi)
     )
 end
 
-function get_xs_2d(bolfi; plt)
+function get_xs_2d(bolfi; step)
     lb1, ub1 = first.(bolfi.problem.domain.bounds)
     lb2, ub2 = getindex.(bolfi.problem.domain.bounds, Ref(2))
-    return lb1:plt.step:ub1, lb2:plt.step:ub2
+    return lb1:step:ub1, lb2:step:ub2
 end

@@ -6,6 +6,7 @@ using BOSS, BOLFI
 using OptimizationPRIMA
 
 import ..ToyProblem
+import ..log_posterior_estimate
 
 
 # --- CALLBACK ---
@@ -21,6 +22,7 @@ mutable struct PlotCallback <: BolfiCallback
     step::Float64
     parallel::Bool
     acq_grid::Union{Nothing, Vector{Float64}}
+    sampler::DistributionSampler
 end
 PlotCallback(;
     title = "",
@@ -32,7 +34,17 @@ PlotCallback(;
     step,
     parallel = true,
     acq_grid = nothing,
-) = PlotCallback(title, 0, plot_each, display, save_plots, plot_dir, plot_name, step, parallel, acq_grid)
+    sampler = _default_sampler(),
+) = PlotCallback(title, 0, plot_each, display, save_plots, plot_dir, plot_name, step, parallel, acq_grid, sampler)
+
+function _default_sampler()
+    return AMISSampler(;
+        iters = 10,
+        gauss_mix_options = GaussMixOptions(;
+            algorithm = BOBYQA(),
+        ),
+    )
+end
 
 """
 Plots the state in the current iteration.
@@ -71,13 +83,8 @@ end
 # --- PLOTS ---
 
 function plot_state(prev_state::BolfiProblem, new_datum::Union{Nothing, <:AbstractVector{<:Real}}; plt::PlotCallback, iter::Int, kwargs...)
-    if ToyProblem.x_dim() == 1
-        f = plot_state_1d(prev_state, new_datum; plt, kwargs...)
-    elseif ToyProblem.x_dim() == 2
-        f = plot_state_2d(prev_state, new_datum; plt, kwargs...)
-    else
-        error("unsupported dimension")
-    end
+    @assert ToyProblem.x_dim() == 2
+    f = plot_state_2d(prev_state, new_datum; plt, kwargs...)
 
     plt.display && display(f)
     plt.save_plots && save(plt.plot_dir * '/' * plt.plot_name * "_$iter" * ".png", f)
@@ -85,9 +92,6 @@ function plot_state(prev_state::BolfiProblem, new_datum::Union{Nothing, <:Abstra
 end
 
 include("utils.jl")
-include("1d.jl")
 include("2d.jl")
-
-include("marginals.jl")
 
 end # MakiePlots
