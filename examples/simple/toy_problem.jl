@@ -46,7 +46,6 @@ function get_x_prior()
     bounds = get_bounds()
     return truncated(prior; lower=bounds[1], upper=bounds[2])
 end
-# _get_x_prior() = Product(fill(Uniform(-5., 5.), x_dim()))
 _get_x_prior() = Product(fill(Normal(0., 5/3), x_dim()))
 
 function Distributions.truncated(d::Product; lower, upper)
@@ -57,13 +56,12 @@ end
 
 # - - - HYPERPARAMETERS - - - - -
 
-get_acquisition() = PostVarAcq()
+get_acquisition() = MaxVar()
 
 get_kernel() = BOSS.Matern32Kernel()
 
 const λ_MIN = 0.05
 const λ_MAX = 10.
-# get_lengthscale_priors() = fill(Product(fill(truncated(Normal(1., 10/3)), x_dim())), y_dim)
 get_lengthscale_priors() = fill(Product(fill(calc_inverse_gamma(λ_MIN, λ_MAX), x_dim())), y_dim)
 
 function get_amplitude_priors()
@@ -72,10 +70,7 @@ function get_amplitude_priors()
 end
 
 function get_noise_std_priors()
-    # μ_std = ω
-    # max_std = 10 * ω
-    # return [truncated(Normal(μ_std[i], max_std[i] / 3); lower=0.) for i in 1:y_dim]
-    # return [calc_inverse_gamma(0.1, ω[i]*100) for i in 1:y_dim]
+    # let the simulation noise be known
     return fill(Dirac(0.), y_dim)
 end
 
@@ -92,7 +87,7 @@ get_model() = GaussianProcess(;
 function get_init_data(count)
     X = rand(get_x_prior(), count)
     Y = reduce(hcat, (obj(x) for x in eachcol(X)))[:,:]
-    return BOSS.ExperimentData(X, Y)
+    return ExperimentData(X, Y)
 end
 
 
@@ -111,14 +106,14 @@ function bolfi_problem(data::ExperimentData)
     )
 end
 
-function true_post(x)
-    ll = true_like(x)
-    pθ = pdf(ToyProblem.get_x_prior(), x)
-    return pθ * ll
+function true_logpost(x)
+    ll = true_loglike(x)
+    lp = logpdf(ToyProblem.get_x_prior(), x)
+    return ll + lp
 end
-function true_like(x)
+function true_loglike(x)
     y = ToyProblem.simulation(x; noise_std=zeros(ToyProblem.y_dim))
-    ll = like(get_likelihood(), y)
+    ll = loglike(get_likelihood(), y)
     return ll
 end
 
