@@ -1,6 +1,6 @@
 
 """
-    LikelihoodMaximizer(; kwargs...)
+    LogpdfMaximizer(; kwargs...)
 
 A helper struct for the [`RejectionSampler`](@ref) that defines the optimization algorithm
 used to maximize the likelihood function. The `RejectionSampler` uses needs to know the maximum
@@ -14,21 +14,21 @@ likelihood value for the rejection process.
         This is makes the parallel tasks sticky (non-migrating), but can decrease performance.
 - `kwargs::Base.Pairs{Symbol, <:Any}`: Additional keyword arguments passed to the optimization algorithm.
 """
-struct LikelihoodMaximizer
+struct LogpdfMaximizer
     algorithm::Any
     multistart::Int64
     parallel::Bool
     static_schedule::Bool
     kwargs::Base.Pairs{Symbol, <:Any}
 end
-function LikelihoodMaximizer(;
+function LogpdfMaximizer(;
     algorithm,
     multistart,
     parallel = true,
     static_schedule = false,
     kwargs...
 )
-    return LikelihoodMaximizer(algorithm, multistart, parallel, static_schedule, kwargs)
+    return LogpdfMaximizer(algorithm, multistart, parallel, static_schedule, kwargs)
 end
 
 """
@@ -37,13 +37,13 @@ end
 A sampler that uses trivial rejection sampling to draw samples from the posterior distribution.
 
 # Keywords
-- `likelihood_maximizer::LikelihoodMaximizer`: The optimizer used to find the maximum likelihood value.
+- `logpdf_maximizer::LogpdfMaximizer`: The optimizer used to find the maximum logpdf value.
 """
 @kwdef struct RejectionSampler <: PureSampler
-    likelihood_maximizer::LikelihoodMaximizer
+    logpdf_maximizer::LogpdfMaximizer
 end
 
-function sample_posterior(::RejectionSampler, posterior::Function, domain::Domain, count::Int;
+function sample_posterior(sampler::RejectionSampler, logpost::Function, domain::Domain, count::Int;
     options::BolfiOptions = BolfiOptions(),    
 )
     # TODO: complex domains not supported for now
@@ -51,15 +51,15 @@ function sample_posterior(::RejectionSampler, posterior::Function, domain::Domai
     @assert isnothing(domain.cons)
 
     # uniform prior
-    prior = Uniform.(domain.bounds...)
+    prior = product_distribution(Uniform.(domain.bounds...))
 
     # likelihood := posterior
-    max_post = opt_likelihood(sampler.likelihood_maximizer, posterior, domain)
+    max_logpost = opt_logpdf(sampler.logpdf_maximizer, logpost, domain)
 
-    return sample_posterior_rej(prior, posterior, max_post, count)
+    return sample_posterior_rej(prior, logpost, max_logpost, count)
 end
 
-function sample_posterior(sampler::RejectionSampler, likelihood::Function, prior::MultivariateDistribution, domain::Domain, count::Int;
+function sample_posterior(sampler::RejectionSampler, loglike::Function, prior::MultivariateDistribution, domain::Domain, count::Int;
     options::BolfiOptions = BolfiOptions(),    
 )
     # TODO: complex domains not supported for now
@@ -67,13 +67,12 @@ function sample_posterior(sampler::RejectionSampler, likelihood::Function, prior
     @assert isnothing(domain.cons)
     @assert extrema(prior) == domain.bounds
 
-    # max_like = _max_like(bolfi.likelihood, bolfi)
-    max_like = opt_likelihood(sampler.likelihood_maximizer, likelihood, domain)
+    max_loglike = opt_logpdf(sampler.logpdf_maximizer, loglike, domain)
 
-    return sample_posterior_rej(prior, likelihood, max_like, count)
+    return sample_posterior_rej(prior, loglike, max_loglike, count)
 end
 
-function sample_posterior_rej(prior, likelihood, max_like, count)
+function sample_posterior_rej(prior, loglike, max_loglike, count)
     x_dim = length(prior)
     
     prog = Progress(count; desc="Sampling the posterior: ")
@@ -83,8 +82,10 @@ function sample_posterior_rej(prior, likelihood, max_like, count)
     
     while drawn < count
         x = rand(prior)
-        p = likelihood(x)
-        if max_like * rand() < p
+        log_p = loglike(x)
+        
+        # if max_like * rand() < p
+        if max_loglike + log(rand()) < log_p
             next!(prog)
             drawn += 1
             xs[:, drawn] .= x
@@ -118,8 +119,8 @@ end
 #     return logpdf.(Binomial.(trials, ps), z_obs) |> sum |> exp
 # end
 
-function opt_likelihood(opt::LikelihoodMaximizer, likelihood::Function, domain::Domain)
-    objective = OptimizationFunction((x, _) -> -likelihood(x), AutoForwardDiff())
+function opt_logpdf(opt::LogpdfMaximizer, loglike::Function, domain::Domain)
+    objective = OptimizationFunction((x, _) -> -loglike(x), AutoForwardDiff())
     problem(start) = OptimizationProblem(objective, start, nothing;
         lb = domain.bounds[1],
         ub = domain.bounds[2],
@@ -128,7 +129,7 @@ function opt_likelihood(opt::LikelihoodMaximizer, likelihood::Function, domain::
 
     function optim(start)
         x = Optimization.solve(problem(start), opt.algorithm; opt.kwargs...).u
-        val = likelihood(x)
+        val = loglike(x)
         return x, val
     end
 

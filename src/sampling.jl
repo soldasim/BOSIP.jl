@@ -17,8 +17,8 @@ using the specified `sampler`. Return a column-wise matrix of the drawn samples.
 function sample_approx_posterior(bolfi::BolfiProblem, sampler::DistributionSampler, count::Int;
     options::BolfiOptions = BolfiOptions(),    
 )
-    like = approx_likelihood(bolfi)
-    return sample_posterior(sampler, like, bolfi.x_prior, count; options)
+    loglike = log_approx_likelihood(bolfi)
+    return sample_posterior(sampler, loglike, bolfi.x_prior, count; options)
 end
 
 """
@@ -39,8 +39,8 @@ using the specified `sampler`. Return a column-wise matrix of the drawn samples.
 function sample_expected_posterior(bolfi::BolfiProblem, sampler::DistributionSampler, count::Int;
     options::BolfiOptions = BolfiOptions(),    
 )
-    like = likelihood_mean(bolfi)
-    return sample_posterior(sampler, like, bolfi.x_prior, count; options)
+    loglike = log_likelihood_mean(bolfi)
+    return sample_posterior(sampler, loglike, bolfi.x_prior, count; options)
 end
 
 """
@@ -57,27 +57,27 @@ function resample(xs::AbstractMatrix{<:Real}, ws::AbstractVector{<:Real}, count:
 end
 
 """
-    xs = pure_sample_posterior(sampler::PureSampler, posterior::Function, domain::Domain, count::Int;
+    xs = pure_sample_posterior(sampler::PureSampler, logpost::Function, domain::Domain, count::Int;
         supersample_ratio = 20,
     )
 
-Sample `count` samples from the posterior distribution defined by the `posterior` pdf.
+Sample `count` samples from the posterior distribution defined by the `logpost` logpdf.
 Assures that the returned samples are "pure" (unweighted).
 
 In case of a `WeightedSampler`, `supersample_ratio` × `count` samples are drawn,
 and subsequently down-sampled to `count` samples according to their weights.
 """
-function pure_sample_posterior(sampler::PureSampler, posterior::Function, domain::Domain, count::Int;
+function pure_sample_posterior(sampler::PureSampler, logpost::Function, domain::Domain, count::Int;
     supersample_ratio = 20,
 )
-    xs, ws = sample_posterior(sampler, posterior, domain, count)
+    xs, ws = sample_posterior(sampler, logpost, domain, count)
     @assert allequal(ws)
     return xs
 end
-function pure_sample_posterior(sampler::WeightedSampler, posterior::Function, domain::Domain, count::Int;
+function pure_sample_posterior(sampler::WeightedSampler, logpost::Function, domain::Domain, count::Int;
     supersample_ratio = 20,
 )
-    xs, ws = sample_posterior(sampler, posterior, domain, supersample_ratio * count)
+    xs, ws = sample_posterior(sampler, logpost, domain, supersample_ratio * count)
     xs = resample(xs, ws, count)
     return xs
 end
