@@ -9,7 +9,6 @@ and implement the following API;
 
 Each subtype of `Likelihood` *should* implement:
 - `loglike(::Likelihood, y::AbstractVector{<:Real})` where `y` is the simulator output
-- `log_approx_likelihood(::Likelihood, ::BolfiProblem, ::ModelPosterior)`
 - `log_likelihood_mean(::Likelihood, ::BolfiProblem, ::ModelPosterior)`
 
 Each subtype of `Likelihood` *should* implement *at least one* of:
@@ -21,21 +20,22 @@ if `BolfiProblem` where `!isnothing(problem.y_sets)` is used:
 - `get_subset(::Likelihood, y_set::AsbtractVector{<:Bool})`:
 
 The following additional methods are provided by default and *need not be implemented*:
-- `like(::Likelihood, y:AbstractVector{<:Real})`
+- `log_approx_likelihood(::Likelihood, ::BolfiProblem, ::ModelPosterior)`
+- `like(::Likelihood, y:AbstractVector{<:Real})` where `y` is the simulator output
 """
 abstract type Likelihood end
 
 """
     loglike(::Likelihood, y::AbstractVector{<:Real})
 
-Return the log-likelihood of the observation given the simulator output `δ`.
+Return the log-likelihood of the observation given the simulator output `y`.
 """
 function loglike end
 
 """
     like(::Likelihood, y::AbstractVector{<:Real})
 
-Return the likelihood of the observation given the model output `δ`.
+Return the likelihood of the observation given the model output `y`.
 """
 function like(l::Likelihood, y::AbstractVector{<:Real})
     return exp(loglike(l, y))

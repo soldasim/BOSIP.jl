@@ -36,18 +36,6 @@ function loglike(like::BinomialLikelihood, y::AbstractVector{<:Real})
     return mapreduce((t, p, y) -> logpdf(Binomial(t, p), y), +, like.trials, y, like.z_obs)
 end
 
-function log_approx_likelihood(like::BinomialLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
-    z_obs = like.z_obs
-    trials = like.trials
-
-    function log_approx_like(x::AbstractVector{<:Real})
-        μ_ps = mean(model_post, x)
-
-        ps = clamp.(μ_ps, Ref(0.), Ref(1.))
-        return logpdf.(Binomial.(trials, ps), z_obs) |> sum
-    end
-end
-
 function log_likelihood_mean(like::BinomialLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
     z_obs = like.z_obs
     trials = like.trials
