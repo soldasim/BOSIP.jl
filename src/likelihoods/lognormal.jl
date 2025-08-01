@@ -34,16 +34,6 @@ function loglike(like::LogNormalLikelihood, y::AbstractVector{<:Real})
     return logpdf(MvLogNormal(y, like.std_obs), like.z_obs)
 end
 
-function log_approx_likelihood(like::LogNormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
-    z_obs = like.z_obs
-    std_obs = _std_obs(like, bolfi)
-
-    function log_approx_like(x::AbstractVector{<:Real})
-        μ_y = mean(model_post, x)
-        return logpdf(MvLogNormal(μ_y, std_obs), z_obs)
-    end
-end
-
 # Identical to `likelihood_mean(::GaussianLikelihood)`, just swapped `MvNormal` for `MvLogNormal`
 function log_likelihood_mean(like::LogNormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
     z_obs = like.z_obs

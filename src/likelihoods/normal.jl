@@ -31,6 +31,7 @@ function loglike(like::NormalLikelihood, y::AbstractVector{<:Real})
     return logpdf(MvNormal(y, like.std_obs), like.z_obs)
 end
 
+# Specialized implementation. Provides slightly better performance for the batch evaluations.
 function log_approx_likelihood(like::NormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
     z_obs = like.z_obs
     std_obs = _std_obs(like, bolfi)
