@@ -3,7 +3,7 @@
     BinomialLikelihood(; z_obs, trials, kwargs...)
 
 The observation is assumed to have been generated from a Binomial distribution
-as `z_o \\sim Binomial(trials, f(x))`. We can use the simulator to query `z = f(x)`.
+as `z_o \\sim Binomial(trials, f(x))`. We can use the simulator to query `y = f(x)`.
 
 The simulator should only return values between 0 and 1. The GP estimates are clamped to this range.
 
@@ -25,15 +25,15 @@ The simulator should only return values between 0 and 1. The GP estimates are cl
     end
 end
 
-function loglike(like::BinomialLikelihood, δ::AbstractVector{<:Real})
+function loglike(like::BinomialLikelihood, y::AbstractVector{<:Real})
     # if any(z .< 0.) || any(z .> 1.)
     #     @warn "Called `loglike(::BinomialLikelihood, z)`, where `z = $z` is outside of range `[0, 1]`."
     #     z .= clamp.(z, 0., 1.)
     # end
-    δ .= clamp.(δ, 0., 1.)
+    y .= clamp.(y, 0., 1.)
 
     # return sum(logpdf.(Binomial.(like.trials, z), like.z_obs))
-    return mapreduce((t, p, y) -> logpdf(Binomial(t, p), y), +, like.trials, δ, like.z_obs)
+    return mapreduce((t, p, y) -> logpdf(Binomial(t, p), y), +, like.trials, y, like.z_obs)
 end
 
 function log_approx_likelihood(like::BinomialLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)

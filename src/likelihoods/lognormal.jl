@@ -3,10 +3,10 @@
     LogNormalLikelihood(; z_obs, std_obs)
 
 The observation is assumed to have been generated from a normal distribution
-as `z_o \\sim LogNormal(f(x), Diagonal(std_obs))`. We can use the simulator to query `z = f(x)`.
+as `z_o \\sim LogNormal(f(x), Diagonal(std_obs))`. We can use the simulator to query `y = f(x)`.
 
 In many cases, one may want to take the logarithm of the output of the simulator.
-Meaning, if one has simulator `z = sim(x)`, one would define `f` as `y = f(x) = log(sim(x))`.
+Meaning, if one has simulator `sim(x)`, one would define `f` as `y = f(x) = log(sim(x))`.
 This way, the `y` values with high likelihood will have similar values to the `z` values.
 
 # Kwargs
@@ -30,8 +30,8 @@ Alias for [`LogNormalLikelihood`](@ref).
 """
 const LogGaussianLikelihood = LogNormalLikelihood
 
-function loglike(like::LogNormalLikelihood, δ::AbstractVector{<:Real})
-    return logpdf(MvLogNormal(δ, like.std_obs), like.z_obs)
+function loglike(like::LogNormalLikelihood, y::AbstractVector{<:Real})
+    return logpdf(MvLogNormal(y, like.std_obs), like.z_obs)
 end
 
 function log_approx_likelihood(like::LogNormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
@@ -39,8 +39,8 @@ function log_approx_likelihood(like::LogNormalLikelihood, bolfi::BolfiProblem, m
     std_obs = _std_obs(like, bolfi)
 
     function log_approx_like(x::AbstractVector{<:Real})
-        μ_δ = mean(model_post, x)
-        return logpdf(MvLogNormal(μ_δ, std_obs), z_obs)
+        μ_y = mean(model_post, x)
+        return logpdf(MvLogNormal(μ_y, std_obs), z_obs)
     end
 end
 
@@ -50,9 +50,9 @@ function log_likelihood_mean(like::LogNormalLikelihood, bolfi::BolfiProblem, mod
     std_obs = _std_obs(like, bolfi)
 
     function log_like_mean(x::AbstractVector{<:Real})
-        μ_δ, std_δ = mean_and_std(model_post, x)
-        std = sqrt.(std_obs.^2 .+ std_δ.^2)
-        return logpdf(MvLogNormal(μ_δ, std), z_obs)
+        μ_y, std_y = mean_and_std(model_post, x)
+        std = sqrt.(std_obs.^2 .+ std_y.^2)
+        return logpdf(MvLogNormal(μ_y, std), z_obs)
     end
 end
 
@@ -62,11 +62,11 @@ function log_sq_likelihood_mean(like::LogNormalLikelihood, bolfi::BolfiProblem, 
     std_obs = _std_obs(like, bolfi)
 
     function log_sq_like_mean(x::AbstractVector{<:Real})
-        μ_δ, std_δ = mean_and_std(model_post, x)
-        std = sqrt.((std_obs.^2 .+ (2 .* std_δ.^2)) ./ 2)
+        μ_y, std_y = mean_and_std(model_post, x)
+        std = sqrt.((std_obs.^2 .+ (2 .* std_y.^2)) ./ 2)
         # log_C = log( 1 / prod(2 * sqrt(π) .* std_obs .* z_obs) )
         log_C = (-1) * sum(log.(2 * sqrt(π) .* std_obs .* z_obs))
-        return log_C + logpdf(MvLogNormal(μ_δ, std), z_obs)
+        return log_C + logpdf(MvLogNormal(μ_y, std), z_obs)
     end
 end
 
