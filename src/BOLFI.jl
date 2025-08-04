@@ -24,6 +24,7 @@ export GutmannNormalLikelihood, GutmannGaussianLikelihood
 export NormalLikelihood, GaussianLikelihood
 export LogNormalLikelihood, LogGaussianLikelihood
 export BinomialLikelihood
+export MvNormalLikelihood
 
 export BolfiAcquisition, MaxVar, LogMaxVar, MWMV, EIIG, EIV, IMIQR
 export BolfiTermCond, AEConfidence, UBLBConfidence
