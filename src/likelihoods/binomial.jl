@@ -36,11 +36,15 @@ function loglike(like::BinomialLikelihood, y::AbstractVector{<:Real})
     return mapreduce((t, p, y) -> logpdf(Binomial(t, p), y), +, like.trials, y, like.z_obs)
 end
 
-function log_likelihood_mean(like::BinomialLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
+function log_likelihood_mean(like::BinomialLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior;
+    ϵs = nothing,    
+)
     z_obs = like.z_obs
     trials = like.trials
 
-    ϵs = rand(Uniform(0, 1), like.int_grid_size)
+    if isnothing(ϵs)
+        ϵs = rand(Uniform(0, 1), like.int_grid_size)
+    end
 
     # TODO refactor
     function log_like_mean(x::AbstractVector{<:Real})
@@ -56,14 +60,18 @@ function log_likelihood_mean(like::BinomialLikelihood, bolfi::BolfiProblem, mode
     end
 end
 
-function log_sq_likelihood_mean(like::BinomialLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
+function log_sq_likelihood_mean(like::BinomialLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior;
+    ϵs = nothing,    
+)
     z_obs = like.z_obs
     trials = like.trials
 
-    ϵs = rand(Uniform(0, 1), like.int_grid_size)
+    if isnothing(ϵs)
+        ϵs = rand(Uniform(0, 1), like.int_grid_size)
+    end
 
     # TODO refactor
-    function log_like_mean(x::AbstractVector{<:Real})
+    function log_sq_like_mean(x::AbstractVector{<:Real})
         ps_dists = truncated.(Normal.(mean_and_std(model_post, x)...); lower=0., upper=1.)
         
         ll = 0.
@@ -73,6 +81,19 @@ function log_sq_likelihood_mean(like::BinomialLikelihood, bolfi::BolfiProblem, m
             ll += log(mean(vals))
         end
         return ll
+    end
+end
+
+# share the noise samples `ϵs`
+function log_likelihood_variance(like::BinomialLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
+    ϵs = rand(Uniform(0, 1), like.int_grid_size)
+
+    log_like_mean = log_likelihood_mean(like, bolfi, model_post; ϵs)
+    log_sq_like_mean = log_sq_likelihood_mean(like, bolfi, model_post; ϵs)
+
+    function log_like_var(x::AbstractVector{<:Real})
+        # return sq_like_mean(x) - like_mean(x)^2
+        return log( exp(log_sq_like_mean(x)) - exp(2 * log_like_mean(x)) )
     end
 end
 
