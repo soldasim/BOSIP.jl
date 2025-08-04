@@ -5,5 +5,6 @@ include("sqexp.jl")
 include("normal.jl")
 include("lognormal.jl")
 include("binomial.jl")
+include("mvnormal.jl")
 
 include("gutmann_normal.jl")
