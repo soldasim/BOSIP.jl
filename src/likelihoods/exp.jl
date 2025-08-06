@@ -1,6 +1,6 @@
 
 """
-    ExpLikelihood(; kwargs...)
+    ExpLikelihood()
 
 Assumes the model approximates the log-likelihood directly (as a scalar).
 Only exponentiates the model prediction.
