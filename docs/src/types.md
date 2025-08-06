@@ -132,6 +132,7 @@ In particular, the following metrics are currently provided.
 
 ```@docs
 MMDMetric
+OptMMDMetric
 TVMetric
 ```
 
