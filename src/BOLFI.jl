@@ -38,7 +38,7 @@ export ProposalDistribution, NormalProposal
 export DistributionFitter, AnalyticalFitter, OptimizationFitter
 
 export DistributionMetric, SampleMetric, PDFMetric
-export MMDMetric
+export MMDMetric, OptMMDMetric
 export TVMetric
 
 using BOSS
