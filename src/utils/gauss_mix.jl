@@ -63,14 +63,20 @@ function approx_by_gauss_mix(logpost, domain::Domain, opt::GaussMixOptions)
     μs = opt_for_modes(logpost, domain, opt)
 
     gausses = laplace_approx.(Ref(logpost), μs, Ref(domain.bounds))
-    gausses = [filter(!isnothing, gausses)...]
+    gausses = [filter(!isnothing, gausses)...] # init new vector to correct the eltype
+    
+    # discard gausses which are too wide
+    max_stds = (domain.bounds[2] .- domain.bounds[1]) ./ 2 # arbitrarily chosen
+    gausses = filter(g -> all(std(g) .<= max_stds), gausses)
 
     if isempty(gausses)
-        @warn "No mode found! Falling back on `μ = mean(bounds)` and `Σ = ((ub .- lb) ./ 5) * I`."
-        lb, ub = domain.bounds
-        μ = mean(domain.bounds)
-        Σ = Diagonal((ub .- lb) ./ 5)
-        return MvNormal(μ, Σ)
+        # @warn "No modes found! Falling back on `μ = mean(bounds)` and `Σ = ((ub .- lb) ./ 5) * I`."
+        # lb, ub = domain.bounds
+        # μ = mean(domain.bounds)
+        # Σ = Diagonal((ub .- lb) ./ 5)
+        # return MvNormal(μ, Σ)
+        @warn "No modes found! Falling back on a Uniform distribution."
+        return product_distribution(Uniform.(domain.bounds...))
     end
 
     log_weights = logpost.(getfield.(gausses, Ref(:μ)))

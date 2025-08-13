@@ -2,11 +2,13 @@
 """
 Abstract type for proposal distributions.
 
-Each proposal distribution has to implement the following API:
+*Mandatory API*:
+- `x_dim(::ProposalDistribution) -> ::Int`
+- `Distributions.rand(::ProposalDistribution, count::Int)`
+- `Distributions.logpdf(::ProposalDistribution, x::AbstractVector{<:Real})`
 - `initial_params(::ProposalDistribution, count::Int; options::BolfiOptions = BolfiOptions())`
 - `loglikelihood(::ProposalDistribution, xs::AbstractMatrix{<:Real}; options::BolfiOptions = BolfiOptions())`
 - `set_params!(::ProposalDistribution, θ::AbstractVector{<:Real}; options::BolfiOptions = BolfiOptions())`
-- `x_dim(::ProposalDistribution) -> ::Int`
 
 The `ProposalDistribution` should be parametrized by a vector of _real-valued_ numbers.
 
@@ -14,6 +16,9 @@ The `ProposalDistribution` should be parametrized by a vector of _real-valued_ n
 of its covariance matrix directly as that would not necesarilly result in a positive-definite covariance matrix.
 Instead, suitable parameter transformations have to be implemented as a part of the functions
 of the `ProposalDistribution` API, so that the `DistributionFitter` can work with real-valued parameters.)
+
+*Optional API*:
+- `estimate_parameters!(::ProposalDistribution, xs::AbstractMatrix{<:Real}, ws::AbstractVector{<:Real})
 """
 abstract type ProposalDistribution end
 
