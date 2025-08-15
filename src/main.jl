@@ -81,7 +81,7 @@ Uses the provided `ModelFitter` to fit the hyperparameters of the model accordin
 - `options::BolfiOptions`: Defines miscellaneous settings.
 
 """
-function BOSS.estimate_parameters!(bolfi::BolfiProblem, model_fitter::ModelFitter; options::BolfiOptions=BolfiOptions())
+function estimate_parameters!(bolfi::BolfiProblem, model_fitter::ModelFitter; options::BolfiOptions=BolfiOptions())
     boss_options = create_boss_options(options, bolfi)
     estimate_parameters!(bolfi.problem, model_fitter; options=boss_options)
 end
@@ -96,7 +96,7 @@ Uses the provided `AcquisitionMaximizer` to maximize the acquisition function an
 
 - `options::BolfiOptions`: Defines miscellaneous settings.
 """
-function BOSS.maximize_acquisition(bolfi::BolfiProblem, acq_maximizer::AcquisitionMaximizer; options::BolfiOptions=BolfiOptions())
+function maximize_acquisition(bolfi::BolfiProblem, acq_maximizer::AcquisitionMaximizer; options::BolfiOptions=BolfiOptions())
     boss_options = create_boss_options(options, bolfi)
     return maximize_acquisition(bolfi.problem, acq_maximizer; options=boss_options)
 end
@@ -110,7 +110,7 @@ Evaluate the blackbox simulation for the given parameters `x`.
 
 - `options::BolfiOptions`: Defines miscellaneous settings.
 """
-function BOSS.eval_objective!(bolfi::BolfiProblem, x::AbstractVector{<:Real}; options::BolfiOptions=BolfiOptions())
+function eval_objective!(bolfi::BolfiProblem, x::AbstractVector{<:Real}; options::BolfiOptions=BolfiOptions())
     boss_options = create_boss_options(options, bolfi)
-    BOSS.eval_objective!(bolfi.problem, x; options=boss_options)
+    eval_objective!(bolfi.problem, x; options=boss_options)
 end
