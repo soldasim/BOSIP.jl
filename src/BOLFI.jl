@@ -56,8 +56,8 @@ using LazyArrays
 using StatsFuns         # used in GutmannNormalLikelihood
 using SpecialFunctions  # used in utils/owent.jl: erfc
 
-import BOSS.x_dim
-import BOSS.y_dim
+import BOSS.x_dim, BOSS.y_dim
+import BOSS.estimate_parameters!, BOSS.maximize_acquisition, BOSS.eval_objective!
 
 include("include.jl")
 
