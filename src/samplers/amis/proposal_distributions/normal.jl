@@ -88,14 +88,15 @@ function estimate_parameters!(dist::NormalProposal, xs::AbstractMatrix{<:Real}, 
 
     # Σ = sum(ws .* C.(eachcol(δs))) ./ (V1 - (V2 / V1))
     Σ = mapreduce(t -> t[1] * C(t[2]), +, zip(ws, eachcol(δs))) ./ (V1 - (V2 / V1))
-
-    if ishermitian(Σ)
+    Σ = Symmetric(Σ) # avoid non-symmetricity due to numerical errors
+    
+    if any(isinf.(Σ)) || !isposdef(Σ)
+        # reuse the proposal from the last iteration
+        @warn "Analytical estimation of the `NormalProposal` parameters failed. Reusing parameters from the previous iteration."
+        return dist.dist
+    else
         q_ = MvNormal(μ, Σ)
         dist.dist = q_
         return q_
-    else
-        # resue the proposal from the last iteration
-        @warn "Analytical estimation of the `NormalProposal` parameters failed. Reusing parameters from the previous iteration."
-        return dist.dist
     end
 end
