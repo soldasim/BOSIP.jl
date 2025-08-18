@@ -7,39 +7,52 @@ based on a precomputed parameter grid.
 
 # Keywords
 - `grid::Matrix{Float64}`: The parameter grid used to approximate the TV integral.
-- `ws::Vector{Float64}`: The weights for the grid points. Should be `1 / q(x)`,
+- `log_ws::Vector{Float64}`: The log-weights for the grid points. Should be `1 / q(x)`,
         where `q(x)` is the probability density function of the distribution
         used to sample the grid points.
         (`1 / domain_area` is appropriate for an evenly distributed grid)
+        (It is also possible to provide the non-logarithmic weights `ws` instead.)
 """
-@kwdef struct TVMetric <: PDFMetric
+struct TVMetric <: PDFMetric
     grid::Matrix{Float64}
-    ws::Vector{Float64}
+    log_ws::Vector{Float64}
+end
+function TVMetric(;
+    grid,
+    ws = nothing,
+    log_ws = nothing,
+)
+    @assert xor(isnothing(ws), isnothing(log_ws))
+    isnothing(log_ws) && (log_ws = log.(ws))
+    return TVMetric(grid, log_ws)
 end
 
 function calculate_metric(tv::TVMetric, true_logpost::Function, approx_logpost::Function;
     options::BolfiOptions = BolfiOptions(),    
 )
-    return calc_tv(tv.grid, tv.ws, true_logpost, approx_logpost)
+    return calc_tv(tv.grid, tv.log_ws, true_logpost, approx_logpost)
 end
 
-function calc_tv(grid::AbstractMatrix{<:Real}, ws::AbstractVector{<:Real}, true_logpost::Function, approx_logpost::Function)
-    true_post(x) = exp(true_logpost(x))
-    approx_post(x) = exp(approx_logpost(x))
-    
-    # pdf values on grid
-    true_vals = true_post.(eachcol(grid))
-    approx_vals = approx_post.(eachcol(grid))
+function calc_tv(grid::AbstractMatrix{<:Real}, log_ws::AbstractVector{<:Real}, true_logpost::Function, approx_logpost::Function)
+    ### pdf values on grid
+    # true_vals = exp.( true_logpost.(eachcol(grid)) )
+    # approx_vals = exp.( approx_logpost.(eachcol(grid)) )
+    true_logvals = true_logpost.(eachcol(grid))
+    approx_logvals = approx_logpost.(eachcol(grid))
 
-    # normalize by evidence estimated on the grid
-    # true_vals ./= sum(true_vals)
-    # approx_vals ./= sum(approx_vals)
-    true_ev = mean(ws .* true_vals)
-    approx_ev = mean(ws .* approx_vals)
+    ### estimate the evidence on the same grid
+    # true_ev = mean(ws .* true_vals)
+    # approx_ev = mean(ws .* approx_vals)
+    true_logev = log( mean( exp.(log_ws .+ true_logvals) ) )
+    approx_logev = log( mean( exp.(log_ws .+ approx_logvals) ) )
 
-    true_vals ./= true_ev
-    approx_vals ./= approx_ev
+    ### normalize the pdf values
+    # true_vals ./= true_ev
+    # approx_vals ./= approx_ev
+    true_logvals .-= true_logev
+    approx_logvals .-= approx_logev
 
     # calculate the total variation distance
-    return (1/2) * sum(abs.(approx_vals .- true_vals))
+    # return (1/2) * sum(abs.(approx_vals .- true_vals))
+    return (1/2) * sum(abs.( exp.(approx_logvals) .- exp.(true_logvals) ))
 end
