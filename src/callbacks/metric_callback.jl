@@ -11,6 +11,13 @@
 end
 
 function (cb::MetricCallback)(problem::BolfiProblem; kwargs...)
+    score = _calc_score(cb.metric, cb, problem)
+    @show score
+    push!(cb.score_history, score)
+    nothing
+end
+
+function _calc_score(metric::SampleMetric, cb::MetricCallback, problem::BolfiProblem)
     domain = problem.problem.domain
 
     ### sample posterior
@@ -27,10 +34,16 @@ function (cb::MetricCallback)(problem::BolfiProblem; kwargs...)
     cb.approx_samples = approx_samples
 
     ### calculate metric
-    score = calculate_metric(cb.metric, true_samples, approx_samples)
-    
-    @show score
-    push!(cb.score_history, score)
+    score = calculate_metric(metric, true_samples, approx_samples)
+    return score
+end
+function _calc_score(metric::PDFMetric, cb::MetricCallback, problem::BolfiProblem)
+    ### retrieve the true and approx logpdf
+    @assert cb.reference isa Function
+    true_logpdf = cb.reference
+    approx_logpdf = cb.logpost_estimator(problem)
 
-    nothing
+    ### calculate metric
+    score = calculate_metric(metric, true_logpdf, approx_logpdf)
+    return score
 end
