@@ -1,15 +1,20 @@
 
 """
-    EIIG(; kwargs...)
+    EIMMD(; kwargs...)
 
-Selects new data point by maximizing the Expected Integrate Information Gain (EIIG).
+Selects new data point by maximizing the Expected Integrate MMD (EIMMD).
+MMD stands for maximum mean discrepancy.
+    
+This acquisition is devised as a heuristical approximation of information gain.
+To calculate information gain properly, one would need to use the KL divergence
+instead of MMD. There are no theoretical guarantees that this "approximation" works.
 
-The information gain is calculated as the mutual information between
+Information gain is calculated as the mutual information between
 the new data point (a vector-valued random variable from a multivariate distribution given by the GPs)
 and the posterior approximation (a "random function" from a infinite-dimensional distribution).
 
 Instead of calculating the information gain of the infinite-dimensional parameter
-posterior function values, `EIIG` computes the average information gain
+posterior function values, `EIMMD` computes the average information gain
 integrated over the domain.
 
 The resulting mutual information between the new data point
@@ -32,7 +37,7 @@ The samples are drawn from the `x_proposal`.
 - `y_kernel::Kernel`: The kernel used for the samples of the new data point.
 - `p_kernel::Kernel`: The kernel used for the posterior function value samples.
 """
-@kwdef struct EIIG <: BolfiAcquisition
+@kwdef struct EIMMD <: BolfiAcquisition
     y_samples::Int64
     x_samples::Int64
     x_proposal::MultivariateDistribution
@@ -41,7 +46,7 @@ The samples are drawn from the `x_proposal`.
 end
 
 # info gain on the posterior approximation
-function (acq::EIIG)(bolfi::BolfiProblem{Nothing}, options::BolfiOptions; return_xs=false)
+function (acq::EIMMD)(bolfi::BolfiProblem{Nothing}, options::BolfiOptions; return_xs=false)
     problem = bolfi.problem
     y_dim = BOSS.y_dim(problem)
 
@@ -71,7 +76,7 @@ function sample_ϵs(y_dim, y_samples)
     return ϵs
 end
 
-struct EIIGFunc{
+struct EIMMDFunc{
     B<:BolfiProblem,
     M<:ModelPosterior,
     X<:AbstractMatrix{<:Real},
@@ -79,7 +84,7 @@ struct EIIGFunc{
     E1<:AbstractVector{<:AbstractVector{<:Real}},
     E2<:AbstractVector{<:AbstractVector{<:AbstractVector{<:Real}}},
 }
-    acq::EIIG
+    acq::EIMMD
     bolfi::B
     model_post::M
     xs::X
@@ -88,7 +93,7 @@ struct EIIGFunc{
     Es_s::E2
 end
 
-function (f::EIIGFunc)(x_::AbstractVector{<:Real})
+function (f::EIMMDFunc)(x_::AbstractVector{<:Real})
     # sample `N` y_ samples at the new x_
     μy, σy = mean_and_std(f.model_post, x_)
     ys_ = calc_y.(Ref(μy), Ref(σy), f.ϵs_y)
@@ -125,7 +130,7 @@ function (f::EIIGFunc)(x_::AbstractVector{<:Real})
 end
 
 function construct_hsic_acquisition(
-    acq::EIIG,
+    acq::EIMMD,
     bolfi::BolfiProblem,
     xs::AbstractMatrix{<:Real}, # x samples to integrate over the domain
     ws::AbstractVector{<:Real}, # weights for the x samples (importance sampling)
@@ -136,7 +141,7 @@ function construct_hsic_acquisition(
     model_post = BOSS.model_posterior(boss)
 
     @warn "Using experimental length-scales for the HSIC kernels."
-    return EIIGFunc(acq, bolfi, model_post, xs, ws, ϵs_y, Es_s)
+    return EIMMDFunc(acq, bolfi, model_post, xs, ws, ϵs_y, Es_s)
 end
 
 function calc_y(μ, σ, ϵ)
