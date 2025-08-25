@@ -55,10 +55,10 @@ MaxVar
 LogMaxVar
 ```
 
-The `EIIG` acquisition maximizes the Expected Integrated Information Gain. That is; it attempts to minimize the entropy of the current distribution over the possible parameter posteriors (which is implicitly given by the explicit surrogate model posterior).
+The `EIMMD` acquisition maximizes the Expected Integrated MMD as a proxy to the Expected Integrated Information Gain. That is; it attempts to minimize the entropy of the current distribution over the possible parameter posteriors (which is implicitly given by the explicit surrogate model posterior). However, since calculating the KLD is too challenging, MMD is used instead. Beware, that there are no theoretical guarantees about this approximation though.
 
 ```@docs
-EIIG
+EIMMD
 ```
 
 The `MWMV` can be used to solve LFSS problems. It maximizes the "mass-weighted mean variance" of the posteriors given by the different sensor sets.

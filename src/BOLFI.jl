@@ -26,7 +26,7 @@ export LogNormalLikelihood, LogGaussianLikelihood
 export BinomialLikelihood
 export MvNormalLikelihood
 
-export BolfiAcquisition, MaxVar, LogMaxVar, MWMV, EIIG, EIV, IMIQR
+export BolfiAcquisition, MaxVar, LogMaxVar, MWMV, EIMMD, EIV, IMIQR
 export BolfiTermCond, AEConfidence, UBLBConfidence
 export BolfiCallback, CombinedCallback, NoCallback, MetricCallback
 export BolfiOptions
