@@ -250,7 +250,7 @@ version = "0.4.7"
 deps = ["BOSS", "DifferentiationInterface", "Distributed", "Distributions", "ForwardDiff", "KernelFunctions", "LazyArrays", "LinearAlgebra", "Optimization", "ProgressMeter", "Random", "SpecialFunctions", "Statistics", "StatsFuns"]
 path = ".."
 uuid = "631834c2-07fe-4b6b-876a-15b6a4e37445"
-version = "0.3.1"
+version = "0.4.0"
 weakdeps = ["CairoMakie", "Turing"]
 
     [deps.BOSIP.extensions]
