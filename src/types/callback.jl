@@ -1,53 +1,53 @@
 
 """
-If a callback `cb` of type `BolfiCallback` is defined in `BolfiOptions`,
-the method `cb(::BolfiProblem; kwargs...)` will be called in every iteration.
+If a callback `cb` of type `BosipCallback` is defined in `BosipOptions`,
+the method `cb(::BosipProblem; kwargs...)` will be called in every iteration.
 
 ```
-cb(problem::BolfiProblem;
+cb(problem::BosipProblem;
     model_fitter::BOSS.ModelFitter,
     acq_maximizer::BOSS.AcquisitionMaximizer,
-    term_cond::TermCond,                        # either `BOSS.TermCond` or a `BolfiTermCond` wrapped into `TermCondWrapper`
+    term_cond::TermCond,                        # either `BOSS.TermCond` or a `BosipTermCond` wrapped into `TermCondWrapper`
     options::BossOptions,
     first::Bool,
 )
 ```
 """
-abstract type BolfiCallback end
+abstract type BosipCallback end
 
 """
-Combines multiple `BolfiCallback`s.
+Combines multiple `BosipCallback`s.
 """
-struct CombinedCallback <: BolfiCallback
-    callbacks::Vector{BolfiCallback}
+struct CombinedCallback <: BosipCallback
+    callbacks::Vector{BosipCallback}
 end
 CombinedCallback(cbs...) = CombinedCallback([cbs...])
-CombinedCallback(cb::BolfiCallback) = CombinedCallback([cb])
+CombinedCallback(cb::BosipCallback) = CombinedCallback([cb])
 
-function (comb::CombinedCallback)(bolfi::BolfiProblem; kwargs...)
+function (comb::CombinedCallback)(bosip::BosipProblem; kwargs...)
     for cb in comb.callbacks
-        cb(bolfi; kwargs...)
+        cb(bosip; kwargs...)
     end
 end
 
 """
-Wrapper for BOSS around `BolfiCallback`.
+Wrapper for BOSS around `BosipCallback`.
 """
 struct CallbackWrapper{
-    CB<:BolfiCallback
+    CB<:BosipCallback
 } <: BossCallback
     callback::CB
-    bolfi::BolfiProblem
+    bosip::BosipProblem
 end
-CallbackWrapper(cb::BossCallback, ::BolfiProblem) = cb
+CallbackWrapper(cb::BossCallback, ::BosipProblem) = cb
 
-(wrap::CallbackWrapper)(::BossProblem; kwargs...) = wrap.callback(wrap.bolfi; kwargs...)
+(wrap::CallbackWrapper)(::BossProblem; kwargs...) = wrap.callback(wrap.bosip; kwargs...)
 
 """
     NoCallback()
 
-A dummy `BolfiCallback` which does nothing.
+A dummy `BosipCallback` which does nothing.
 """
-struct NoCallback <: BolfiCallback end
+struct NoCallback <: BosipCallback end
 
-function (::NoCallback)(::BolfiProblem; kwargs...) end
+function (::NoCallback)(::BosipProblem; kwargs...) end

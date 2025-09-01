@@ -10,7 +10,7 @@ The parameter prior describes our expert knowledge about the domain. If we have 
 
 The observation likelihood ``p(z_o|y)`` describes the uncertainty of the real-world observation ``z_o``.
 
-The simulator realizes the mapping ``y = f(x)`` composed with the user defined mapping ``\delta = \phi(y)``. The [`Likelihood`](@ref) provided to [`BolfiProblem`](@ref) should map the modeled proxy variable ``\delta`` to the likelihood value ``p(z_o|y)``.
+The simulator realizes the mapping ``y = f(x)`` composed with the user defined mapping ``\delta = \phi(y)``. The [`Likelihood`](@ref) provided to [`BosipProblem`](@ref) should map the modeled proxy variable ``\delta`` to the likelihood value ``p(z_o|y)``.
 
 In many cases, it is reasonable to assume the observation noise to be Gaussian and model the simulation outputs ``y`` directly. Then one can use the [`NormalLikelihood`](@ref). The only hyperparemter for the normal likelihood is the observation noise deviation ``\sigma_f``. This deviation has to be estimated by the user. It should reflect the measurement precision in the real experiment used to obtain the observation ``z_o``. The value of ``\sigma_f`` greatly affects the width of the resulting posterior. Thus some care should be taken with its choice.
 
@@ -58,7 +58,7 @@ Again, one might also construct an inverse gamma prior to additionally suppress 
 
 ## Simulation Noise
 
-We do not have to define the simulation noise deviations as exact values. It is sufficient to provide priors, and BOLFI.jl will estimate the simulation noise by itself.
+We do not have to define the simulation noise deviations as exact values. It is sufficient to provide priors, and BOSIP.jl will estimate the simulation noise by itself.
 
 We can use a more or less weak prior, depending on our confidence in estimating the simulation noise. Again, a reasonable choice is to use etiher the half-normal distribution to suppress exceedingly large noise deviations, or the inverse gamma distribution to also suppress small deviations.
 

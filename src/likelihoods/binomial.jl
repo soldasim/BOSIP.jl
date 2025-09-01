@@ -36,7 +36,7 @@ function loglike(like::BinomialLikelihood, y::AbstractVector{<:Real})
     return mapreduce((t, p, y) -> logpdf(Binomial(t, p), y), +, like.trials, y, like.z_obs)
 end
 
-function log_likelihood_mean(like::BinomialLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior;
+function log_likelihood_mean(like::BinomialLikelihood, bosip::BosipProblem, model_post::ModelPosterior;
     ϵs = nothing,    
 )
     z_obs = like.z_obs
@@ -60,7 +60,7 @@ function log_likelihood_mean(like::BinomialLikelihood, bolfi::BolfiProblem, mode
     end
 end
 
-function log_sq_likelihood_mean(like::BinomialLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior;
+function log_sq_likelihood_mean(like::BinomialLikelihood, bosip::BosipProblem, model_post::ModelPosterior;
     ϵs = nothing,    
 )
     z_obs = like.z_obs
@@ -85,11 +85,11 @@ function log_sq_likelihood_mean(like::BinomialLikelihood, bolfi::BolfiProblem, m
 end
 
 # share the noise samples `ϵs`
-function log_likelihood_variance(like::BinomialLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
+function log_likelihood_variance(like::BinomialLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
     ϵs = rand(Uniform(0, 1), like.int_grid_size)
 
-    log_like_mean = log_likelihood_mean(like, bolfi, model_post; ϵs)
-    log_sq_like_mean = log_sq_likelihood_mean(like, bolfi, model_post; ϵs)
+    log_like_mean = log_likelihood_mean(like, bosip, model_post; ϵs)
+    log_sq_like_mean = log_sq_likelihood_mean(like, bosip, model_post; ϵs)
 
     function log_like_var(x::AbstractVector{<:Real})
         # return sq_like_mean(x) - like_mean(x)^2

@@ -44,7 +44,7 @@ A sampler that uses trivial rejection sampling to draw samples from the posterio
 end
 
 function sample_posterior(sampler::RejectionSampler, logpost::Function, domain::Domain, count::Int;
-    options::BolfiOptions = BolfiOptions(),    
+    options::BosipOptions = BosipOptions(),    
 )
     # TODO: complex domains not supported for now
     @assert !any(domain.discrete)
@@ -60,7 +60,7 @@ function sample_posterior(sampler::RejectionSampler, logpost::Function, domain::
 end
 
 function sample_posterior(sampler::RejectionSampler, loglike::Function, prior::MultivariateDistribution, domain::Domain, count::Int;
-    options::BolfiOptions = BolfiOptions(),    
+    options::BosipOptions = BosipOptions(),    
 )
     # TODO: complex domains not supported for now
     @assert !any(domain.discrete)
@@ -99,19 +99,19 @@ function sample_posterior_rej(prior, loglike, max_loglike, count)
     return xs, ws
 end
 
-# function _max_like(like::NormalLikelihood, bolfi)
-#     std_obs = BOLFI._std_obs(like, bolfi)
+# function _max_like(like::NormalLikelihood, bosip)
+#     std_obs = BOSIP._std_obs(like, bosip)
 #     z_obs = like.z_obs
 
 #     return pdf(MvNormal(z_obs, std_obs), z_obs)
 # end
-# function _max_like(like::LogNormalLikelihood, bolfi)
+# function _max_like(like::LogNormalLikelihood, bosip)
 #     std_obs = like.std_obs
 #     z_obs = like.z_obs
 
 #     return pdf(MvLogNormal(z_obs, std_obs), z_obs)
 # end
-# function _max_like(like::BinomialLikelihood, bolfi)
+# function _max_like(like::BinomialLikelihood, bosip)
 #     trials = like.trials
 #     z_obs = like.z_obs
 

@@ -1,25 +1,29 @@
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://soldasim.github.io/BOLFI.jl/stable/)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://soldasim.github.io/BOSIP.jl/stable/)
 
-# BOLFI (Bayesian Optimization Likelihood-Free Inference)
+# BOSIP (Bayesian Optimization for Simulator Inverse Problems)
 
-The BOLFI method performs Likelihood-Free Inference (also known as Simulation-Based Inference) by approximating the likelihood function with a Gaussian Process and greatly reduces the number of required evaluations by employing the Bayesian Optimization procedure to select new evaluation points.
+The BOSIP method solves Bayesian inverse problems with the forward model represented by a simulator by learning the whole posterior distribution. A probabilistic surrogate model is used to alleviate the need to evaluate the expensive simulation, and the Bayesian optimization procedure is used to minimize the number of required simulations.
 
-The BOLFI method has been introduced in [1]. Similar approaches have been discussed in [2], [3].
+Similar approaches have been discussed in [1,2,3,4,5].
 
-See the [documentation](https://soldasim.github.io/BOLFI.jl/) for more information.
+See the [documentation](https://soldasim.github.io/BOSIP.jl/) for more information.
 
 # References
 
-[1] Michael U Gutmann, Jukka Cor, et al. “Bayesian optimization for likelihood-free
-inference of simulator-based statistical models”. In: Journal of Machine Learning
-Research 17.125 (2016), pp. 1–47.
+[1] M. J¨arvenp¨a¨a, M. U. Gutmann, A. Vehtari, P. Marttinen, Parallel gaussian process surrogate bayesian inference
+with noisy likelihood evaluations (2021).
 
-[2] Bach Do and Makoto Ohsaki. “Bayesian optimization-assisted approximate Bayesian
-computation and its application to identifying cyclic constitutive law of structural
-steels”. In: Computers & Structures 286 (2023), p. 107111.
+[2] O. S¨urer, Batch sequential experimental design for calibration of stochastic simulation models, Technometrics (just-
+accepted) (2025) 1–22.
 
-[3] Edward Meeds and Max Welling. “GPS-ABC: Gaussian process surrogate approxi-
-mate Bayesian computation”. In: arXiv preprint arXiv:1401.2838 (2014).
+[3] P. Villani, J. Unger, M. Weiser, Adaptive gaussian process regression for bayesian inverse problems, arXiv preprint
+arXiv:2404.19459 (2024).
+
+[4] H. Wang, J. Li, Adaptive gaussian process approximation for bayesian inference with expensive likelihood func-
+tions, Neural computation 30 (11) (2018) 3072–3094.
+
+[5] A. L. Teckentrup, Convergence of gaussian process regression with estimated hyper-parameters and applications in
+bayesian inverse problems, SIAM/ASA Journal on Uncertainty Quantification 8 (4) (2020) 1310–1337.
 
 # Citation
 

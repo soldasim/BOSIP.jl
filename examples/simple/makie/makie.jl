@@ -2,7 +2,7 @@ module MakiePlots
 
 using CairoMakie
 using Distributions
-using BOSS, BOLFI
+using BOSS, BOSIP
 using OptimizationPRIMA
 
 import ..ToyProblem
@@ -11,7 +11,7 @@ import ..log_posterior_estimate
 
 # --- CALLBACK ---
 
-mutable struct PlotCallback <: BolfiCallback
+mutable struct PlotCallback <: BosipCallback
     title::String
     iters::Int
     plot_each::Int
@@ -49,17 +49,17 @@ end
 """
 Plots the state in the current iteration.
 """
-function (plt::PlotCallback)(bolfi::BolfiProblem; options, first, kwargs...)
+function (plt::PlotCallback)(bosip::BosipProblem; options, first, kwargs...)
     if first
         options.info && @info "Plotting ..."
-        plot_state(bolfi, nothing; plt, iter=plt.iters, kwargs...)
+        plot_state(bosip, nothing; plt, iter=plt.iters, kwargs...)
         return
     end
     
     plt.iters += 1
     if plt.iters % plt.plot_each == 0
         options.info && @info "Plotting ..."
-        plot_state(bolfi, nothing; plt, iter=plt.iters, kwargs...)
+        plot_state(bosip, nothing; plt, iter=plt.iters, kwargs...)
     end
 end
 
@@ -82,7 +82,7 @@ end
 
 # --- PLOTS ---
 
-function plot_state(prev_state::BolfiProblem, new_datum::Union{Nothing, <:AbstractVector{<:Real}}; plt::PlotCallback, iter::Int, kwargs...)
+function plot_state(prev_state::BosipProblem, new_datum::Union{Nothing, <:AbstractVector{<:Real}}; plt::PlotCallback, iter::Int, kwargs...)
     @assert ToyProblem.x_dim() == 2
     f = plot_state_2d(prev_state, new_datum; plt, kwargs...)
 

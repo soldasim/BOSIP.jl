@@ -7,7 +7,7 @@ Only works with proposal distributions which implement `estimate_parameters!`.
 struct AnalyticalFitter <: DistributionFitter end
 
 function fit_distribution!(::AnalyticalFitter, dist::ProposalDistribution, xs::AbstractMatrix{<:Real}, ws::AbstractVector{<:Real};
-    options::BolfiOptions = BolfiOptions(),
+    options::BosipOptions = BosipOptions(),
 )
     estimate_parameters!(dist, xs, ws)
 end

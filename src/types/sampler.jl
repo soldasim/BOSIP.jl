@@ -37,7 +37,7 @@ abstract type WeightedSampler <: DistributionSampler end
 Sample `count` samples from the given posterior log-density function.
 
 # Keywords
-- `options::BolfiOptions`: Miscellaneous preferences. Defaults to `BolfiOptions()`.
+- `options::BosipOptions`: Miscellaneous preferences. Defaults to `BosipOptions()`.
 """
 function sample_posterior end
 

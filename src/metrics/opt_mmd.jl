@@ -11,7 +11,7 @@ automatically during each evaluation of the metric.
 # Keywords
 - `kernel::Kernel`: The kernel used to calculate the MMD.
     (Provide a kernel *without* lengthscales as they are optimized automatically.)
-- `bounds::AbstractBounds`: The domain bounds of the `BolfiProblem`.
+- `bounds::AbstractBounds`: The domain bounds of the `BosipProblem`.
 - `algorithm`: The optimization algorithm used to optimize the kernel lengthscales.
 - `kwargs...`: Additional keyword arguments passed to the optimization algorithm.
 """
@@ -31,7 +31,7 @@ function OptMMDMetric(;
 end
 
 function calculate_metric(mmd::OptMMDMetric, true_samples::AbstractMatrix{<:Real}, approx_samples::AbstractMatrix{<:Real};
-    options::BolfiOptions = BolfiOptions(),    
+    options::BosipOptions = BosipOptions(),    
 )
     options.info && @info "Optimizing kernel lengthscales for the MMD metric ..."
 

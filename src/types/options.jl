@@ -1,6 +1,6 @@
 
 """
-    BolfiOptions(; kwargs...)
+    BosipOptions(; kwargs...)
 
 Stores miscellaneous settings.
 
@@ -11,11 +11,11 @@ Stores miscellaneous settings.
         Determines whether to run multiple objective function evaluations
         within one batch in serial, parallel, or distributed fashion.
         (Only has an effect if batching AM is used.)
-- `callback::Union{<:BossCallback, <:BolfiCallback}`: If provided,
+- `callback::Union{<:BossCallback, <:BosipCallback}`: If provided,
         the callback will be called before the BO procedure starts and after every iteration.
 """
-@kwdef struct BolfiOptions{
-    CB<:Union{<:BossCallback, <:BolfiCallback},
+@kwdef struct BosipOptions{
+    CB<:Union{<:BossCallback, <:BosipCallback},
 }
     info::Bool = true
     debug::Bool = false
@@ -23,13 +23,13 @@ Stores miscellaneous settings.
     callback::CB = NoCallback()
 end
 
-create_boss_options(opt::BolfiOptions, bolfi::BolfiProblem) = BOSS.BossOptions(
+create_boss_options(opt::BosipOptions, bosip::BosipProblem) = BOSS.BossOptions(
     opt.info,
     opt.debug,
     opt.parallel_evals,
-    CallbackWrapper(opt.callback, bolfi),
+    CallbackWrapper(opt.callback, bosip),
 )
-create_boss_options(opt::BolfiOptions) = BOSS.BossOptions(
+create_boss_options(opt::BosipOptions) = BOSS.BossOptions(
     opt.info,
     opt.debug,
     opt.parallel_evals,

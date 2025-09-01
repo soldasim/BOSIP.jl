@@ -28,7 +28,7 @@ function TVMetric(;
 end
 
 function calculate_metric(tv::TVMetric, true_logpost::Function, approx_logpost::Function;
-    options::BolfiOptions = BolfiOptions(),    
+    options::BosipOptions = BosipOptions(),    
 )
     return calc_tv(tv.grid, tv.log_ws, true_logpost, approx_logpost)
 end

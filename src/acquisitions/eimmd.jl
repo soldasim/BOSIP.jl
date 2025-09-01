@@ -37,7 +37,7 @@ The samples are drawn from the `x_proposal`.
 - `y_kernel::Kernel`: The kernel used for the samples of the new data point.
 - `p_kernel::Kernel`: The kernel used for the posterior function value samples.
 """
-@kwdef struct EIMMD <: BolfiAcquisition
+@kwdef struct EIMMD <: BosipAcquisition
     y_samples::Int64
     x_samples::Int64
     x_proposal::MultivariateDistribution
@@ -46,8 +46,8 @@ The samples are drawn from the `x_proposal`.
 end
 
 # info gain on the posterior approximation
-function (acq::EIMMD)(bolfi::BolfiProblem{Nothing}, options::BolfiOptions; return_xs=false)
-    problem = bolfi.problem
+function (acq::EIMMD)(bosip::BosipProblem{Nothing}, options::BosipOptions; return_xs=false)
+    problem = bosip.problem
     y_dim = BOSS.y_dim(problem)
 
     # Sample parameter values.
@@ -62,7 +62,7 @@ function (acq::EIMMD)(bolfi::BolfiProblem{Nothing}, options::BolfiOptions; retur
     Es_s = [sample_ϵs(y_dim, acq.y_samples) for _ in 1:acq.x_samples] # vector-vector-vector
 
     # Compute HSIC
-    a = construct_hsic_acquisition(acq, bolfi, xs, ws, ϵs_y, Es_s)
+    a = construct_hsic_acquisition(acq, bosip, xs, ws, ϵs_y, Es_s)
     if return_xs
         return a, xs
     else
@@ -77,7 +77,7 @@ function sample_ϵs(y_dim, y_samples)
 end
 
 struct EIMMDFunc{
-    B<:BolfiProblem,
+    B<:BosipProblem,
     M<:ModelPosterior,
     X<:AbstractMatrix{<:Real},
     W<:AbstractVector{<:Real},
@@ -85,7 +85,7 @@ struct EIMMDFunc{
     E2<:AbstractVector{<:AbstractVector{<:AbstractVector{<:Real}}},
 }
     acq::EIMMD
-    bolfi::B
+    bosip::B
     model_post::M
     xs::X
     ws::W
@@ -99,7 +99,7 @@ function (f::EIMMDFunc)(x_::AbstractVector{<:Real})
     ys_ = calc_y.(Ref(μy), Ref(σy), f.ϵs_y)
 
     # augment problems
-    problem_copies = [deepcopy(f.bolfi.problem) for _ in 1:f.acq.y_samples]
+    problem_copies = [deepcopy(f.bosip.problem) for _ in 1:f.acq.y_samples]
     for (p, y_) in zip(problem_copies, ys_)
         augment_dataset!(p, x_, y_)
     end
@@ -107,8 +107,8 @@ function (f::EIMMDFunc)(x_::AbstractVector{<:Real})
 
     # sample `K x N` y_eval (and s_eval) samples (N for each x_eval sample)
     Y_evals = get_ys_eval.(Ref(aug_posts_samples), eachcol(f.xs), f.Es_s) # vector-vector-vector
-    # S_evals = get_ss_eval.(Y_evals, eachcol(f.xs), Ref(f.bolfi.likelihood), Ref(f.bolfi.x_prior))
-    log_S_evals = get_log_ss_eval.(Y_evals, eachcol(f.xs), Ref(f.bolfi.likelihood), Ref(f.bolfi.x_prior)) # vector-vector
+    # S_evals = get_ss_eval.(Y_evals, eachcol(f.xs), Ref(f.bosip.likelihood), Ref(f.bosip.x_prior))
+    log_S_evals = get_log_ss_eval.(Y_evals, eachcol(f.xs), Ref(f.bosip.likelihood), Ref(f.bosip.x_prior)) # vector-vector
 
     # S_evals are UNNORMALIZED! (This is intentional, as there is no straight-forward way to normalize them.)
     
@@ -131,17 +131,17 @@ end
 
 function construct_hsic_acquisition(
     acq::EIMMD,
-    bolfi::BolfiProblem,
+    bosip::BosipProblem,
     xs::AbstractMatrix{<:Real}, # x samples to integrate over the domain
     ws::AbstractVector{<:Real}, # weights for the x samples (importance sampling)
     ϵs_y::AbstractVector{<:AbstractVector{<:Real}}, # [GP] noise samples for sampling the GP posterior
     Es_s::AbstractVector{<:AbstractVector{<:AbstractVector{<:Real}}}, # [DOMAIN × GP] noise samples for the posterior pdf values
 )
-    boss = bolfi.problem
+    boss = bosip.problem
     model_post = BOSS.model_posterior(boss)
 
     @warn "Using experimental length-scales for the HSIC kernels."
-    return EIMMDFunc(acq, bolfi, model_post, xs, ws, ϵs_y, Es_s)
+    return EIMMDFunc(acq, bosip, model_post, xs, ws, ϵs_y, Es_s)
 end
 
 function calc_y(μ, σ, ϵ)
@@ -155,13 +155,13 @@ function get_ys_eval(aug_posts, x_eval, ϵs)
 end
 
 # function get_ss_eval(ys_eval, x_eval, likelihood, x_prior)
-#     log_ls = BOLFI.loglike.(Ref(likelihood), ys_eval)
+#     log_ls = BOSIP.loglike.(Ref(likelihood), ys_eval)
 #     log_px = logpdf(x_prior, x_eval)
 #     ss = exp.(log_px .+ log_ls) # TODO unnormalized
 #     return ss
 # end
 function get_log_ss_eval(ys_eval, x_eval, likelihood, x_prior)
-    log_ls = BOLFI.loglike.(Ref(likelihood), ys_eval)
+    log_ls = BOSIP.loglike.(Ref(likelihood), ys_eval)
     log_px = logpdf(x_prior, x_eval)
     ss = log_ls .+ log_px # TODO unnormalized
     return ss

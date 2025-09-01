@@ -9,18 +9,18 @@ and implement the following API;
 
 Each subtype of `Likelihood` *should* implement:
 - `loglike(::Likelihood, y::AbstractVector{<:Real})` where `y` is the simulator output
-- `log_likelihood_mean(::Likelihood, ::BolfiProblem, ::ModelPosterior)`
+- `log_likelihood_mean(::Likelihood, ::BosipProblem, ::ModelPosterior)`
 
 Each subtype of `Likelihood` *should* implement *at least one* of:
-- `log_sq_likelihood_mean(::Likelihood, ::BolfiProblem, ::ModelPosterior)`
-- `log_likelihood_variance(::Likelihood, ::BolfiProblem, ::ModelPosterior)`
+- `log_sq_likelihood_mean(::Likelihood, ::BosipProblem, ::ModelPosterior)`
+- `log_likelihood_variance(::Likelihood, ::BosipProblem, ::ModelPosterior)`
 
 Additionally, the following method is also necessary to implement
-if `BolfiProblem` where `!isnothing(problem.y_sets)` is used:
+if `BosipProblem` where `!isnothing(problem.y_sets)` is used:
 - `get_subset(::Likelihood, y_set::AsbtractVector{<:Bool})`:
 
 The following additional methods are provided by default and *need not be implemented*:
-- `log_approx_likelihood(::Likelihood, ::BolfiProblem, ::ModelPosterior)`
+- `log_approx_likelihood(::Likelihood, ::BosipProblem, ::ModelPosterior)`
 - `like(::Likelihood, y:AbstractVector{<:Real})` where `y` is the simulator output
 """
 abstract type Likelihood end
@@ -42,28 +42,28 @@ function like(l::Likelihood, y::AbstractVector{<:Real})
 end
 
 """
-    log_approx_likelihood(::Likelihood, ::BolfiProblem, ::ModelPosterior)
+    log_approx_likelihood(::Likelihood, ::BosipProblem, ::ModelPosterior)
 
 Returns a function mapping ``x`` to ``log \\hat{p}(z_o|x)``.
 """
 function log_approx_likelihood end
 
 """
-    log_likelihood_mean(::Likelihood, ::BolfiProblem, ::ModelPosterior)
+    log_likelihood_mean(::Likelihood, ::BosipProblem, ::ModelPosterior)
 
 Returns a function mapping ``x`` to ``log \\mathbb{E}[ \\hat{p}(z_o|x) | GP ]``.
 """
 function log_likelihood_mean end
 
 """
-    log_sq_likelihood_mean(::Likelihood, ::BolfiProblem, ::ModelPosterior)
+    log_sq_likelihood_mean(::Likelihood, ::BosipProblem, ::ModelPosterior)
 
 Returns a function mapping ``x`` to ``log \\mathbb{E}[ \\hat{p}(z_o|x)^2 | GP ]``.
 """
 function log_sq_likelihood_mean end
 
 """
-    log_likelihood_variance(::Likelihood, ::BolfiProblem, ::ModelPosterior)
+    log_likelihood_variance(::Likelihood, ::BosipProblem, ::ModelPosterior)
 
 Return a function mapping ``x`` to ``log \\mathbb{V}[ \\hat{p}(z_o|x) | GP ]``.
 """

@@ -13,22 +13,22 @@ w.r.t. each approximate posterior.
 
 - `samples::Int`: The number of samples used to estimate the evidence.
 """
-@kwdef struct MWMV <: BolfiAcquisition
+@kwdef struct MWMV <: BosipAcquisition
     samples::Int = 10_000
 end
 
-function (acq::MWMV)(::Type{<:UniFittedParams}, bolfi::BolfiProblem{Matrix{Bool}}, options::BolfiOptions)
-    sets = size(bolfi.y_sets)[2]
-    xs = rand(bolfi.x_prior, acq.samples)  # shared samples
+function (acq::MWMV)(::Type{<:UniFittedParams}, bosip::BosipProblem{Matrix{Bool}}, options::BosipOptions)
+    sets = size(bosip.y_sets)[2]
+    xs = rand(bosip.x_prior, acq.samples)  # shared samples
     
     set_vars = Vector{Function}(undef, sets)
     ws = Vector{Float64}(undef, sets)
 
     for i in 1:sets
-        bolfi_ = get_subset(bolfi, i)
-        post_mean = posterior_mean(bolfi_; normalize=true, xs)
-        ws[i] = 1. / sum(post_mean.(eachcol(bolfi_.problem.data.X)))
-        set_vars[i] = posterior_variance(bolfi_; normalize=true, xs)
+        bosip_ = get_subset(bosip, i)
+        post_mean = posterior_mean(bosip_; normalize=true, xs)
+        ws[i] = 1. / sum(post_mean.(eachcol(bosip_.problem.data.X)))
+        set_vars[i] = posterior_variance(bosip_; normalize=true, xs)
     end
     
     function mwmv_acq(x)
@@ -41,7 +41,7 @@ function (acq::MWMV)(::Type{<:UniFittedParams}, bolfi::BolfiProblem{Matrix{Bool}
 end
 
 # TODO: Think about MWMV for BI
-function (acq::MWMV)(::Type{<:MultiFittedParams}, bolfi::BolfiProblem{Matrix{Bool}}, options::BolfiOptions)
+function (acq::MWMV)(::Type{<:MultiFittedParams}, bosip::BosipProblem{Matrix{Bool}}, options::BosipOptions)
     throw(ArgumentError("""
         The support for Bayesian inference is not implemented yet for the MWMV acquisition.
         Use a MAP model fitter or another acquisition function.

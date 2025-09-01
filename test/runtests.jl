@@ -1,6 +1,6 @@
-using BOLFI
+using BOSIP
 using Test
 
-@testset "BOLFI.jl" begin
+@testset "BOSIP.jl" begin
     # Write your tests here.
 end

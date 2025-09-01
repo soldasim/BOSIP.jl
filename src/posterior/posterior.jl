@@ -1,6 +1,6 @@
 
 """
-    approx_posterior(::BolfiProblem; kwargs...)
+    approx_posterior(::BosipProblem; kwargs...)
 
 Return the MAP estimation of the unnormalized approximate posterior ``\\hat{p}(z_o|x) p(x)`` as a function of ``x``.
 
@@ -12,7 +12,7 @@ due to a lack of data and due to the simulator evaluation noise.
 
 By using `approx_posterior` or `posterior_mean` one controls,
 whether to integrate over the uncertainty in the discrepancy estimate.
-In addition to that, by providing a `ModelFitter{MAP}` or a `ModelFitter{BI}` to `bolfi!` one controls,
+In addition to that, by providing a `ModelFitter{MAP}` or a `ModelFitter{BI}` to `bosip!` one controls,
 whether to integrate over the uncertainty in the GP hyperparameters.
 
 # Keywords
@@ -32,9 +32,9 @@ whether to integrate over the uncertainty in the GP hyperparameters.
 [`posterior_variance`](@ref),
 [`approx_likelihood`](@ref)
 """
-function approx_posterior(bolfi::BolfiProblem; normalize=false, xs=nothing, samples=10_000)
-    x_prior = bolfi.x_prior
-    log_post = log_approx_posterior(bolfi)
+function approx_posterior(bosip::BosipProblem; normalize=false, xs=nothing, samples=10_000)
+    x_prior = bosip.x_prior
+    log_post = log_approx_posterior(bosip)
 
     if normalize
         py = evidence(x -> exp(log_post(x)), x_prior; xs, samples)
@@ -49,7 +49,7 @@ function approx_posterior(bolfi::BolfiProblem; normalize=false, xs=nothing, samp
 end
 
 """
-    posterior_mean(::BolfiProblem; kwargs...)
+    posterior_mean(::BosipProblem; kwargs...)
 
 Return the expectation of the unnormalized posterior ``\\mathbb{E}[\\hat{p}(z_o|x) p(x)]`` as a function of ``x``.
 
@@ -60,7 +60,7 @@ integrated over the uncertainty of the GPs due to a lack of data and due to the 
 
 By using `approx_posterior` or `posterior_mean` one controls,
 whether to integrate over the uncertainty in the discrepancy estimate.
-In addition to that, by providing a `ModelFitter{MAP}` or a `ModelFitter{BI}` to `bolfi!` one controls,
+In addition to that, by providing a `ModelFitter{MAP}` or a `ModelFitter{BI}` to `bosip!` one controls,
 whether to integrate over the uncertainty in the GP hyperparameters.
 
 # Keywords
@@ -80,9 +80,9 @@ whether to integrate over the uncertainty in the GP hyperparameters.
 [`posterior_variance`](@ref),
 [`likelihood_mean`](@ref)
 """
-function posterior_mean(bolfi::BolfiProblem; normalize=false, xs=nothing, samples=10_000)
-    x_prior = bolfi.x_prior
-    log_post_mean = log_posterior_mean(bolfi)
+function posterior_mean(bosip::BosipProblem; normalize=false, xs=nothing, samples=10_000)
+    x_prior = bosip.x_prior
+    log_post_mean = log_posterior_mean(bosip)
 
     if normalize
         py = evidence(x -> exp(log_post_mean(x)), x_prior; xs, samples)
@@ -97,7 +97,7 @@ function posterior_mean(bolfi::BolfiProblem; normalize=false, xs=nothing, sample
 end
 
 """
-    posterior_variance(::BolfiProblem; kwargs...)
+    posterior_variance(::BosipProblem; kwargs...)
 
 Return the variance of the unnormalized posterior ``\\mathbb{V}[\\hat{p}(z_o|x) p(x)]`` as a function of ``x``.
 
@@ -106,7 +106,7 @@ If `normalize=true`, the resulting posterior variance is approximately normalize
 The returned function maps parameters `x` to the variance of the posterior probability density value estimate
 caused by the uncertainty of the GPs due to a lack of data and due to the simulator evaluation noise.
 
-By providing a `ModelFitter{MAP}` or a `ModelFitter{BI}` to `bolfi!` one controls,
+By providing a `ModelFitter{MAP}` or a `ModelFitter{BI}` to `bosip!` one controls,
 whether to compute the variance over the uncertainty in the GP hyperparameters as well.
 
 # Keywords
@@ -126,12 +126,12 @@ whether to compute the variance over the uncertainty in the GP hyperparameters a
 [`posterior_mean`](@ref),
 [`likelihood_variance`](@ref)
 """
-function posterior_variance(bolfi::BolfiProblem; normalize=false, xs=nothing, samples=10_000)
-    x_prior = bolfi.x_prior
-    log_post_var = log_posterior_variance(bolfi)
+function posterior_variance(bosip::BosipProblem; normalize=false, xs=nothing, samples=10_000)
+    x_prior = bosip.x_prior
+    log_post_var = log_posterior_variance(bosip)
 
     if normalize
-        post_mean = posterior_mean(bolfi)
+        post_mean = posterior_mean(bosip)
         py = evidence(post_mean, x_prior; xs, samples)
         log_py2 = 2 * log(py)
         post_var = x -> exp.(log_post_var(x) .- log_py2)
@@ -144,7 +144,7 @@ function posterior_variance(bolfi::BolfiProblem; normalize=false, xs=nothing, sa
 end
 
 """
-    approx_likelihood(::BolfiProblem)
+    approx_likelihood(::BosipProblem)
 
 Return the MAP estimation of the likelihood ``\\hat{p}(z_o|x)`` as a function of ``x``.
 
@@ -154,7 +154,7 @@ due to a lack of data and due to the simulator evaluation noise.
 
 By using `approx_likelihood` or `likelihood_mean` one controls,
 whether to integrate over the uncertainty in the discrepancy estimate.
-In addition to that, by providing a `ModelFitter{MAP}` or a `ModelFitter{BI}` to `bolfi!` one controls,
+In addition to that, by providing a `ModelFitter{MAP}` or a `ModelFitter{BI}` to `bosip!` one controls,
 whether to integrate over the uncertainty in the GP hyperparameters.
 
 # See Also
@@ -170,11 +170,11 @@ function approx_likelihood(args...)
 end
 
 # the method for `UniFittedParams` is implemented in `src/posterior/log_posterior.jl`
-function approx_likelihood(::Type{<:MultiFittedParams}, bolfi::BolfiProblem)
-    model_posts = BOSS.model_posterior(bolfi.problem)
+function approx_likelihood(::Type{<:MultiFittedParams}, bosip::BosipProblem)
+    model_posts = BOSS.model_posterior(bosip.problem)
     sample_count = length(model_posts)
     
-    likes = approx_likelihood.(Ref(bolfi.likelihood), Ref(bolfi), model_posts)
+    likes = approx_likelihood.(Ref(bosip.likelihood), Ref(bosip), model_posts)
     
     function exp_like(x)
         return mapreduce(l -> l(x), .+, likes) ./ sample_count
@@ -182,7 +182,7 @@ function approx_likelihood(::Type{<:MultiFittedParams}, bolfi::BolfiProblem)
 end
 
 """
-    likelihood_mean(::BolfiProblem)
+    likelihood_mean(::BosipProblem)
 
 Return the expectation of the likelihood approximation ``\\mathbb{E}[\\hat{p}(z_o|x)]`` as a function of ``x``.
 
@@ -191,7 +191,7 @@ integrated over the uncertainty of the GPs due to a lack of data and due to the 
 
 By using `approx_likelihood` or `likelihood_mean` one controls,
 whether to integrate over the uncertainty in the discrepancy estimate.
-In addition to that, by providing a `ModelFitter{MAP}` or a `ModelFitter{BI}` to `bolfi!` one controls,
+In addition to that, by providing a `ModelFitter{MAP}` or a `ModelFitter{BI}` to `bosip!` one controls,
 whether to integrate over the uncertainty in the GP hyperparameters.
 
 # See Also
@@ -207,11 +207,11 @@ function likelihood_mean(args...)
 end
 
 # the method for `UniFittedParams` is implemented in `src/posterior/log_posterior.jl`
-function likelihood_mean(::Type{<:MultiFittedParams}, bolfi::BolfiProblem)
-    model_posts = BOSS.model_posterior(bolfi.problem)
+function likelihood_mean(::Type{<:MultiFittedParams}, bosip::BosipProblem)
+    model_posts = BOSS.model_posterior(bosip.problem)
     sample_count = length(model_posts)
     
-    like_means = likelihood_mean.(Ref(bolfi.likelihood), Ref(bolfi), model_posts)
+    like_means = likelihood_mean.(Ref(bosip.likelihood), Ref(bosip), model_posts)
     
     function exp_like_mean(x)
         return mapreduce(l -> l(x), .+, like_means) ./ sample_count
@@ -219,7 +219,7 @@ function likelihood_mean(::Type{<:MultiFittedParams}, bolfi::BolfiProblem)
 end
 
 """
-    likelihood_variance(::BolfiProblem)
+    likelihood_variance(::BosipProblem)
 
 Return the variance of the likelihood approximation ``\\mathbb{V}[\\hat{p}(z_o|x)]`` as a function of ``x``.
 
@@ -227,7 +227,7 @@ The returned function maps parameters `x` to the variance of the likelihood prob
 caused by the uncertainty of the GPs due to a lack of data and the uncertainty of the simulator
 due to the evaluation noise.
 
-By providing a `ModelFitter{MAP}` or a `ModelFitter{BI}` to `bolfi!` one controls,
+By providing a `ModelFitter{MAP}` or a `ModelFitter{BI}` to `bosip!` one controls,
 whether to compute the variance over the uncertainty in the GP hyperparameters as well.
 
 # See Also
@@ -243,11 +243,11 @@ function likelihood_variance(args...)
 end
 
 # the method for `UniFittedParams` is implemented in `src/posterior/log_posterior.jl`
-function likelihood_variance(::Type{<:MultiFittedParams}, bolfi::BolfiProblem)
-    model_posts = BOSS.model_posterior(bolfi.problem)
+function likelihood_variance(::Type{<:MultiFittedParams}, bosip::BosipProblem)
+    model_posts = BOSS.model_posterior(bosip.problem)
     sample_count = length(model_posts)
 
-    like_vars = likelihood_variance.(Ref(bolfi.likelihood), Ref(bolfi), model_posts)
+    like_vars = likelihood_variance.(Ref(bosip.likelihood), Ref(bosip), model_posts)
 
     function exp_like_var(x)
         return mapreduce(l -> l(x), .+, like_vars) ./ sample_count

@@ -4,15 +4,15 @@
 
 Selects the new evaluation point by maximizing the variance of the posterior approximation.
 """
-struct MaxVar <: BolfiAcquisition end
+struct MaxVar <: BosipAcquisition end
 
-function (acq::MaxVar)(::Type{<:UniFittedParams}, bolfi::BolfiProblem{Nothing}, options::BolfiOptions)
-    return posterior_variance(bolfi; normalize=false)
+function (acq::MaxVar)(::Type{<:UniFittedParams}, bosip::BosipProblem{Nothing}, options::BosipOptions)
+    return posterior_variance(bosip; normalize=false)
 end
 
 # Use the specialized `posterior_variance` computation defined for Bayesian inference.
 # This is NOT equivalent to the fallback behavior defined in
-#   `(acq::BolfiAcquisition)(::Type{<:MultiFittedParams}, bolfi::BolfiProblem, options::BolfiOptions)`.
-function (acq::MaxVar)(::Type{<:MultiFittedParams}, bolfi::BolfiProblem{Nothing}, options::BolfiOptions)
-    return posterior_variance(bolfi; normalize=false)
+#   `(acq::BosipAcquisition)(::Type{<:MultiFittedParams}, bosip::BosipProblem, options::BosipOptions)`.
+function (acq::MaxVar)(::Type{<:MultiFittedParams}, bosip::BosipProblem{Nothing}, options::BosipOptions)
+    return posterior_variance(bosip; normalize=false)
 end
