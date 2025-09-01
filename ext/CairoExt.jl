@@ -1,13 +1,13 @@
 module CairoExt
 
-using BOLFI, BOSS
+using BOSIP, BOSS
 using CairoMakie
-using BOLFI.KernelFunctions
-using BOLFI.Statistics
-using BOLFI.LinearAlgebra
-using BOLFI.Distributions
+using BOSIP.KernelFunctions
+using BOSIP.Statistics
+using BOSIP.LinearAlgebra
+using BOSIP.Distributions
 
-@kwdef struct PlotSettings <: BOLFI.PlotSettings
+@kwdef struct PlotSettings <: BOSIP.PlotSettings
     grid_size::Int = 200
     param_labels::Union{Nothing, Vector{String}} = nothing
     plot_data::Bool = true
@@ -16,7 +16,7 @@ using BOLFI.Distributions
     plot_cell_res::Int = 400
 end
 
-BOLFI.PlotSettings(args...; kwargs...) =
+BOSIP.PlotSettings(args...; kwargs...) =
     PlotSettings(args...; kwargs...)
 
 const SAMPLES_SCATTER_KWARGS = (
@@ -30,7 +30,7 @@ const DATA_SCATTER_KWARGS = (
     markersize = 5,
 )
 
-function BOLFI.plot_marginals_int(bolfi::BolfiProblem;
+function BOSIP.plot_marginals_int(bosip::BosipProblem;
     func = approx_posterior,
     normalize = true,
     lhc_grid_size = 1000,
@@ -40,16 +40,16 @@ function BOLFI.plot_marginals_int(bolfi::BolfiProblem;
     matrix_ops = true,
 )
     info && @info "Generating a latin hypercube of parameter samples ..."
-    xs = BOSS.generate_LHC(bolfi.problem.domain.bounds, lhc_grid_size)
-    keep = BOSS.in_domain.(eachcol(xs), Ref(bolfi.problem.domain))
+    xs = BOSS.generate_LHC(bosip.problem.domain.bounds, lhc_grid_size)
+    keep = BOSS.in_domain.(eachcol(xs), Ref(bosip.problem.domain))
     info && (sum(keep) < lhc_grid_size) && @warn "Discarding some LHC points outside of the parameter domain."
     xs = xs[:, keep]
 
     info && @info "Plotting the marginals ..."
-    return plot_marginals_int(bolfi, xs; func, normalize, plot_settings, display, matrix_ops)
+    return plot_marginals_int(bosip, xs; func, normalize, plot_settings, display, matrix_ops)
 end
 
-function BOLFI.plot_marginals_kde(bolfi::BolfiProblem;
+function BOSIP.plot_marginals_kde(bosip::BosipProblem;
     turing_options = TuringOptions(),
     kernel = GaussianKernel(),
     lengthscale = 1.,
@@ -58,14 +58,14 @@ function BOLFI.plot_marginals_kde(bolfi::BolfiProblem;
     display = false,
 )
     info && @info "Sampling parameter samples from the posterior ..."
-    xs = sample_posterior(bolfi, turing_options)
+    xs = sample_posterior(bosip, turing_options)
 
     info && @info "Plotting the marginals ..."
-    (lengthscale isa Real) && (lengthscale = fill(lengthscale, BOLFI.x_dim(bolfi)))
-    return plot_marginals_kde(bolfi, xs, kernel, lengthscale; plot_settings, display)
+    (lengthscale isa Real) && (lengthscale = fill(lengthscale, BOSIP.x_dim(bosip)))
+    return plot_marginals_kde(bosip, xs, kernel, lengthscale; plot_settings, display)
 end
 
-function plot_marginals_int(bolfi::BolfiProblem, grid::AbstractMatrix{<:Real};
+function plot_marginals_int(bosip::BosipProblem, grid::AbstractMatrix{<:Real};
     func,
     normalize,
     plot_settings,
@@ -73,11 +73,11 @@ function plot_marginals_int(bolfi::BolfiProblem, grid::AbstractMatrix{<:Real};
     matrix_ops,
     kwargs...
 )
-    x_dim = BOLFI.x_dim(bolfi)
+    x_dim = BOSIP.x_dim(bosip)
     count = size(grid)[2]
-    bounds = bolfi.problem.domain.bounds
-    f = func(bolfi)
-    X = bolfi.problem.data.X
+    bounds = bosip.problem.domain.bounds
+    f = func(bosip)
+    X = bosip.problem.data.X
 
     grid_size = plot_settings.grid_size
     steps = plot_steps(grid_size, bounds)
@@ -166,15 +166,15 @@ function plot_marginals_int(bolfi::BolfiProblem, grid::AbstractMatrix{<:Real};
     return fig
 end
 
-function plot_marginals_kde(bolfi::BolfiProblem, samples::AbstractMatrix{<:Real}, kernel::Kernel, lengthscale::AbstractVector{<:Real};
+function plot_marginals_kde(bosip::BosipProblem, samples::AbstractMatrix{<:Real}, kernel::Kernel, lengthscale::AbstractVector{<:Real};
     plot_settings,
     display,
     kwargs...
 )
-    x_dim = BOLFI.x_dim(bolfi)
-    bounds = bolfi.problem.domain.bounds
+    x_dim = BOSIP.x_dim(bosip)
+    bounds = bosip.problem.domain.bounds
     count = size(samples)[2]
-    X = bolfi.problem.data.X
+    X = bosip.problem.data.X
 
     grid_size = plot_settings.grid_size
     steps = plot_steps(grid_size, bounds)

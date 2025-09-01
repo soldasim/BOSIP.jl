@@ -26,7 +26,7 @@ function OptimizationFitter(;
 end
 
 function fit_distribution!(opt::OptimizationFitter, dist::ProposalDistribution, xs::AbstractMatrix{<:Real}, ws::AbstractVector{<:Real};
-    options::BolfiOptions = BolfiOptions(),
+    options::BosipOptions = BosipOptions(),
 )
     init_θs = initial_params(dist, opt.multistart)
     ll = loglikelihood(dist, xs, ws)

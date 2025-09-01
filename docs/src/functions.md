@@ -4,13 +4,13 @@ This page contains documentation for all exported functions.
 
 ## Training
 
-Call the main function `bolfi!` to run the BOLFI procedure, which sequentially queries the expensive blackbox simulator to learn the parameter posterior efficiently.
+Call the main function `bosip!` to run the BOSIP procedure, which sequentially queries the expensive blackbox simulator to learn the parameter posterior efficiently.
 
 ```@docs
-bolfi!
+bosip!
 ```
 
-Call the function `estimate_parameters!` to fit the model hyperparameters according to the current dataset. (One can also call `bolfi!` with `term_cond = IterLimit(0)` to fit the hyperparameters without running any simulations. This will additionally only refit the model if the dataset changed since the last parameter estimation. In contrast, calling `estimate_parameters!` will always re-run the parameter estimation.)
+Call the function `estimate_parameters!` to fit the model hyperparameters according to the current dataset. (One can also call `bosip!` with `term_cond = IterLimit(0)` to fit the hyperparameters without running any simulations. This will additionally only refit the model if the dataset changed since the last parameter estimation. In contrast, calling `estimate_parameters!` will always re-run the parameter estimation.)
 
 ```@docs
 estimate_parameters!

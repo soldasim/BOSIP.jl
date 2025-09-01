@@ -1,13 +1,13 @@
 
-# Likelihood-Free Inference Problem
+# Simulator Inverse Problem
 
-Likelihood-free inference (LFI), also known as simulation-based inference (SBI), is methodology used to solve the inverse problem in cases where the evaluation of the forward model is prohibitively expensive (and usually realized by a simulator). LFI methods aim to learn the posterior distribution of the parameters (the target of inference) instead of finding single MAP parameter estimator.
+We use the term _simulator inverse problems_ to refer to an inverse problem, where the forward model is represented by a (prohibitively expensive) simulator. The inverse problem is defined in a Bayesian way, and as such the goal is to learn the whole posterior distribution.
 
-This section formally introduces the general LFI problem as considered in BOLFI.jl.
+This section formally introduces the general Bayesian inverse problem as considered in BOSIP.jl.
 
 | | | | | |
 | --- | --- | --- | --- | --- |
-| | | ![BOSBI](img/bosbi.drawio.png) | | |
+| | | ![BOSIP](img/bosip.drawio.png) | | |
 | | | | | |
 
 ## Problem Definition
@@ -39,9 +39,9 @@ The following are considered as inputs of the problem:
 
 The goal is to learn an approximation of the posterior ``p(x|z_o)``, describing not only a MAP estimate of the parameters ``x``, but the whole distribution of likely values.
 
-# The BOLFI Method
+# The BOSIP Method
 
-BOLFI.jl uses the Bayesian optimization (BO) procedure, handled by the BOSS.jl package, to efficiently train an approximation of the parameter posterior while minimizing the number of required expensive simulations.
+BOSIP.jl uses the Bayesian optimization (BO) procedure, handled by the BOSS.jl package, to efficiently train an approximation of the parameter posterior while minimizing the number of required expensive simulations.
 
 The three key parts of the method are; *the acquisition function* used to sequentially select candidate parameters for simulations, *the probabilistic surrogate model* used to obtain a cheap approximation of the simulator together with uncertainty estimates, and *the proxy variable ``\delta``* defining the exact quantitiy modeled by the surrogate model.
 
@@ -55,25 +55,25 @@ In general, it is not always reasonable to model the simulation outputs ``y(x)``
 
 It is upon the user to define a suitable proxy variable ``\delta = \phi(y)`` to be modeled by the surrogate model. The uncertainty of the modeled proxy variable ``\delta(x)`` is then propagated into the uncertainty in the estimate of the likelihood value ``\ell(x) = p(z_o|x)``.
 
-Some examples of setting up BOLFI.jl to model different quantities are described below.
+Some examples of setting up BOSIP.jl to model different quantities are described below.
 
 ### Modeling the Simulation Output
 
-To model the simulation output, one should provide the black-box simulator directly as the ``f`` function of the [`BolfiProblem`](@ref) structure, and use a suitable [`Likelihood`](@ref), which defines the whole mapping from ``y`` to ``\ell = p(z_o|y)``. For example, one may use the [`NormalLikelihood`](@ref) if the observation noise ``p(z|y)`` is assumed to be normal.
+To model the simulation output, one should provide the black-box simulator directly as the ``f`` function of the [`BosipProblem`](@ref) structure, and use a suitable [`Likelihood`](@ref), which defines the whole mapping from ``y`` to ``\ell = p(z_o|y)``. For example, one may use the [`NormalLikelihood`](@ref) if the observation noise ``p(z|y)`` is assumed to be normal.
 
-This way, BOLFI.jl will use the surrogate model to model the whole simulation output ``y \in \mathbb{R}^{d_y}``.
+This way, BOSIP.jl will use the surrogate model to model the whole simulation output ``y \in \mathbb{R}^{d_y}``.
 
 ### Modeling the Log-Likelihood
 
-To model the log-likelihood, one should compose the simulator with a subsequent mapping ``\phi`` into a single function ``f`` and provide it to the [`BolfiProblem`](@ref) structure. The mapping ``\phi`` should be defined as the log-pdf of the observation likelihood ``p(z|y)``. I.e. the provided function ``f`` will take the parameters ``x`` as the input, evaluate the expensive simulation ``y = f(x)``, and then map the simulation outputs ``y`` to a scalar log-likelihood value ``\log\ell = p(z_o|y)``. In this case, the [`ExpLikelihood`](@ref) should be provided as the [`Likelihood`](@ref), which then only exponentiates the log-likelihood.
+To model the log-likelihood, one should compose the simulator with a subsequent mapping ``\phi`` into a single function ``f`` and provide it to the [`BosipProblem`](@ref) structure. The mapping ``\phi`` should be defined as the log-pdf of the observation likelihood ``p(z|y)``. I.e. the provided function ``f`` will take the parameters ``x`` as the input, evaluate the expensive simulation ``y = f(x)``, and then map the simulation outputs ``y`` to a scalar log-likelihood value ``\log\ell = p(z_o|y)``. In this case, the [`ExpLikelihood`](@ref) should be provided as the [`Likelihood`](@ref), which then only exponentiates the log-likelihood.
 
-This way, BOLFI.jl will use the surrogate model to model the scalar log-likelihood ``\log p(z_o|x)``.
+This way, BOSIP.jl will use the surrogate model to model the scalar log-likelihood ``\log p(z_o|x)``.
 
 ### Modeling Arbitrary Proxy Variable
 
 To model any arbitrary proxy variable ``\delta`` by the surrogate model, do the following. Define a mapping ``\phi``, which maps the simulation outputs ``y`` to your proxy variable ``\delta`` by realizing *a part of* the observation likelihood pdf ``p(z_o|y)``. Then define a second mapping ``\psi``, such that ``(\psi \circ \phi)(y) = p(z_o|y)``. In other words, the mapping ``\psi`` realized the *remaining part* of the observation likelihood pdf.
 
-Compose the expensive simulator ``y = f(x)`` and the mapping ``\psi`` into a single function `f` and provide it to the [`BolfiProblem`](@ref). Define a custom [`Likelihood`](@ref), which realizes the remaining mapping ``\psi`` and provide it to the [`BolfiProblem`](@ref) as the `likelihood`.
+Compose the expensive simulator ``y = f(x)`` and the mapping ``\psi`` into a single function `f` and provide it to the [`BosipProblem`](@ref). Define a custom [`Likelihood`](@ref), which realizes the remaining mapping ``\psi`` and provide it to the [`BosipProblem`](@ref) as the `likelihood`.
 
 ## Surrogate Model
 
@@ -89,4 +89,4 @@ x \in \arg\max \alpha(x)
 ```
 for the next simulation. The current surrogate model is used to calculate the acquisition values ``\alpha(x)``, thus avoiding the need for the expensive simulator when evaluating the acquisition function.
 
-The most basic [`BolfiAcquisition`](@ref) is the [`MaxVar`](@ref), which selects the point of maximal variance of the current posterior approximation as the next evalation point, effectively exploring the areas with the highest model uncertainty.
+The most basic [`BosipAcquisition`](@ref) is the [`MaxVar`](@ref), which selects the point of maximal variance of the current posterior approximation as the next evalation point, effectively exploring the areas with the highest model uncertainty.

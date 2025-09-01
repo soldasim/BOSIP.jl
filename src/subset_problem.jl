@@ -1,12 +1,12 @@
 
-get_subset(bolfi::BolfiProblem{Matrix{Bool}}, idx::Int) =
-    get_subset(bolfi, bolfi.y_sets[:, idx])
+get_subset(bosip::BosipProblem{Matrix{Bool}}, idx::Int) =
+    get_subset(bosip, bosip.y_sets[:, idx])
 
-function get_subset(bolfi::BolfiProblem, y_set::AbstractVector{<:Bool})
-    return BolfiProblem(
-        get_subset(bolfi.problem, y_set),
-        get_subset(bolfi.likelihood, y_set),
-        bolfi.x_prior,
+function get_subset(bosip::BosipProblem, y_set::AbstractVector{<:Bool})
+    return BosipProblem(
+        get_subset(bosip.problem, y_set),
+        get_subset(bosip.likelihood, y_set),
+        bosip.x_prior,
         nothing,
     )
 end

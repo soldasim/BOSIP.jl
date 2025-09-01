@@ -2,7 +2,7 @@
 # Visit https://bit.ly/cffinit to generate yours today!
 
 cff-version: 1.2.0
-title: BOLFI.jl (Bayesian Optimization Likelihood-Free Inference)
+title: BOSIP.jl (Bayesian Optimization for Simulator Inverse Problems)
 message: >-
   If you use this software, please cite it using the
   metadata from this file.
@@ -11,17 +11,20 @@ authors:
   - given-names: Šimon
     family-names: Soldát
     email: soldasim@fel.cvut.cz
-repository-code: 'https://github.com/soldasim/BOLFI.jl'
+    affiliation: AI Center FEE CTU
+    orcid: 'https://orcid.org/0009-0004-4299-9198'
+repository-code: 'https://github.com/soldasim/BOSIP.jl'
 abstract: >-
-  The BOLFI method performs Likelihood-Free Inference by
-  approximating the likelihood function with a Gaussian
-  Process and greatly reduces the number of required
-  evaluations by employing the Bayesian Optimization
-  procedure to select new evaluation points.
+  The BOSIP method solves Bayesian inverse problems with the
+  forward model represented by a simulator by learning the
+  whole posterior distribution. A probabilistic surrogate
+  model is used to alleviate the need to evaluate the
+  expensive simulation, and the Bayesian optimization
+  procedure is used to minimize the number of required
+  simulations.
 keywords:
   - simulation-based inference
-  - likelihood-free inference
-  - indirect inference
+  - Bayesian inverse problem
   - Bayesian optimization
   - active learning
   - Gaussian process

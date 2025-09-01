@@ -35,6 +35,6 @@ abstract type PDFMetric <: DistributionMetric end
 Evaluate the accuracy of the approximate parameter posterior.
 
 # Keywords
-- `options::BolfiOptions`: Miscellaneous preferences. Defaults to `BolfiOptions()`.
+- `options::BosipOptions`: Miscellaneous preferences. Defaults to `BosipOptions()`.
 """
 function calculate_metric end

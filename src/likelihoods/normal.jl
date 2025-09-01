@@ -32,9 +32,9 @@ function loglike(like::NormalLikelihood, y::AbstractVector{<:Real})
 end
 
 # Specialized implementation. Provides slightly better performance for the batch evaluations.
-function log_approx_likelihood(like::NormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
+function log_approx_likelihood(like::NormalLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
     z_obs = like.z_obs
-    std_obs = _std_obs(like, bolfi)
+    std_obs = _std_obs(like, bosip)
 
     function log_approx_like(x::AbstractVector{<:Real})
         μ_y = mean(model_post, x)
@@ -53,9 +53,9 @@ function log_approx_likelihood(like::NormalLikelihood, bolfi::BolfiProblem, mode
     return log_approx_like
 end
 
-function log_likelihood_mean(like::NormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
+function log_likelihood_mean(like::NormalLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
     z_obs = like.z_obs
-    std_obs = _std_obs(like, bolfi)
+    std_obs = _std_obs(like, bosip)
 
     function log_like_mean(x::AbstractVector{<:Real})
         μ_y, std_y = mean_and_std(model_post, x)
@@ -76,9 +76,9 @@ function log_likelihood_mean(like::NormalLikelihood, bolfi::BolfiProblem, model_
     return log_like_mean
 end
 
-function log_sq_likelihood_mean(like::NormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
+function log_sq_likelihood_mean(like::NormalLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
     z_obs = like.z_obs
-    std_obs = _std_obs(like, bolfi)
+    std_obs = _std_obs(like, bosip)
 
     function log_sq_like_mean(x::AbstractVector{<:Real})
         μ_y, std_y = mean_and_std(model_post, x)
@@ -102,11 +102,11 @@ function log_sq_likelihood_mean(like::NormalLikelihood, bolfi::BolfiProblem, mod
     return log_sq_like_mean
 end
 
-function _std_obs(like::NormalLikelihood{Nothing}, bolfi::BolfiProblem)
-    @assert bolfi.problem.params isa UniFittedParams
-    return bolfi.problem.params.σ
+function _std_obs(like::NormalLikelihood{Nothing}, bosip::BosipProblem)
+    @assert bosip.problem.params isa UniFittedParams
+    return bosip.problem.params.σ
 end
-function _std_obs(like::NormalLikelihood, bolfi)
+function _std_obs(like::NormalLikelihood, bosip)
     return like.std_obs
 end
 

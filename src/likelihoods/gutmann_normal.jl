@@ -6,7 +6,7 @@ The observation is assumed to have been generated from a normal distribution
 as `z_o \\sim Normal(f(x), Diagonal(std_obs))`. We can use the simulator to query `z = f(x)`.
 
 This likelihood is an adaptation of the equations from Gutmann et al. [1,2]
-for the deterministic simulator considered in BOLFI.jl.
+for the deterministic simulator considered in BOSIP.jl.
 The main difference to the original Gutmann's equations is that here
 the predefined observation std `std_δ` is used instead of the noise std `σ_n`
 used in the original paper, which is estimated as a GP hyperparameter.
@@ -17,7 +17,7 @@ describing the discrepancy `\\delta` of the simulator outcome from the real obse
 
 (See that the real observation `z_obs` is _not_ provided as a parameter to `GutmannNormalLikelihood`
 as in the case of other `Likelihood`s. Instead, the observation `z_obs` should be used
-to calculate the discrepancy `\\delta` in the simulator `f` provided to `BolfiProblem`.
+to calculate the discrepancy `\\delta` in the simulator `f` provided to `BosipProblem`.
 The simulator should return the discrepancy as a vector `[\\delta]` of length 1.)
 
 The likelihood is then defined as ``P[\\delta < \\epslion]`` instead of ``P[\\delta = 0]``,
@@ -47,8 +47,8 @@ Alias for [`GutmannNormalLikelihood`](@ref).
 """
 const GutmannGaussianLikelihood = GutmannNormalLikelihood
 
-function log_approx_likelihood(like::GutmannNormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
-    if (y_dim(bolfi) != 1) || any(bolfi.problem.data.Y .< 0.)
+function log_approx_likelihood(like::GutmannNormalLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
+    if (y_dim(bosip) != 1) || any(bosip.problem.data.Y .< 0.)
         throw(error("The simulator should return a positive scalar discrepancy for Gutmann's likelihood."))
     end
 
@@ -63,8 +63,8 @@ function log_approx_likelihood(like::GutmannNormalLikelihood, bolfi::BolfiProble
     end
 end
 
-function log_likelihood_mean(like::GutmannNormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
-    if (y_dim(bolfi) != 1) || any(bolfi.problem.data.Y .< 0.)
+function log_likelihood_mean(like::GutmannNormalLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
+    if (y_dim(bosip) != 1) || any(bosip.problem.data.Y .< 0.)
         throw(error("The simulator should return a positive scalar discrepancy for Gutmann's likelihood."))
     end
 
@@ -81,8 +81,8 @@ end
 
 # The derivation can be found in the supplementary material of the
 # "Efficient Acquisition Rules for Model-Based Approximate Bayesian Computation" paper.
-function log_sq_likelihood_mean(like::GutmannNormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
-    if (y_dim(bolfi) != 1) || any(bolfi.problem.data.Y .< 0.)
+function log_sq_likelihood_mean(like::GutmannNormalLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
+    if (y_dim(bosip) != 1) || any(bosip.problem.data.Y .< 0.)
         throw(error("The simulator should return a positive scalar discrepancy for Gutmann's likelihood."))
     end
 

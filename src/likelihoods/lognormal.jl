@@ -35,9 +35,9 @@ function loglike(like::LogNormalLikelihood, y::AbstractVector{<:Real})
 end
 
 # Identical to `likelihood_mean(::GaussianLikelihood)`, just swapped `MvNormal` for `MvLogNormal`
-function log_likelihood_mean(like::LogNormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
+function log_likelihood_mean(like::LogNormalLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
     z_obs = like.z_obs
-    std_obs = _std_obs(like, bolfi)
+    std_obs = _std_obs(like, bosip)
 
     function log_like_mean(x::AbstractVector{<:Real})
         μ_y, std_y = mean_and_std(model_post, x)
@@ -47,9 +47,9 @@ function log_likelihood_mean(like::LogNormalLikelihood, bolfi::BolfiProblem, mod
 end
 
 # Identical to `sq_likelihood_mean(::GaussianLikelihood)`, just swapped `MvNormal` for `MvLogNormal`
-function log_sq_likelihood_mean(like::LogNormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
+function log_sq_likelihood_mean(like::LogNormalLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
     z_obs = like.z_obs
-    std_obs = _std_obs(like, bolfi)
+    std_obs = _std_obs(like, bosip)
 
     function log_sq_like_mean(x::AbstractVector{<:Real})
         μ_y, std_y = mean_and_std(model_post, x)
@@ -60,11 +60,11 @@ function log_sq_likelihood_mean(like::LogNormalLikelihood, bolfi::BolfiProblem, 
     end
 end
 
-function _std_obs(like::LogNormalLikelihood{Nothing}, bolfi)
-    @assert bolfi.problem.params isa UniFittedParams
-    return bolfi.problem.params.σ
+function _std_obs(like::LogNormalLikelihood{Nothing}, bosip)
+    @assert bosip.problem.params isa UniFittedParams
+    return bosip.problem.params.σ
 end
-function _std_obs(like::LogNormalLikelihood, bolfi)
+function _std_obs(like::LogNormalLikelihood, bosip)
     return like.std_obs
 end
 

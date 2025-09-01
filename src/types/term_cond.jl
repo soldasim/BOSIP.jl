@@ -1,20 +1,20 @@
 
 """
-An abstract type for BOLFI termination conditions.
+An abstract type for BOSIP termination conditions.
 
 # Implementing custom termination condition:
-- Create struct `CustomTermCond <: BolfiTermCond`
-- Implement method `(::CustomTermCond)(::BolfiProblem) -> ::Bool`
+- Create struct `CustomTermCond <: BosipTermCond`
+- Implement method `(::CustomTermCond)(::BosipProblem) -> ::Bool`
 """
-abstract type BolfiTermCond end
+abstract type BosipTermCond end
 
 struct TermCondWrapper{
-    T<:BolfiTermCond
+    T<:BosipTermCond
 } <: TermCond
     term_cond::T
-    bolfi::BolfiProblem
+    bosip::BosipProblem
 end
 
-TermCondWrapper(term_cond::TermCond, ::BolfiProblem) = term_cond
+TermCondWrapper(term_cond::TermCond, ::BosipProblem) = term_cond
 
-(wrap::TermCondWrapper)(::BossProblem) = wrap.term_cond(wrap.bolfi)
+(wrap::TermCondWrapper)(::BossProblem) = wrap.term_cond(wrap.bosip)

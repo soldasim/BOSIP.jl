@@ -15,7 +15,7 @@ between the two sample sets.
 end
 
 function calculate_metric(mmd::MMDMetric, true_samples::AbstractMatrix{<:Real}, approx_samples::AbstractMatrix{<:Real};
-    options::BolfiOptions = BolfiOptions(),    
+    options::BosipOptions = BosipOptions(),    
 )
     return calc_mmd(mmd.kernel, eachcol(true_samples), eachcol(approx_samples))
 end

@@ -1,7 +1,7 @@
 
 """
-    BolfiProblem(X, Y; kwargs...)
-    BolfiProblem(::ExperimentData; kwargs...)
+    BosipProblem(X, Y; kwargs...)
+    BosipProblem(::ExperimentData; kwargs...)
 
 Defines the likelihood-free inference problem and stores all data.
 
@@ -16,7 +16,7 @@ Currently, at least one datapoint has to be provided (purely for implementation 
 
 - `f::Any`: The simulation to be queried for data.
 - `domain::Domain`: The parameter domain of the problem.
-- `acquisition::BolfiAcquisition`: Defines the acquisition function.
+- `acquisition::BosipAcquisition`: Defines the acquisition function.
 - `model::SurrogateModel`: The surrogate model to be used to model the proxy `δ`.
 - `likelihood::Likelihood`: The likelihood of the experiment observation `z_o`.
 - `x_prior::MultivariateDistribution`: The prior `p(x)` on the input parameters.
@@ -25,7 +25,7 @@ Currently, at least one datapoint has to be provided (purely for implementation 
         The algorithm then trains multiple posteriors `p(θ|y_1), ..., p(θ|y_m)` simultaneously.
         The posteriors can be compared after the run is completed to see which observation subsets are most informative.
 """
-mutable struct BolfiProblem{
+mutable struct BosipProblem{
     S<:Union{Nothing, Matrix{Bool}},
 }
     problem::BossProblem
@@ -34,23 +34,23 @@ mutable struct BolfiProblem{
     y_sets::S
 end
 
-BolfiProblem(problem, likelihood, x_prior) =
-    BolfiProblem(problem, likelihood, x_prior, nothing)
+BosipProblem(problem, likelihood, x_prior) =
+    BosipProblem(problem, likelihood, x_prior, nothing)
 
-BolfiProblem(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real}; kwargs...) =
-    BolfiProblem(ExperimentData(X, Y); kwargs...)
+BosipProblem(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real}; kwargs...) =
+    BosipProblem(ExperimentData(X, Y); kwargs...)
 
 """
     DummyAcq()
 
-Dummy acquisition function used only in the `BolfiProblem` constructor
+Dummy acquisition function used only in the `BosipProblem` constructor
 as a temporary placeholder.
 
 It does _not_ implement the `BOSS.AcquisitionFunction` API.
 """
 struct DummyAcq <: AcquisitionFunction end
 
-function BolfiProblem(data::ExperimentData;
+function BosipProblem(data::ExperimentData;
     f,
     domain,
     acquisition = MaxVar(),
@@ -67,7 +67,7 @@ function BolfiProblem(data::ExperimentData;
         data,
     )
 
-    bolfi = BolfiProblem(
+    bosip = BosipProblem(
         problem,
         likelihood,
         x_prior,
@@ -75,16 +75,16 @@ function BolfiProblem(data::ExperimentData;
     )
 
     # fill in the acquisition function
-    bolfi.problem.acquisition = AcqWrapper(
+    bosip.problem.acquisition = AcqWrapper(
         acquisition,
-        bolfi,
+        bosip,
         # leave default options for now
         # they are updated later in `_init_problem!`
-        BolfiOptions(),
+        BosipOptions(),
     )
 
-    return bolfi
+    return bosip
 end
 
-x_dim(bolfi::BolfiProblem) = x_dim(bolfi.problem)
-y_dim(bolfi::BolfiProblem) = y_dim(bolfi.problem)
+x_dim(bosip::BosipProblem) = x_dim(bosip.problem)
+y_dim(bosip::BosipProblem) = y_dim(bosip.problem)

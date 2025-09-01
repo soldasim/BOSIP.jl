@@ -34,7 +34,7 @@ re-fitted in each iteration.
 end
 
 function sample_posterior(sampler::AMISSampler, logpost::Function, domain::Domain, count::Int;
-    options::BolfiOptions = BolfiOptions(),
+    options::BosipOptions = BosipOptions(),
 )
     iters = sampler.iters
     samples_total = iters * count # more samples than needed to allow for efficient down-sampling

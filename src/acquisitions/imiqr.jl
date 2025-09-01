@@ -21,27 +21,27 @@ See the "IMIQR" section in [1] for more information.
 # References
 [1] Järvenpää, Marko, et al. "Parallel Gaussian process surrogate Bayesian inference with noisy likelihood evaluations." (2021): 147-178.
 """
-@kwdef struct IMIQR <: BolfiAcquisition
+@kwdef struct IMIQR <: BosipAcquisition
     p_u::Float64 = 0.75
     x_samples::Int64
     x_proposal::MultivariateDistribution
 end
 
 struct IMIQRFunc{
-    P<:BolfiProblem,
+    P<:BosipProblem,
     M<:ModelPosterior,
     X<:AbstractMatrix{<:Real},
     W<:AbstractVector{<:Real},
 }
     # some fields may not be used
     p_u::Float64
-    bolfi::P
+    bosip::P
     model_post::M
     xs::X
     ws::W
 end
 
-function (acq::IMIQR)(::Type{<:UniFittedParams}, bolfi::BolfiProblem{Nothing}, options::BolfiOptions)    
+function (acq::IMIQR)(::Type{<:UniFittedParams}, bosip::BosipProblem{Nothing}, options::BosipOptions)    
     # Sample parameter values.
     xs = rand(acq.x_proposal, acq.x_samples)
     
@@ -51,8 +51,8 @@ function (acq::IMIQR)(::Type{<:UniFittedParams}, bolfi::BolfiProblem{Nothing}, o
 
     return IMIQRFunc(
         acq.p_u,
-        bolfi,
-        BOSS.model_posterior(bolfi.problem),
+        bosip,
+        BOSS.model_posterior(bosip.problem),
         xs,
         ws,
     )
@@ -60,7 +60,7 @@ end
 
 function (f::IMIQRFunc)(x_::AbstractVector{<:Real})
     return _log_imiqr(
-        f.bolfi.likelihood,
+        f.bosip.likelihood,
         f,
         x_,
     )
@@ -107,10 +107,10 @@ end
 #     f::IMIQRFunc,
 #     x_::AbstractVector{<:Real},
 # )
-#     x_prior = f.bolfi.x_prior
+#     x_prior = f.bosip.x_prior
 
 #     # obtain the median-augmented model posterior
-#     model_post_ = _mean_augmented_model_posterior(f.bolfi.problem, x_)
+#     model_post_ = _mean_augmented_model_posterior(f.bosip.problem, x_)
 
 #     # obtain the lower and upper quantile model posteriors
 #     # TODO: Such `quantile` functions are not implemented in BOSS.jl.
@@ -120,8 +120,8 @@ end
 #     model_post_u = quantile(model_post_, f.p_u)
 
 #     # obtain the lower and upper likelihood quantiles
-#     like_l = approx_likelihood(like, f.bolfi, model_post_l)
-#     like_u = approx_likelihood(like, f.bolfi, model_post_u)
+#     like_l = approx_likelihood(like, f.bosip, model_post_l)
+#     like_u = approx_likelihood(like, f.bosip, model_post_u)
 
 #     # calculate the interquantile ranges
 #     log_med_iqrs = [_log_iqr(x_prior, like_l, like_u, x) for x in eachcol(f.xs)]
@@ -159,10 +159,10 @@ function _log_imiqr(
     f::IMIQRFunc,
     x_::AbstractVector{<:Real},
 )
-    x_prior = f.bolfi.x_prior
+    x_prior = f.bosip.x_prior
 
     # obtain the median-augmented model posterior
-    model_post_ = _mean_augmented_model_posterior(f.bolfi.problem, x_)
+    model_post_ = _mean_augmented_model_posterior(f.bosip.problem, x_)
 
     # calculate the log IQR values
     u = quantile(Normal(), f.p_u)

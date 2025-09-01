@@ -21,7 +21,7 @@ abstract type PlotSettings end
 
 """
     using CairoMakie
-    plot_marginals_int(::BolfiProblem; kwargs...)
+    plot_marginals_int(::BosipProblem; kwargs...)
 
 Create a matrix of plots displaying the marginal posterior distribution of each pair of parameters
 with the individual marginals of each parameter on the diagonal.
@@ -35,7 +35,7 @@ Also provides an option to plot "marginals" of different functions by using the 
 # Kwargs
 
 - `func::Function`: Defines the function which is plotted.
-        The plotted function `f` is defined as `f = func(::BolfiProblem)`.
+        The plotted function `f` is defined as `f = func(::BosipProblem)`.
         Reasonable options for `func` include `approx_posterior`, `posterior_mean`, `posterior_variance` etc.
 - `normalize::Bool`: Specifies whether the plotted marginals are normalized.
         If `normalize=false`, the plotted values are simply averages over the random LHC grid.
@@ -54,7 +54,7 @@ function plot_marginals_int end
 
 """
     using CairoMakie, Turing
-    plot_marginals_kde(::BolfiProblem; kwargs...)
+    plot_marginals_kde(::BosipProblem; kwargs...)
 
 Create a matrix of plots displaying the marginal posterior distribution of each pair of parameters
 with the individual marginals of each parameter on the diagonal.

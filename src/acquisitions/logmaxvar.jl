@@ -8,8 +8,8 @@ The `LogMaxVar` acquisition is functionally equivalent to `MaxVar`.
 Using `MaxVar` or `LogMaxVar` can be more/less suitable in different scenarios.
 Switching between the two can help with numerical stability.
 """
-struct LogMaxVar <: BolfiAcquisition end
+struct LogMaxVar <: BosipAcquisition end
 
-function (acq::LogMaxVar)(::Type{<:UniFittedParams}, bolfi::BolfiProblem{Nothing}, options::BolfiOptions)
-    return log_posterior_variance(bolfi)
+function (acq::LogMaxVar)(::Type{<:UniFittedParams}, bosip::BosipProblem{Nothing}, options::BosipOptions)
+    return log_posterior_variance(bosip)
 end

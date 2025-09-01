@@ -1,10 +1,10 @@
-# Example: LFI
+# Example
 
-This page showcases the use of BOLFI.jl on a simple toy problem. The source code for the showcased problem is also available at [github](https://github.com/soldasim/BOLFI.jl/tree/master/examples/simple).
+This page showcases the use of BOSIP.jl on a simple toy problem. The source code for the showcased problem is also available at [github](https://github.com/soldasim/BOSIP.jl/tree/master/examples/simple).
 
 The example requires the following packages to be loaded.
 ```julia
-using BOLFI
+using BOSIP
 using BOSS
 using Distributions
 using OptimizationPRIMA
@@ -17,7 +17,7 @@ In our toy problem, our goal is to infer two parameters ``x \in \mathbb{R}^2``. 
 f_(x) = x[1] * x[2]
 ```
 
-_(Note that we refer to the parameters as `x` here, inteas of ``x``, to be consistent with the source code of BOLFI.jl.)_
+_(Note that we refer to the parameters as `x` here, inteas of ``x``, to be consistent with the source code of BOSIP.jl.)_
 
 We have observed the single observation ``\prod x = 1.``.
 ```julia
@@ -140,11 +140,11 @@ We need to define the acquisition function. The next evaluation point in each it
 acquisition = MaxVar()
 ```
 
-## Instantiate `BolfiProblem`
+## Instantiate `BosipProblem`
 
-Now, we can instantiate the `BolfiProblem`.
+Now, we can instantiate the `BosipProblem`.
 ```julia
-problem = BolfiProblem(init_data;
+problem = BosipProblem(init_data;
     f = gp_objective,
     domain = Domain(; bounds),
     acquisition
@@ -154,9 +154,9 @@ problem = BolfiProblem(init_data;
 )
 ```
 
-## Running BOLFI
+## Running BOSIP
 
-Before we run the BOLFI method, we need to define the methods used during the individual steps of the algorithm.
+Before we run the BOSIP method, we need to define the methods used during the individual steps of the algorithm.
 
 We need to define the algorithms used to estimate the model (hyper)parameters and maximize the acquisition. See the [BOSS.jl](https://soldasim.github.io/BOSS.jl/stable/) package for more information about available model fitters and/or acquisition maximizers.
 ```julia
@@ -174,20 +174,20 @@ acq_maximizer = OptimizationAM(;
 )
 ```
 
-Finally, we need to defint the termination condition and we can use `BolfiOptions` to change some miscellaneous settings. (_One can for example define a custom `BolfiCallback` which is periodically called in each iteration of `bolfi!`._)
+Finally, we need to defint the termination condition and we can use `BosipOptions` to change some miscellaneous settings. (_One can for example define a custom `BosipCallback` which is periodically called in each iteration of `bosip!`._)
 ```julia
 term_cond = BOSS.IterLimit(25)
 
-options = BolfiOptions(;
+options = BosipOptions(;
     info = true,
 )
 ```
 
-Now, we have everything we need and we can call the main function `bolfi!`.
+Now, we have everything we need and we can call the main function `bosip!`.
 ```julia
-bolfi!(problem; model_fitter, acq_maximizer, term_cond, options)
+bosip!(problem; model_fitter, acq_maximizer, term_cond, options)
 ```
 
 # Plots
 
-To visualize the algorithm, use the example script in the [github repo](https://github.com/soldasim/BOLFI.jl/tree/master/examples/simple). It implements the same problem described on this page, but additionally contains a custom callback for plotting.
+To visualize the algorithm, use the example script in the [github repo](https://github.com/soldasim/BOSIP.jl/tree/master/examples/simple). It implements the same problem described on this page, but additionally contains a custom callback for plotting.

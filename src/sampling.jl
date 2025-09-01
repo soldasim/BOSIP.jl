@@ -1,12 +1,12 @@
 
 """
-    xs, ws = sample_approx_posterior(bolfi::BolfiProblem, sampler::DistributionSampler, count::Int; kwargs...)
+    xs, ws = sample_approx_posterior(bosip::BosipProblem, sampler::DistributionSampler, count::Int; kwargs...)
 
-Sample `count` samples from the approximate posterior of the `BolfiProblem`
+Sample `count` samples from the approximate posterior of the `BosipProblem`
 using the specified `sampler`. Return a column-wise matrix of the drawn samples.
 
 # Keywords
-- `options::BolfiOptions`: Miscellaneous preferences. Defaults to `BolfiOptions()`.
+- `options::BosipOptions`: Miscellaneous preferences. Defaults to `BosipOptions()`.
 
 # See Also
 
@@ -14,21 +14,21 @@ using the specified `sampler`. Return a column-wise matrix of the drawn samples.
 [`sample_posterior`](@ref),
 [`resample`](@ref)
 """
-function sample_approx_posterior(bolfi::BolfiProblem, sampler::DistributionSampler, count::Int;
-    options::BolfiOptions = BolfiOptions(),    
+function sample_approx_posterior(bosip::BosipProblem, sampler::DistributionSampler, count::Int;
+    options::BosipOptions = BosipOptions(),
 )
-    loglike = log_approx_likelihood(bolfi)
-    return sample_posterior(sampler, loglike, bolfi.x_prior, count; options)
+    loglike = log_approx_likelihood(bosip)
+    return sample_posterior(sampler, loglike, bosip.x_prior, count; options)
 end
 
 """
-    xs, ws = sample_approx_posterior(bolfi::BolfiProblem, sampler::DistributionSampler, count::Int; kwargs...)
+    xs, ws = sample_approx_posterior(bosip::BosipProblem, sampler::DistributionSampler, count::Int; kwargs...)
 
-Sample `count` samples from the expected posterior (i.e. the posterior mean) of the `BolfiProblem`
+Sample `count` samples from the expected posterior (i.e. the posterior mean) of the `BosipProblem`
 using the specified `sampler`. Return a column-wise matrix of the drawn samples.
 
 # Keywords
-- `options::BolfiOptions`: Miscellaneous preferences. Defaults to `BolfiOptions()`.
+- `options::BosipOptions`: Miscellaneous preferences. Defaults to `BosipOptions()`.
 
 # See Also
 
@@ -36,11 +36,11 @@ using the specified `sampler`. Return a column-wise matrix of the drawn samples.
 [`sample_posterior`](@ref),
 [`resample`](@ref)
 """
-function sample_expected_posterior(bolfi::BolfiProblem, sampler::DistributionSampler, count::Int;
-    options::BolfiOptions = BolfiOptions(),    
+function sample_expected_posterior(bosip::BosipProblem, sampler::DistributionSampler, count::Int;
+    options::BosipOptions = BosipOptions(),
 )
-    loglike = log_likelihood_mean(bolfi)
-    return sample_posterior(sampler, loglike, bolfi.x_prior, count; options)
+    loglike = log_likelihood_mean(bosip)
+    return sample_posterior(sampler, loglike, bosip.x_prior, count; options)
 end
 
 """

@@ -6,9 +6,9 @@ Abstract type for proposal distributions.
 - `x_dim(::ProposalDistribution) -> ::Int`
 - `Distributions.rand(::ProposalDistribution, count::Int)`
 - `Distributions.logpdf(::ProposalDistribution, x::AbstractVector{<:Real})`
-- `initial_params(::ProposalDistribution, count::Int; options::BolfiOptions = BolfiOptions())`
-- `loglikelihood(::ProposalDistribution, xs::AbstractMatrix{<:Real}; options::BolfiOptions = BolfiOptions())`
-- `set_params!(::ProposalDistribution, θ::AbstractVector{<:Real}; options::BolfiOptions = BolfiOptions())`
+- `initial_params(::ProposalDistribution, count::Int; options::BosipOptions = BosipOptions())`
+- `loglikelihood(::ProposalDistribution, xs::AbstractMatrix{<:Real}; options::BosipOptions = BosipOptions())`
+- `set_params!(::ProposalDistribution, θ::AbstractVector{<:Real}; options::BosipOptions = BosipOptions())`
 
 The `ProposalDistribution` should be parametrized by a vector of _real-valued_ numbers.
 

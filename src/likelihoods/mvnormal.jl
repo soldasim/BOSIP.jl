@@ -18,7 +18,7 @@ function loglike(like::MvNormalLikelihood, y::AbstractVector{<:Real})
     return logpdf(MvNormal(y, like.Σ_obs), like.z_obs)
 end
 
-function log_likelihood_mean(like::MvNormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
+function log_likelihood_mean(like::MvNormalLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
     z_obs = like.z_obs
     Σ_obs = like.Σ_obs
 
@@ -31,7 +31,7 @@ function log_likelihood_mean(like::MvNormalLikelihood, bolfi::BolfiProblem, mode
     return log_like_mean
 end
 
-function log_sq_likelihood_mean(like::MvNormalLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
+function log_sq_likelihood_mean(like::MvNormalLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
     z_obs = like.z_obs
     Σ_obs = like.Σ_obs
     y_dim = length(z_obs)

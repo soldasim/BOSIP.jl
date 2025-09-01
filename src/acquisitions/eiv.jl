@@ -14,29 +14,29 @@ is implicitly given by the variance of the predictive distribution of the surrog
 - `x_proposal::MultivariateDistribution`: This distribution is used to sample
         parameter samples used to numerically approximate the integral over the parameter domain.
 """
-@kwdef struct EIV <: BolfiAcquisition
+@kwdef struct EIV <: BosipAcquisition
     y_samples::Int64
     x_samples::Int64
     x_proposal::MultivariateDistribution
 end
 
 struct EIVFunc{
-    P<:BolfiProblem,
+    P<:BosipProblem,
     M<:ModelPosterior,
     X<:AbstractMatrix{<:Real},
     W<:AbstractVector{<:Real},
     E<:AbstractVector{<:AbstractVector{<:Real}},
 }
     # some fields may not be used
-    bolfi::P
+    bosip::P
     model_post::M
     xs::X
     ws::W
     ϵs_y::E
 end
 
-function (acq::EIV)(::Type{<:UniFittedParams}, bolfi::BolfiProblem{Nothing}, options::BolfiOptions)
-    y_dim = BOSS.y_dim(bolfi.problem)
+function (acq::EIV)(::Type{<:UniFittedParams}, bosip::BosipProblem{Nothing}, options::BosipOptions)
+    y_dim = BOSS.y_dim(bosip.problem)
     
     # Sample parameter values.
     xs = rand(acq.x_proposal, acq.x_samples)
@@ -49,8 +49,8 @@ function (acq::EIV)(::Type{<:UniFittedParams}, bolfi::BolfiProblem{Nothing}, opt
     ws = exp.( log_ws .- log(sum(exp.(log_ws))) ) # normalize to sum up to 1
     
     return EIVFunc(
-        bolfi,
-        BOSS.model_posterior(bolfi.problem),
+        bosip,
+        BOSS.model_posterior(bosip.problem),
         xs,
         ws,
         ϵs_y,
@@ -59,7 +59,7 @@ end
 
 function (f::EIVFunc)(x_::AbstractVector{<:Real})
     return _log_posterior_variance(
-        f.bolfi.likelihood,
+        f.bosip.likelihood,
         f,
         x_,
     )
@@ -77,7 +77,7 @@ function _log_posterior_variance(
     ys_ = calc_y.(Ref(μy), Ref(σy), f.ϵs_y) # -> eimmd.jl
 
     # augment problems
-    augmented_problems = [deepcopy(f.bolfi) for _ in eachindex(ys_)]
+    augmented_problems = [deepcopy(f.bosip) for _ in eachindex(ys_)]
     for (p, y_) in zip(augmented_problems, ys_)
         augment_dataset!(p.problem, x_, y_)
     end
@@ -120,7 +120,7 @@ function _log_posterior_variance(
     f::EIVFunc,
     x_::AbstractVector{<:Real},
 )
-    log_var_reds = [_log_posterior_variance_reduction_pointwise(like, f.bolfi.x_prior, f.model_post, x, x_) for x in eachcol(f.xs)]
+    log_var_reds = [_log_posterior_variance_reduction_pointwise(like, f.bosip.x_prior, f.model_post, x, x_) for x in eachcol(f.xs)]
     M = maximum(log_var_reds)
     
     # only compute the second term (the variance reduction)

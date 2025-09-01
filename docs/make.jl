@@ -1,21 +1,19 @@
-using BOLFI
+using BOSIP
 using Documenter
 
-makedocs(sitename="BOLFI.jl";
+makedocs(sitename="BOSIP.jl";
     pages = [
         "index.md",
-        "lfi.md",
-        "lfss.md",
+        "sip.md",
         "functions.md",
         "types.md",
         "hyperparams.md",
-        "example_lfi.md",
-        "example_lfss.md",
+        "example.md",
     ],
 )
 
 deploydocs(;
-    repo = "github.com/soldasim/BOLFI.jl",
+    repo = "github.com/soldasim/BOSIP.jl",
     devbranch = "dev",
     devurl = "dev",
     versions = [

@@ -12,8 +12,8 @@ function loglike(::SqExpLikelihood, y::AbstractVector{<:Real})
     return y[1]^2
 end
 
-function log_likelihood_mean(::SqExpLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
-    mid = mean(bolfi.problem.domain.bounds)
+function log_likelihood_mean(::SqExpLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
+    mid = mean(bosip.problem.domain.bounds)
     @assert mean(model_post, mid) |> length == 1
 
     function log_like_mean(x::AbstractVector{<:Real})
@@ -25,8 +25,8 @@ function log_likelihood_mean(::SqExpLikelihood, bolfi::BolfiProblem, model_post:
     end
 end
 
-function log_sq_likelihood_mean(::SqExpLikelihood, bolfi::BolfiProblem, model_post::ModelPosterior)
-    mid = mean(bolfi.problem.domain.bounds)
+function log_sq_likelihood_mean(::SqExpLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
+    mid = mean(bosip.problem.domain.bounds)
     @assert mean(model_post, mid) |> length == 1
 
     function log_sq_like_mean(x::AbstractVector{<:Real})

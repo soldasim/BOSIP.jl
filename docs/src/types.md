@@ -2,10 +2,10 @@
 
 ## Problem & Model
 
-The `BolfiProblem` structure contains all information about the inference problem, as well as the model hyperparameters.
+The `BosipProblem` structure contains all information about the inference problem, as well as the model hyperparameters.
 
 ```@docs
-BolfiProblem
+BosipProblem
 ```
 
 ## Likelihood
@@ -34,7 +34,7 @@ The `BinomialLikelihood` assumes that the observation `z_o` has been drawn from 
 BinomialLikelihood
 ```
 
-The `ExpLikelihood` assumes that the function `f` of the [`BolfiProblem`](@ref) already maps the parameters ``x`` to the log-likelihood ``\log p(z_o|y)``. Thus, the `ExpLikelihood` only exponentiates the surrogate model output ``\delta`` to obtain the likelihood value.
+The `ExpLikelihood` assumes that the function `f` of the [`BosipProblem`](@ref) already maps the parameters ``x`` to the log-likelihood ``\log p(z_o|y)``. Thus, the `ExpLikelihood` only exponentiates the surrogate model output ``\delta`` to obtain the likelihood value.
 
 ```@docs
 ExpLikelihood
@@ -42,10 +42,10 @@ ExpLikelihood
 
 ## Acquisition Function
 
-The abstract type `BolfiAcquisition` represents the acquisition function.
+The abstract type `BosipAcquisition` represents the acquisition function.
 
 ```@docs
-BolfiAcquisition
+BosipAcquisition
 ```
 
 The `MaxVar` can be used to solve LFI problems. It maximizes the posterior variance to select the next evaluation point.
@@ -69,15 +69,15 @@ MWMV
 
 ## Termination Condition
 
-The abstract type `BolfiTermCond` represents the termination condition for the whole BOLFI procedure. Additionally, any `BOSS.TermCond` from the BOSS.jl package can be used with BOLFI.jl as well, and it will be automatically converted to a `BolfiTermCond`.
+The abstract type `BosipTermCond` represents the termination condition for the whole BOSIP procedure. Additionally, any `BOSS.TermCond` from the BOSS.jl package can be used with BOSIP.jl as well, and it will be automatically converted to a `BosipTermCond`.
 
 ```@docs
-BolfiTermCond
+BosipTermCond
 ```
 
 The most basic termination condition is the `BOSS.IterLimit`, which can be used to simply terminate the procedure after a predefined number of iterations.
 
-BOLFI.jl provides two specialized termination conditions; the `AEConfidence`, and the `UBLBConfidence`. Both of them estimate the degree of convergence by comparing confidence regions given by two different approximations of the posterior.
+BOSIP.jl provides two specialized termination conditions; the `AEConfidence`, and the `UBLBConfidence`. Both of them estimate the degree of convergence by comparing confidence regions given by two different approximations of the posterior.
 
 ```@docs
 AEConfidence
@@ -86,18 +86,18 @@ UBLBConfidence
 
 ## Miscellaneous
 
-The `BolfiOptions` structure can be used to define miscellaneous settings of BOLFI.jl.
+The `BosipOptions` structure can be used to define miscellaneous settings of BOSIP.jl.
 
 ```@docs
-BolfiOptions
+BosipOptions
 ```
 
-The abstract type `BolfiCallback` can be derived to define a custom callback, which will be called once before the BOLFI procedure starts, and subsequently in every iteration.
+The abstract type `BosipCallback` can be derived to define a custom callback, which will be called once before the BOSIP procedure starts, and subsequently in every iteration.
 
-For an example usage of this functionality, see the [example](https://github.com/soldasim/BOLFI.jl/tree/master/examples/simple) in the package repository, where a custom callback is used to create the plots.
+For an example usage of this functionality, see the [example](https://github.com/soldasim/BOSIP.jl/tree/master/examples/simple) in the package repository, where a custom callback is used to create the plots.
 
 ```@docs
-BolfiCallback
+BosipCallback
 ```
 
 ## Samplers

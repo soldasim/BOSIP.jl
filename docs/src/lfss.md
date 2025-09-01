@@ -1,4 +1,0 @@
-
-# Sensor Selection Problem
-
-TODO

@@ -11,7 +11,7 @@ Terminates after the IoU of the two confidence regions surpasses `r`.
 - `samples::Int`: The number of samples used to approximate the confidence regions
         and their IoU ratio. Only has an effect if `isnothing(xs)`.
 - `xs::Union{Nothing, <:AbstractMatrix{<:Real}}`: Can be used to provide a pre-sampled
-        set of parameter samples from the `x_prior` defined in `BolfiProblem`.
+        set of parameter samples from the `x_prior` defined in `BosipProblem`.
 - `q::Float64`: The confidence value of the confidence regions.
         Defaults to `q = 0.95`.
 - `r::Float64`: The algorithm terminates once the IoU ratio surpasses `r`.
@@ -20,7 +20,7 @@ Terminates after the IoU of the two confidence regions surpasses `r`.
 struct AEConfidence{
     I<:Union{IterLimit, NoLimit},
     X<:Union{Nothing, <:AbstractMatrix{<:Real}},
-} <: BolfiTermCond
+} <: BosipTermCond
     iter_limit::I
     samples::Int
     xs::X
@@ -38,35 +38,35 @@ function AEConfidence(;
     return AEConfidence(iter_limit, samples, xs, q, r)
 end
 
-function (cond::AEConfidence)(bolfi::BolfiProblem)
-    @assert bolfi.problem.params isa UniFittedParams
-    return ae_confidence(cond, bolfi)
+function (cond::AEConfidence)(bosip::BosipProblem)
+    @assert bosip.problem.params isa UniFittedParams
+    return ae_confidence(cond, bosip)
 end
 
-function ae_confidence(cond::AEConfidence, bolfi::BolfiProblem{Nothing})
-    cond.iter_limit(bolfi.problem) || return false
-    ratio = calculate(cond, bolfi)
+function ae_confidence(cond::AEConfidence, bosip::BosipProblem{Nothing})
+    cond.iter_limit(bosip.problem) || return false
+    ratio = calculate(cond, bosip)
     return ratio < cond.r
 end
 
-function ae_confidence(cond::AEConfidence, bolfi::BolfiProblem{Matrix{Bool}})
-    cond.iter_limit(bolfi.problem) || return false
-    (bolfi.problem.data isa ExperimentData) && return true
-    ratios = calculate.(Ref(cond), get_subset.(Ref(bolfi), eachcol(bolfi.y_sets)))
+function ae_confidence(cond::AEConfidence, bosip::BosipProblem{Matrix{Bool}})
+    cond.iter_limit(bosip.problem) || return false
+    (bosip.problem.data isa ExperimentData) && return true
+    ratios = calculate.(Ref(cond), get_subset.(Ref(bosip), eachcol(bosip.y_sets)))
     return any(ratios .< cond.r)
 end
 
-function calculate(cond::AEConfidence, bolfi::BolfiProblem)
+function calculate(cond::AEConfidence, bosip::BosipProblem)
     if isnothing(cond.xs)
-        xs = rand(bolfi.x_prior, cond.samples)
+        xs = rand(bosip.x_prior, cond.samples)
     else
         xs = cond.xs
     end
 
-    f_approx = approx_posterior(bolfi; normalize=false, xs)
-    f_expect = posterior_mean(bolfi; normalize=false, xs)
+    f_approx = approx_posterior(bosip; normalize=false, xs)
+    f_expect = posterior_mean(bosip; normalize=false, xs)
 
-    xs_logpdf = logpdf.(Ref(bolfi.x_prior), eachcol(xs))
+    xs_logpdf = logpdf.(Ref(bosip.x_prior), eachcol(xs))
     ws_approx = exp.( log.(f_approx.(eachcol(xs))) .-  xs_logpdf)
     ws_expect = exp.( log.(f_expect.(eachcol(xs))) .-  xs_logpdf)
 
@@ -75,5 +75,5 @@ function calculate(cond::AEConfidence, bolfi::BolfiProblem)
 
     in_approx = (f_approx.(eachcol(xs)) .> c_approx)
     in_expect = (f_expect.(eachcol(xs)) .> c_expect)
-    return set_iou(in_approx, in_expect, bolfi.x_prior, xs)
+    return set_iou(in_approx, in_expect, bosip.x_prior, xs)
 end

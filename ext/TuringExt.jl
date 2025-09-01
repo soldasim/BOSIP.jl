@@ -1,14 +1,14 @@
 module TuringExt
 
-using BOLFI
+using BOSIP
 using BOSS
 using Turing
 using Random
 
 """
-Implementation of the abstract `BOLFI.TuringSampler`. See the docs `? BOLFI.TuringSampler`.
+Implementation of the abstract `BOSIP.TuringSampler`. See the docs `? BOSIP.TuringSampler`.
 """
-@kwdef struct TuringSampler{S} <: BOLFI.TuringSampler
+@kwdef struct TuringSampler{S} <: BOSIP.TuringSampler
     sampler::S = NUTS(0, 0.65)
     warmup::Int = 1000
     chain_count::Int = 6
@@ -16,16 +16,16 @@ Implementation of the abstract `BOLFI.TuringSampler`. See the docs `? BOLFI.Turi
     parallel::Bool = true
 end
 
-BOLFI.TuringSampler(args...; kwargs...) = TuringSampler(args...; kwargs...)
+BOSIP.TuringSampler(args...; kwargs...) = TuringSampler(args...; kwargs...)
 
-function BOLFI.sample_posterior(sampler::TuringSampler, logpost::Function, domain::Domain, count::Int; kwargs...)
+function BOSIP.sample_posterior(sampler::TuringSampler, logpost::Function, domain::Domain, count::Int; kwargs...)
     @assert !any(domain.discrete)
     @assert isnothing(domain.cons)
     
     model = turing_model(logpost, domain.bounds)
     return _sample_posterior_turing(model, sampler, count)
 end
-function BOLFI.sample_posterior(sampler::TuringSampler, loglike::Function, prior::MultivariateDistribution, domain::Domain, count::Int; kwargs...)
+function BOSIP.sample_posterior(sampler::TuringSampler, loglike::Function, prior::MultivariateDistribution, domain::Domain, count::Int; kwargs...)
     @assert !any(domain.discrete)
     @assert isnothing(domain.cons)
     @assert extrema(prior) == domain.bounds

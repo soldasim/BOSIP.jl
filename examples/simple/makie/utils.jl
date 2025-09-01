@@ -14,5 +14,5 @@ function calculate_values(func, grid)
     return vals
 end
 
-unwrap(acquisition::BolfiAcquisition) = acquisition
-unwrap(acquisition::BOLFI.AcqWrapper) = acquisition.acq
+unwrap(acquisition::BosipAcquisition) = acquisition
+unwrap(acquisition::BOSIP.AcqWrapper) = acquisition.acq

@@ -24,7 +24,7 @@ Returns `(T * N)` importance samples with weights.
 end
 
 function (amis::AMIS)(log_π, q::ProposalDistribution, fitter::DistributionFitter;
-    options::BolfiOptions = BolfiOptions(),
+    options::BosipOptions = BosipOptions(),
 )
     x_dim_ = x_dim(q)
     N, T = amis.N, amis.T

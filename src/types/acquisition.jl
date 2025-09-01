@@ -1,33 +1,33 @@
 
 """
-An abstract type for BOLFI acquisition functions.
+An abstract type for BOSIP acquisition functions.
 
-### **Required** API for subtypes of `BolfiAcquisition`:
+### **Required** API for subtypes of `BosipAcquisition`:
 
-- Implement method `(::CustomAcq)(::Type{<:UniFittedParams}, ::BolfiProblem, ::BolfiOptions) -> (x -> ::Real)`.
+- Implement method `(::CustomAcq)(::Type{<:UniFittedParams}, ::BosipProblem, ::BosipOptions) -> (x -> ::Real)`.
 
-### **Optional** API for subtypes of `BolfiAcquisition`:
+### **Optional** API for subtypes of `BosipAcquisition`:
 
-- Implement method `(::CustomAcq)(::Type{<:MultiFittedParams}, ::BolfiProblem, ::BolfiOptions) -> (x -> ::Real)`.
+- Implement method `(::CustomAcq)(::Type{<:MultiFittedParams}, ::BosipProblem, ::BosipOptions) -> (x -> ::Real)`.
     A default fallback is provided for `MultiFittedParams`, which averages individual acquisition functions for each sample.
 """
-abstract type BolfiAcquisition end
+abstract type BosipAcquisition end
 
 # Broadcast between MAP and BI parameters.
-function (acq::BolfiAcquisition)(bolfi::BolfiProblem{<:Any}, options::BolfiOptions)
-    return acq(typeof(bolfi.problem.params), bolfi, options)
+function (acq::BosipAcquisition)(bosip::BosipProblem{<:Any}, options::BosipOptions)
+    return acq(typeof(bosip.problem.params), bosip, options)
 end
 
 """
-A wrapper around any `BolfiAcquisition` function converting it to the BOSS.jl `AcquisitionFunction`.
+A wrapper around any `BosipAcquisition` function converting it to the BOSS.jl `AcquisitionFunction`.
 """
 mutable struct AcqWrapper{
-    A<:BolfiAcquisition
+    A<:BosipAcquisition
 } <: AcquisitionFunction
     acq::A
-    bolfi::BolfiProblem
-    options::BolfiOptions
+    bosip::BosipProblem
+    options::BosipOptions
 end
 
 BOSS.construct_acquisition(wrap::AcqWrapper, ::BossProblem, ::BossOptions) =
-    wrap.acq(wrap.bolfi, wrap.options)
+    wrap.acq(wrap.bosip, wrap.options)
