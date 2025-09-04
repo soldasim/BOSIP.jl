@@ -45,7 +45,7 @@ function calculate_metric(mmd::OptMMDMetric, true_samples::AbstractMatrix{<:Real
     x0 = (mmd.bounds[2] .- mmd.bounds[1]) ./ 3
 
     prob = OptimizationProblem(f, x0, nothing;
-        lb = [0., 0.],
+        lb = zero(mmd.bounds[1]),
         ub = mmd.bounds[2] .- mmd.bounds[1],
     )
     sol = solve(prob, mmd.algorithm)
