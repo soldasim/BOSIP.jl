@@ -176,14 +176,25 @@ function bosip_problem(data::ExperimentData)
     )
 end
 
-function true_logpost(x)
+function true_logpost(x::AbstractVector)
     ll = true_loglike(x)
     lp = logpdf(ToyProblem.get_x_prior(), x)
     return ll + lp
 end
-function true_loglike(x)
+function true_logpost(X::AbstractMatrix)
+    ll = true_loglike(X)
+    lp = logpdf.(Ref(ToyProblem.get_x_prior()), eachcol(X))
+    return ll + lp
+end
+
+function true_loglike(x::AbstractVector)
     y = ToyProblem.simulation(x; noise_std=zeros(ToyProblem.y_dim))
     ll = loglike(get_likelihood(), y)
+    return ll
+end
+function true_loglike(X::AbstractMatrix)
+    ys = ToyProblem.simulation.(eachcol(X); noise_std=zeros(ToyProblem.y_dim))
+    ll = loglike.(Ref(get_likelihood()), ys)
     return ll
 end
 

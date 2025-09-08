@@ -45,7 +45,8 @@ function (amis::AMIS)(log_π, q::ProposalDistribution, fitter::DistributionFitte
     # t = 0
     xs[:, :, 1] = rand(qs[1], N)
 
-    log_P[:, 1] = log_π.(eachcol(xs[:, :, 1]))
+    # log_P[:, 1] = log_π.(eachcol(xs[:, :, 1]))
+    log_P[:, 1] = log_π(xs[:, :, 1])
     Δ[:, 1] .= pdf.(Ref(qs[1]), eachcol(xs[:, :, 1]))
     log_Ω[:, 1] .= log_P[:, 1] .- log.(Δ[:, 1])
 
@@ -60,7 +61,8 @@ function (amis::AMIS)(log_π, q::ProposalDistribution, fitter::DistributionFitte
         xs[:, :, t] = rand(qs[t], N)
 
         # calculate new weights
-        log_P[:, t] = log_π.(eachcol(xs[:, :, t]))
+        # log_P[:, t] = log_π.(eachcol(xs[:, :, t]))
+        log_P[:, t] = log_π(xs[:, :, t])
         for i in 1:t
             Δ[:, t] .+= pdf.(Ref(qs[i]), eachcol(xs[:, :, t]))
         end
