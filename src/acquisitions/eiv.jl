@@ -85,10 +85,17 @@ function _log_posterior_variance(
 
     # calculate the expected integrated variance
     log_vars = _log_posterior_variance_pointwise.(Ref(log_post_vars), eachcol(f.xs))
-    M = maximum(log_vars)
 
-    # use the "logsumexp" trick for numerical stability
-    log_eiv = M + log(sum(f.ws .* exp.(log_vars .- M)))
+    # special case for zero EIV
+    if all(==(-Inf), log_vars)
+        @warn "Estimated EIV for x_=$(x_) is equal to zero."
+        log_eiv = -Inf
+    
+    else
+        # use the "logsumexp" trick for numerical stability
+        M = maximum(log_vars)
+        log_eiv = M + log(sum(f.ws .* exp.(log_vars .- M)))
+    end
 
     # the EIV is to be minimized
     return (-1) * log_eiv
@@ -102,9 +109,12 @@ function _log_posterior_variance_pointwise(
 )
     # calculate the expected integrated variance
     vals = map(fvar -> fvar(x), log_post_vars)
-    M = maximum(vals)
+
+    # special case for zero expected variance
+    all(==(-Inf), vals) && return -Inf
 
     # use the "logsumexp" trick for numerical stability
+    M = maximum(vals)
     return M + log(mean(exp.(vals .- M)))
 end
 
