@@ -1,31 +1,31 @@
 
 """
-    EIMMD(; kwargs...)
+    IMMD(; kwargs...)
 
-Selects new data point by maximizing the Expected Integrate MMD (EIMMD).
-MMD stands for maximum mean discrepancy.
+Selects new data point by maximizing the Integrated MMD (IMMD),
+where MMD stands for maximum mean discrepancy.
     
-This acquisition is devised as a heuristical approximation of information gain.
-To calculate information gain properly, one would need to use the KL divergence
-instead of MMD. There are no theoretical guarantees that this "approximation" works.
-
-Information gain is calculated as the mutual information between
+This acquisition function is (loosely) based on information gain.
+Ideally, we would like to calculate the mutual information between
 the new data point (a vector-valued random variable from a multivariate distribution given by the GPs)
 and the posterior approximation (a "random function" from a infinite-dimensional distribution).
 
-Instead of calculating the information gain of the infinite-dimensional parameter
-posterior function values, `EIMMD` computes the average information gain
-integrated over the domain.
+Calculating mutual information of an infinite-dimensional variable is infeasible.
+Thus, we calculate the mutual information of the new data point and the posterior
+probability value at a single point `x`, integrated over `x`.
+This integral is still infeasible, but can be approximated by Monte Carlo integration.
 
-The resulting mutual information between the new data point
-and the functional values of the approximate posterior
-is estimated by calculating the maximum mean discrepancy (MMD)
-between their joint and marginal distributions.
-This is also known as  the Hilbert-Schmidt independence criterion (HSIC).
+Mutual information is calculated as the Kullback-Leibler divergence (KLD)
+of the joint and marginal distributions of the two variables.
+Instead of the KLD distance, we use the MMD distance,
+as it can be readily estimated from samples.
+Finally, instead of the MMD between the joing and marginal distributions,
+we can calculate the HSIC (Hilbert-Schmidt independence criterion) of the two variables.
 
-The random function (an infinite-dimensional random variable) representing
-the posterior is reduces to samples, which are integrated over.
-The samples are drawn from the `x_proposal`.
+In conclusion, instead of the mutual information of the new data point
+(vector-valued random variable) and the posterior pdf (a function-valued random variable),
+we calculate the HSIC between the new data point and some point `x` on the domain,
+integrated over `x`.
 
 # Kwargs
 - `y_samples::Int64`: The amount of samples drawn from the joint and marginal distributions
@@ -37,7 +37,7 @@ The samples are drawn from the `x_proposal`.
 - `y_kernel::Kernel`: The kernel used for the samples of the new data point.
 - `p_kernel::Kernel`: The kernel used for the posterior function value samples.
 """
-@kwdef struct EIMMD <: BosipAcquisition
+@kwdef struct IMMD <: BosipAcquisition
     y_samples::Int64
     x_samples::Int64
     x_proposal::MultivariateDistribution
@@ -46,7 +46,7 @@ The samples are drawn from the `x_proposal`.
 end
 
 # info gain on the posterior approximation
-function (acq::EIMMD)(bosip::BosipProblem{Nothing}, options::BosipOptions; return_xs=false)
+function (acq::IMMD)(bosip::BosipProblem{Nothing}, options::BosipOptions)
     problem = bosip.problem
     y_dim = BOSS.y_dim(problem)
 
@@ -61,13 +61,7 @@ function (acq::EIMMD)(bosip::BosipProblem{Nothing}, options::BosipOptions; retur
     ϵs_y = sample_ϵs(y_dim, acq.y_samples) # vector-vector
     Es_s = [sample_ϵs(y_dim, acq.y_samples) for _ in 1:acq.x_samples] # vector-vector-vector
 
-    # Compute HSIC
-    a = construct_hsic_acquisition(acq, bosip, xs, ws, ϵs_y, Es_s)
-    if return_xs
-        return a, xs
-    else
-        return a
-    end
+    return construct_hsic_acquisition(acq, bosip, xs, ws, ϵs_y, Es_s)
 end
 
 function sample_ϵs(y_dim, y_samples)
@@ -76,7 +70,7 @@ function sample_ϵs(y_dim, y_samples)
     return ϵs
 end
 
-struct EIMMDFunc{
+struct IMMDFunc{
     B<:BosipProblem,
     M<:ModelPosterior,
     X<:AbstractMatrix{<:Real},
@@ -84,7 +78,7 @@ struct EIMMDFunc{
     E1<:AbstractVector{<:AbstractVector{<:Real}},
     E2<:AbstractVector{<:AbstractVector{<:AbstractVector{<:Real}}},
 }
-    acq::EIMMD
+    acq::IMMD
     bosip::B
     model_post::M
     xs::X
@@ -93,7 +87,7 @@ struct EIMMDFunc{
     Es_s::E2
 end
 
-function (f::EIMMDFunc)(x_::AbstractVector{<:Real})
+function (f::IMMDFunc)(x_::AbstractVector{<:Real})
     # sample `N` y_ samples at the new x_
     μy, σy = mean_and_std(f.model_post, x_)
     ys_ = calc_y.(Ref(μy), Ref(σy), f.ϵs_y)
@@ -130,7 +124,7 @@ function (f::EIMMDFunc)(x_::AbstractVector{<:Real})
 end
 
 function construct_hsic_acquisition(
-    acq::EIMMD,
+    acq::IMMD,
     bosip::BosipProblem,
     xs::AbstractMatrix{<:Real}, # x samples to integrate over the domain
     ws::AbstractVector{<:Real}, # weights for the x samples (importance sampling)
@@ -141,7 +135,7 @@ function construct_hsic_acquisition(
     model_post = BOSS.model_posterior(boss)
 
     @warn "Using experimental length-scales for the HSIC kernels."
-    return EIMMDFunc(acq, bosip, model_post, xs, ws, ϵs_y, Es_s)
+    return IMMDFunc(acq, bosip, model_post, xs, ws, ϵs_y, Es_s)
 end
 
 function calc_y(μ, σ, ϵ)

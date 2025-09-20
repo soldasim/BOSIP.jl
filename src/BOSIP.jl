@@ -28,7 +28,7 @@ export LogNormalLikelihood, LogGaussianLikelihood
 export BinomialLikelihood
 export MvNormalLikelihood
 
-export BosipAcquisition, MaxVar, LogMaxVar, MWMV, EIMMD, EIV, IMIQR
+export BosipAcquisition, MaxVar, LogMaxVar, MWMV, IMMD, EIV, IMIQR
 export BosipTermCond, AEConfidence, UBLBConfidence
 export BosipCallback, CombinedCallback, NoCallback, MetricCallback
 export BosipOptions
