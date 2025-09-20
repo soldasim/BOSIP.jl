@@ -1,6 +1,6 @@
 include("maxvar.jl")
 include("logmaxvar.jl")
 include("mwmv.jl")
-include("eimmd.jl")
+include("immd.jl")
 include("eiv.jl")
 include("imiqr.jl")

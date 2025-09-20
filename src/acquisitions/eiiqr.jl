@@ -78,7 +78,7 @@ end
 function _eiiqr(f::EIIQRFunc, x_::AbstractVector{<:Real})
     # sample `N` y_ samples at the new x_
     μy, σy = mean_and_std(f.model_post, x_)
-    ys_ = calc_y.(Ref(μy), Ref(σy), f.ϵs_y) # -> eimmd.jl
+    ys_ = calc_y.(Ref(μy), Ref(σy), f.ϵs_y) # -> immd.jl
 
     # augment problems
     augmented_problems = [deepcopy(f.bosip) for _ in eachindex(ys_)]
