@@ -1,4 +1,15 @@
 
+"""
+    construct_acquisition(::BosipProblem) -> (x -> ::Real)
+    construct_acquisition(::BosipProblem, ::BosipOptions) -> (x -> ::Real)
+
+Construct the acquisition function.
+"""
+function construct_acquisition(bosip::BosipProblem, options::BosipOptions=BosipOptions())
+    @assert bosip.problem.acquisition isa AcqWrapper
+    return bosip.problem.acquisition.acq(bosip, options)
+end
+
 # Default fallback for `MultiFittedParams` that occur when Bayesian inference is used.
 # Constructs a separate acquisition function for each sample and averages them.
 function (acq::BosipAcquisition)(::Type{<:MultiFittedParams}, bosip::BosipProblem{<:Any}, options::BosipOptions)

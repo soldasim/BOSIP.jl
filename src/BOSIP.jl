@@ -11,6 +11,7 @@ export log_approx_posterior, log_posterior_mean, log_posterior_variance
 export log_approx_likelihood, log_likelihood_mean, log_likelihood_variance
 export evidence
 export loglike, like
+export construct_acquisition
 export sample_approx_posterior, sample_expected_posterior, sample_posterior, resample
 export calculate_metric
 export plot_marginals_int, plot_marginals_kde, PlotSettings
@@ -59,6 +60,7 @@ using SpecialFunctions  # used in utils/owent.jl: erfc
 
 import BOSS.x_dim, BOSS.y_dim
 import BOSS.estimate_parameters!, BOSS.maximize_acquisition, BOSS.eval_objective!
+import BOSS.construct_acquisition
 
 include("include.jl")
 

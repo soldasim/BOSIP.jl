@@ -99,6 +99,10 @@ evidence
 
 The functions `like` and `loglike` can be used to evaluate the likelihood value
 
+## Acquisition Function
+
+The function `construct_acquisition` can be used to obtain the acquisition function.
+
 ## Sampling from the Posterior
 
 The `sample_approx_posterior`, `sample_expected_posterior`, and `sample_posterior` functions can be used to obtain approximate samples from the trained parameter posterior.

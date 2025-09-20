@@ -7,7 +7,7 @@ include("posterior/include.jl")
 include("sampling.jl")
 include("main.jl")
 include("plots.jl")
-include("bi_acquisition.jl")
+include("acquisition.jl")
 include("subset_problem.jl")
 
 # Modules
