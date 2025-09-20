@@ -29,5 +29,5 @@ mutable struct AcqWrapper{
     options::BosipOptions
 end
 
-BOSS.construct_acquisition(wrap::AcqWrapper, ::BossProblem, ::BossOptions) =
+construct_acquisition(wrap::AcqWrapper, ::BossProblem, ::BossOptions) =
     wrap.acq(wrap.bosip, wrap.options)
