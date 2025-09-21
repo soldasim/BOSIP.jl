@@ -61,7 +61,19 @@ function (acq::IMMD)(bosip::BosipProblem{Nothing}, options::BosipOptions)
     ϵs_y = sample_ϵs(y_dim, acq.y_samples) # vector-vector
     Es_s = [sample_ϵs(y_dim, acq.y_samples) for _ in 1:acq.x_samples] # vector-vector-vector
 
-    return construct_hsic_acquisition(acq, bosip, xs, ws, ϵs_y, Es_s)
+    # precalculate model posterior
+    model_post = BOSS.model_posterior(bosip.problem)
+
+    @warn "Using experimental length-scales for the HSIC kernels."
+    # calculate `σy` used for the y lengthscale
+    σs_ = std.(Ref(model_post), eachcol(xs))
+    σy = sum(ws .* σs_)  # sum(ws) == 1
+    # calculate `M` used for the s lengthscale
+    post_ = approx_posterior(bosip)
+    ss_ = post_.(eachcol(xs))
+    M = maximum(ss_)
+
+    return IMMDFunc(acq, bosip, model_post, xs, ws, ϵs_y, Es_s, σy, M)
 end
 
 function sample_ϵs(y_dim, y_samples)
@@ -77,6 +89,8 @@ struct IMMDFunc{
     W<:AbstractVector{<:Real},
     E1<:AbstractVector{<:AbstractVector{<:Real}},
     E2<:AbstractVector{<:AbstractVector{<:AbstractVector{<:Real}}},
+    LY<:AbstractVector{<:Real},
+    LS<:Real,
 }
     acq::IMMD
     bosip::B
@@ -85,6 +99,8 @@ struct IMMDFunc{
     ws::W
     ϵs_y::E1
     Es_s::E2
+    σy::LY
+    M::LS
 end
 
 function (f::IMMDFunc)(x_::AbstractVector{<:Real})
@@ -109,33 +125,17 @@ function (f::IMMDFunc)(x_::AbstractVector{<:Real})
     # calculate `K` HSICs between `y_` and `s_1,...,s_K`
     
     # y lengthscale
-    y_lengthscale = σy
-    y_kernel = BOSS.with_lengthscale(f.acq.y_kernel, y_lengthscale)
+    y_kernel = BOSS.with_lengthscale(f.acq.y_kernel, f.σy)
 
     # s lengthscales
-    # (normalization instead of calculating different lengthscales)
     p_kernel = f.acq.p_kernel
-    normalize_log_S_evals!(log_S_evals)
+    normalize_log_S_evals!(log_S_evals; f.M) # (normalization instead of kernel lengthscale)
     S_evals = exponentiate_S_evals!(log_S_evals) # in-place exponentiation
-    
+
     vals = hsic.(Ref(y_kernel), Ref(p_kernel), Ref(ys_), S_evals, Ref(f.acq.y_samples))
-
+    
+    # return sum(f.ws .* vals) |> log
     return sum(f.ws .* vals)
-end
-
-function construct_hsic_acquisition(
-    acq::IMMD,
-    bosip::BosipProblem,
-    xs::AbstractMatrix{<:Real}, # x samples to integrate over the domain
-    ws::AbstractVector{<:Real}, # weights for the x samples (importance sampling)
-    ϵs_y::AbstractVector{<:AbstractVector{<:Real}}, # [GP] noise samples for sampling the GP posterior
-    Es_s::AbstractVector{<:AbstractVector{<:AbstractVector{<:Real}}}, # [DOMAIN × GP] noise samples for the posterior pdf values
-)
-    boss = bosip.problem
-    model_post = BOSS.model_posterior(boss)
-
-    @warn "Using experimental length-scales for the HSIC kernels."
-    return IMMDFunc(acq, bosip, model_post, xs, ws, ϵs_y, Es_s)
 end
 
 function calc_y(μ, σ, ϵ)
@@ -174,11 +174,10 @@ function hsic(kernel_X, kernel_Y, X::AbstractVector, Y::AbstractVector, n::Int)
     return (1 / (n^2)) * tr( (C * Kx) * (C * Ky) )
 end
 
-function normalize_log_S_evals!(log_S_evals)
-    log_M = maximum(maximum.(log_S_evals))
+function normalize_log_S_evals!(log_S_evals; M)
     for i in eachindex(log_S_evals)
         for j in eachindex(log_S_evals[i])
-            log_S_evals[i][j] -= log_M
+            log_S_evals[i][j] -= M
         end
     end
     return log_S_evals
