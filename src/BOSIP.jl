@@ -12,7 +12,8 @@ export log_approx_likelihood, log_likelihood_mean, log_likelihood_variance
 export evidence
 export loglike, like
 export construct_acquisition
-export sample_approx_posterior, sample_expected_posterior, sample_posterior, resample
+export sample_approx_posterior, sample_expected_posterior
+export sample_posterior, sample_posterior_pure, resample
 export calculate_metric
 export plot_marginals_int, plot_marginals_kde, PlotSettings
 export find_cutoff, approx_cutoff_area, set_iou

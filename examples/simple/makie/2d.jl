@@ -136,7 +136,7 @@ function plot_posterior_samples!(ax, logpost, sampler, samples, bosip)
 
     if samples isa Bool
         @assert samples
-        xs = BOSIP.pure_sample_posterior(sampler, logpost, domain, 1000)
+        xs = BOSIP.sample_posterior_pure(sampler, logpost, domain, 1000)
     else
         xs = samples
     end

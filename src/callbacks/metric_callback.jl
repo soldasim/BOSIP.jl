@@ -22,13 +22,13 @@ function _calc_score(metric::SampleMetric, cb::MetricCallback, problem::BosipPro
 
     ### sample posterior
     if cb.reference isa Function
-        true_samples = pure_sample_posterior(cb.sampler, cb.reference, domain, cb.sample_count)
+        true_samples = sample_posterior_pure(cb.sampler, cb.reference, domain, cb.sample_count)
     else
         true_samples = cb.reference
     end
 
     est_logpost = cb.logpost_estimator(problem)
-    approx_samples = pure_sample_posterior(cb.sampler, est_logpost, domain, cb.sample_count)
+    approx_samples = sample_posterior_pure(cb.sampler, est_logpost, domain, cb.sample_count)
 
     cb.true_samples = true_samples
     cb.approx_samples = approx_samples
