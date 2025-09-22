@@ -11,6 +11,10 @@ function loglike(::SqExpLikelihood, y::AbstractVector{<:Real})
     @assert length(y) == 1
     return y[1]^2
 end
+function loglike(::SqExpLikelihood, Y::AbstractMatrix{<:Real})
+    @assert size(Y, 1) == 1
+    return Y[1,:] .^ 2
+end
 
 function log_likelihood_mean(::SqExpLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
     mid = mean(bosip.problem.domain.bounds)
@@ -23,6 +27,10 @@ function log_likelihood_mean(::SqExpLikelihood, bosip::BosipProblem, model_post:
         # return log( (1 / sqrt(1 + σ^2)) * exp(-(1/2) * (μ^2 / (1 + σ^2))) )
         return (-(1/2) * log(1 + σ^2)) + (-(1/2) * (μ^2 / (1 + σ^2)))
     end
+    function log_like_mean(X::AbstractMatrix{<:Real})
+        return log_like_mean.(eachcol(X))
+    end
+    return log_like_mean
 end
 
 function log_sq_likelihood_mean(::SqExpLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
@@ -36,4 +44,8 @@ function log_sq_likelihood_mean(::SqExpLikelihood, bosip::BosipProblem, model_po
         # return log( (1 / sqrt(1 + 2 * σ^2)) * exp(-(1/2) * (μ^2 / (σ^2 * (1 + 2 * σ^2)))) )
         return (-(1/2) * log(1 + 2 * σ^2)) + (-(1/2) * (μ^2 / (σ^2 * (1 + 2 * σ^2))))
     end
+    function log_sq_like_mean(X::AbstractMatrix{<:Real})
+        return log_sq_like_mean.(eachcol(X))
+    end
+    return log_sq_like_mean
 end

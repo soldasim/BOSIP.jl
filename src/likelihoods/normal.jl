@@ -27,30 +27,9 @@ Alias for [`NormalLikelihood`](@ref).
 """
 const GaussianLikelihood = NormalLikelihood
 
-function loglike(like::NormalLikelihood, y::AbstractVector{<:Real})
-    return logpdf(MvNormal(y, like.std_obs), like.z_obs)
-end
-
-# Specialized implementation. Provides slightly better performance for the batch evaluations.
-function log_approx_likelihood(like::NormalLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
-    z_obs = like.z_obs
-    std_obs = _std_obs(like, bosip)
-
-    function log_approx_like(x::AbstractVector{<:Real})
-        μ_y = mean(model_post, x)
-        
-        return logpdf(MvNormal(μ_y, std_obs), z_obs)
-    end
-    function log_approx_like(X::AbstractMatrix{<:Real})
-        μs_y = mean(model_post, X)
-        
-        # return logpdf.(MvNormal.(eachrow(μs_y), Ref(Diagonal(std_obs))), Ref(z_obs))
-        σ_mat = repeat(std_obs', size(μs_y, 1))
-        y_mat = repeat(z_obs', size(μs_y, 1))
-        ll_mat = ((μ, σ, y) -> logpdf(Normal(μ, σ), y)).(μs_y, σ_mat, y_mat)
-        return sum(ll_mat; dims=2)
-    end
-    return log_approx_like
+function loglike(like::NormalLikelihood, Y::AbstractVecOrMat{<:Real})
+    # return logpdf(MvNormal(y, like.std_obs), like.z_obs)
+    return logpdf(MvNormal(like.z_obs, like.std_obs), Y)
 end
 
 function log_likelihood_mean(like::NormalLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
