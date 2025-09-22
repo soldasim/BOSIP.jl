@@ -14,8 +14,9 @@ as `z_obs \\sim Normal(f(x), Σ_obs)`. We can use the simulator to query `y = f(
     Σ_obs::Matrix{Float64}
 end
 
-function loglike(like::MvNormalLikelihood, y::AbstractVector{<:Real})
-    return logpdf(MvNormal(y, like.Σ_obs), like.z_obs)
+function loglike(like::MvNormalLikelihood, Y::AbstractVecOrMat{<:Real})
+    # return logpdf(MvNormal(y, like.Σ_obs), like.z_obs)
+    return logpdf(MvNormal(like.z_obs, like.Σ_obs), Y)
 end
 
 function log_likelihood_mean(like::MvNormalLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
@@ -28,6 +29,9 @@ function log_likelihood_mean(like::MvNormalLikelihood, bosip::BosipProblem, mode
         Σ = Σ_obs + Diagonal(std_y .^ 2)
         return logpdf(MvNormal(μ_y, Σ), z_obs)
     end
+    function log_like_mean(X::AbstractMatrix{<:Real})
+        return log_like_mean.(eachcol(X))
+    end
     return log_like_mean
 end
 
@@ -36,7 +40,7 @@ function log_sq_likelihood_mean(like::MvNormalLikelihood, bosip::BosipProblem, m
     Σ_obs = like.Σ_obs
     y_dim = length(z_obs)
 
-    function log_like_mean(x::AbstractVector{<:Real})
+    function log_sq_like_mean(x::AbstractVector{<:Real})
         μ_y, std_y = mean_and_std(model_post, x)
         
         Σ = ((1/2) .* Σ_obs) + Diagonal(std_y .^ 2)
@@ -44,5 +48,8 @@ function log_sq_likelihood_mean(like::MvNormalLikelihood, bosip::BosipProblem, m
         log_C = (-1) * ( (y_dim / 2) * log(4 * π) + (1/2) * logdet(Σ_obs))
         return log_C + logpdf(MvNormal(μ_y, Σ), z_obs)
     end
-    return log_like_mean
+    function log_sq_like_mean(X::AbstractMatrix{<:Real})
+        return log_sq_like_mean.(eachcol(X))
+    end
+    return log_sq_like_mean
 end

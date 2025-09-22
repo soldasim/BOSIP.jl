@@ -11,6 +11,10 @@ function loglike(::ExpLikelihood, y::AbstractVector{<:Real})
     @assert length(y) == 1
     return y[1]
 end
+function loglike(::ExpLikelihood, Y::AbstractMatrix{<:Real})
+    @assert size(Y, 1) == 1
+    return Y[:,1]
+end
 
 function log_likelihood_mean(::ExpLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
     mid = mean(bosip.problem.domain.bounds)
@@ -23,6 +27,10 @@ function log_likelihood_mean(::ExpLikelihood, bosip::BosipProblem, model_post::M
         # return log( exp(μ + 0.5 * σ2) )
         return μ + 0.5 * σ2
     end
+    function log_like_mean(X::AbstractMatrix{<:Real})
+        return log_like_mean.(eachcol(X))
+    end
+    return log_like_mean
 end
 
 # function log_sq_likelihood_mean(::ExpLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
@@ -36,6 +44,10 @@ end
 #         # return log( exp(2 * μ + 2 * σ2) )
 #         return 2 * μ + 2 * σ2
 #     end
+#     function log_sq_like_mean(X::AbstractMatrix{<:Real})
+#         return log_sq_like_mean.(eachcol(X))
+#     end
+#     return log_sq_like_mean
 # end
 
 # This is a more numerically stable version, than using the `log_sq_likelihood_mean` function above.
@@ -50,4 +62,8 @@ function log_likelihood_variance(::ExpLikelihood, bosip::BosipProblem, model_pos
         # return log( exp(2 * (μ + σ2) + log(1 - exp(-σ2))) )
         return 2 * (μ + σ2) + log(1 - exp(-σ2))
     end
+    function log_like_var(X::AbstractMatrix{<:Real})
+        return log_like_var.(eachcol(X))
+    end
+    return log_like_var
 end
