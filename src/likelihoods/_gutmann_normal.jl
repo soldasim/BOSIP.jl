@@ -1,3 +1,4 @@
+### OUTDATED IMPLEMENTATION ###
 
 """
     GutmannNormalLikelihood(; std_obs::Vector{Float64})
