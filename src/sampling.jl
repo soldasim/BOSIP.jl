@@ -57,7 +57,7 @@ function resample(xs::AbstractMatrix{<:Real}, ws::AbstractVector{<:Real}, count:
 end
 
 """
-    xs = pure_sample_posterior(sampler::PureSampler, logpost::Function, domain::Domain, count::Int;
+    xs = sample_posterior_pure(sampler::DistributionSampler, logpost::Function, domain::Domain, count::Int;
         supersample_ratio = 20,
     )
 
@@ -67,14 +67,14 @@ Assures that the returned samples are "pure" (unweighted).
 In case of a `WeightedSampler`, `supersample_ratio` × `count` samples are drawn,
 and subsequently down-sampled to `count` samples according to their weights.
 """
-function pure_sample_posterior(sampler::PureSampler, logpost::Function, domain::Domain, count::Int;
+function sample_posterior_pure(sampler::PureSampler, logpost::Function, domain::Domain, count::Int;
     supersample_ratio = 20,
 )
     xs, ws = sample_posterior(sampler, logpost, domain, count)
     @assert allequal(ws)
     return xs
 end
-function pure_sample_posterior(sampler::WeightedSampler, logpost::Function, domain::Domain, count::Int;
+function sample_posterior_pure(sampler::WeightedSampler, logpost::Function, domain::Domain, count::Int;
     supersample_ratio = 20,
 )
     xs, ws = sample_posterior(sampler, logpost, domain, supersample_ratio * count)
