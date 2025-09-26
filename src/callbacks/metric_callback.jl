@@ -10,11 +10,15 @@
     approx_samples::Union{Nothing, Matrix{Float64}} = nothing
 end
 
-function (cb::MetricCallback)(problem::BosipProblem; kwargs...)
+function (cb::MetricCallback)(problem::BosipProblem; first::Bool, options::BossOptions, kwargs...)
+    if first && !isempty(cb.score_history)
+        options.info && @warn "A continued run detected. Not calculating the first metric score to avoid duplicates."
+        return
+    end
+
     score = _calc_score(cb.metric, cb, problem)
-    @show score
+    options.info && @show score
     push!(cb.score_history, score)
-    nothing
 end
 
 function _calc_score(metric::SampleMetric, cb::MetricCallback, problem::BosipProblem)
