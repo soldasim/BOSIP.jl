@@ -171,7 +171,7 @@ function _log_imiqr(
     # use the "logsumexp" trick for numerical stability
     M = maximum(log_med_iqrs)
     log_imiqr = M + log(sum(f.ws .* exp.(log_med_iqrs .- M)))
-    log_imiqr *= 2 # unnecessary, but for consistency with the paper
+    log_imiqr += log(2) # for consistency with the paper
 
     # the IMIQR is to be minimized
     return (-1) * log_imiqr
@@ -188,6 +188,6 @@ function _log_iqr(
     log_p = logpdf(x_prior, x)
     mean_ll, std_ll = mean_and_std(model_post, x) .|> first
 
-    log_med_iqr = log_p + mean_ll + sinh(u * std_ll)
+    log_med_iqr = log_p + mean_ll + log(sinh(u * std_ll))
     return log_med_iqr
 end
