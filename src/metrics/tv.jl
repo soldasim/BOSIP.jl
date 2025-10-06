@@ -12,47 +12,59 @@ based on a precomputed parameter grid.
         used to sample the grid points.
         (`1 / domain_area` is appropriate for an evenly distributed grid)
         (It is also possible to provide the non-logarithmic weights `ws` instead.)
+- `true_logpost::Function`: The log-pdf of the true posterior distribution.
+        If provided, the log-pdf values on the grid are cached, which greatly improves performance.
 """
 struct TVMetric <: PDFMetric
     grid::Matrix{Float64}
     log_ws::Vector{Float64}
+    true_logvals::Union{Nothing, Vector{Float64}}
 end
 function TVMetric(;
     grid,
     ws = nothing,
     log_ws = nothing,
+    true_logpost = nothing,
 )
     @assert xor(isnothing(ws), isnothing(log_ws))
     isnothing(log_ws) && (log_ws = log.(ws))
-    return TVMetric(grid, log_ws)
+    
+    if isnothing(true_logpost)
+        true_logvals = nothing
+    else
+        true_logvals = true_logpost.(eachcol(grid))
+        true_logev = _log_mean_exp(log_ws .+ true_logvals)
+        true_logvals .-= true_logev
+    end
+
+    return TVMetric(grid, log_ws, true_logvals)
 end
 
 function calculate_metric(tv::TVMetric, true_logpost::Function, approx_logpost::Function;
     options::BosipOptions = BosipOptions(),    
 )
-    return calc_tv(tv.grid, tv.log_ws, true_logpost, approx_logpost)
-end
+    # true logpdf values
+    if isnothing(tv.true_logvals)
+        true_logvals = true_logpost.(eachcol(tv.grid))
+        true_logev = _log_mean_exp(tv.log_ws .+ true_logvals)
+        true_logvals .-= true_logev
+    else
+        true_logvals = tv.true_logvals
+    end
 
-function calc_tv(grid::AbstractMatrix{<:Real}, log_ws::AbstractVector{<:Real}, true_logpost::Function, approx_logpost::Function)
-    ### pdf values on grid
-    # true_vals = exp.( true_logpost.(eachcol(grid)) )
-    # approx_vals = exp.( approx_logpost.(eachcol(grid)) )
-    true_logvals = true_logpost.(eachcol(grid))
-    approx_logvals = approx_logpost.(eachcol(grid))
-
-    ### estimate the evidence on the same grid
-    # true_ev = mean(ws .* true_vals)
-    # approx_ev = mean(ws .* approx_vals)
-    true_logev = log( mean( exp.(log_ws .+ true_logvals) ) )
-    approx_logev = log( mean( exp.(log_ws .+ approx_logvals) ) )
-
-    ### normalize the pdf values
-    # true_vals ./= true_ev
-    # approx_vals ./= approx_ev
-    true_logvals .-= true_logev
+    # approx. logpdf values
+    approx_logvals = approx_logpost.(eachcol(tv.grid))
+    approx_logev = _log_mean_exp(tv.log_ws .+ approx_logvals)
     approx_logvals .-= approx_logev
 
-    # calculate the total variation distance
-    # return (1/2) * sum(abs.(approx_vals .- true_vals))
+    return calc_tv(approx_logvals, true_logvals)
+end
+
+function calc_tv(approx_logvals, true_logvals)
     return (1/2) * sum(abs.( exp.(approx_logvals) .- exp.(true_logvals) ))
+end
+
+function _log_mean_exp(vals::AbstractVector{<:Real})
+    M = maximum(vals)
+    return M + log( mean( exp.(vals .- M) ) )
 end
