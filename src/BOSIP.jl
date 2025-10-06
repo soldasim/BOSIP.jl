@@ -25,9 +25,11 @@ export IdentityLikelihood
 export ExpLikelihood, SqExpLikelihood
 export GutmannNormalLikelihood, GutmannGaussianLikelihood
 export NormalLikelihood, GaussianLikelihood
-export LogNormalLikelihood, LogGaussianLikelihood
+export LogNormalLikelihood
 export BinomialLikelihood
 export MvNormalLikelihood
+export NormalSumLikelihood
+export LogNormalSumLikelihood
 
 export BosipAcquisition, MaxVar, LogMaxVar, MWMV, IMMD, EIV, IMIQR
 export BosipTermCond, AEConfidence, UBLBConfidence
