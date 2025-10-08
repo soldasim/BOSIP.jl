@@ -30,6 +30,7 @@ export BinomialLikelihood
 export MvNormalLikelihood
 export NormalSumLikelihood
 export LogNormalSumLikelihood
+export NormalDiffLikelihood
 
 export BosipAcquisition, MaxVar, LogMaxVar, MWMV, IMMD, EIV, IMIQR
 export BosipTermCond, AEConfidence, UBLBConfidence
