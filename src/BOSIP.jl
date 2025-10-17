@@ -20,7 +20,7 @@ export find_cutoff, approx_cutoff_area, set_iou
 export get_subset
 export approx_by_gauss_mix, GaussMixOptions
 
-export Likelihood
+export Likelihood, CustomLikelihood
 export IdentityLikelihood
 export ExpLikelihood, SqExpLikelihood
 export GutmannNormalLikelihood, GutmannGaussianLikelihood
