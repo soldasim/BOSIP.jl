@@ -1,4 +1,4 @@
-/Manifest.toml
+Manifest.toml
 /examples/*/plots
 .DS_Store
 /docs/build
