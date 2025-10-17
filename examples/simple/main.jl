@@ -124,7 +124,7 @@ function main(problem;
         sampler,
     )
     options = BosipOptions(;
-        callback = CombinedCallback(
+        callback = BOSIP.CombinedCallback(
             metric ? metric_cb : BOSIP.NoCallback(),
             plots ? plt : BOSIP.NoCallback(),
         ),
