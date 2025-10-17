@@ -8,7 +8,7 @@ To define a custom likelihood, create a new subtype of `Likelihood`
 and implement the following API;
 
 Each subtype of `Likelihood` *should* implement:
-- `loglike(::Likelihood, y::AbstractVector{<:Real})` where `y` is the simulator output
+- `loglike(::Likelihood, δ::AbstractVector{<:Real}, [x::AbstarctVector{<:Real}])`
 - `log_likelihood_mean(::Likelihood, ::BosipProblem, ::ModelPosterior)`
 
 Each subtype of `Likelihood` *should* implement *at least one* of:
@@ -21,30 +21,27 @@ if `BosipProblem` where `!isnothing(problem.y_sets)` is used:
 
 The following additional methods are provided by default and *need not be implemented*:
 - `log_approx_likelihood(::Likelihood, ::BosipProblem, ::ModelPosterior)`
-- `like(::Likelihood, y:AbstractVector{<:Real})` where `y` is the simulator output
+- `like(::Likelihood, δ::AbstractVector{<:Real}, [x::AbstractVector{<:Real}])`
 """
 abstract type Likelihood end
 
 """
-    loglike(::Likelihood, y::AbstractVector{<:Real}) -> ::Real
-    loglike(l::Likelihood, Y::AbstractMatrix{<:Real}) -> ::AbstractVector{<:Real}
+    loglike(::Likelihood, δ::AbstractVector{<:Real}, [x::AbstractVector{<:Real}]) -> ::Real
+    loglike(::Likelihood, Δ::AbstractMatrix{<:Real}, [X::AbstractMatrix{<:Real}]) -> ::AbstractVector{<:Real}
 
-Return the log-likelihood of the observation given the simulator output `y`.
+Return the log-likelihood of the observation given the proxy variable `δ`.
+Rarely, some `Likelihood`s may require the input parameters `x` to compute the log-likelihood as well.
 """
-function loglike end
+loglike(l::Likelihood, δ::AbstractVector{<:Real}, x::AbstractVector{<:Real}) = loglike(l, δ)
+loglike(l::Likelihood, Δ::AbstractMatrix{<:Real}, X::AbstractMatrix{<:Real}) = loglike(l, Δ)
 
 """
-    like(::Likelihood, y::AbstractVector{<:Real}) -> ::Real
-    like(l::Likelihood, Y::AbstractMatrix{<:Real}) -> ::AbstractVector{<:Real}
+    like(::Likelihood, δ::AbstractVector{<:Real}, [x::AbstractVector{<:Real}]) -> ::Real
+    like(l::Likelihood, Δ::AbstractMatrix{<:Real}, [X::AbstractMatrix{<:Real}]) -> ::AbstractVector{<:Real}
 
-Return the likelihood of the observation given the model output `y`.
+Return the likelihood of the observation given the model output `δ`.
 """
-function like(l::Likelihood, y::AbstractVector{<:Real})
-    return exp(loglike(l, y))
-end
-function like(l::Likelihood, Y::AbstractMatrix{<:Real})
-    return exp.(loglike(l, Y))
-end
+like(args...) = exp.(loglike(args...))
 
 """
     log_approx_likelihood(::Likelihood, ::BosipProblem, ::ModelPosterior)

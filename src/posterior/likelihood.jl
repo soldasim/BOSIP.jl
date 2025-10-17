@@ -2,11 +2,11 @@
 function log_approx_likelihood(like::Likelihood, bosip::BosipProblem, model_post::ModelPosterior)
     function log_approx_like(x::AbstractVector{<:Real})
         μy = mean(model_post, x)
-        return loglike(like, μy)
+        return loglike(like, μy, x)
     end
     function log_approx_like(X::AbstractMatrix{<:Real})
         μY = mean(model_post, X)
-        return loglike(like, μY')
+        return loglike(like, μY', X)
     end
     return log_approx_like
 end

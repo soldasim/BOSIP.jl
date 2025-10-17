@@ -189,12 +189,12 @@ end
 
 function true_loglike(x::AbstractVector)
     y = ToyProblem.simulation(x; noise_std=zeros(ToyProblem.y_dim))
-    ll = loglike(get_likelihood(), y)
+    ll = loglike(get_likelihood(), y, x)
     return ll
 end
 function true_loglike(X::AbstractMatrix)
     ys = ToyProblem.simulation.(eachcol(X); noise_std=zeros(ToyProblem.y_dim))
-    ll = loglike.(Ref(get_likelihood()), ys)
+    ll = loglike.(Ref(get_likelihood()), ys, eachcol(X))
     return ll
 end
 
