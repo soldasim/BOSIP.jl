@@ -2,7 +2,9 @@
 """
 Represents the assumed likelihood of the experiment observation ``z_o``.
 
-# Defining a Custom Likelihood
+See also the [`MonteCarloLikelihood`](@ref) for a simplified interface for likelihoods.
+
+## Defining a Custom Likelihood
 
 To define a custom likelihood, create a new subtype of `Likelihood`
 and implement the following API;
