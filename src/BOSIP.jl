@@ -20,7 +20,7 @@ export find_cutoff, approx_cutoff_area, set_iou
 export get_subset
 export approx_by_gauss_mix, GaussMixOptions
 
-export Likelihood, CustomLikelihood
+export Likelihood, MonteCarloLikelihood, CustomLikelihood
 export IdentityLikelihood
 export ExpLikelihood, SqExpLikelihood
 export GutmannNormalLikelihood, GutmannGaussianLikelihood
@@ -59,8 +59,8 @@ using DifferentiationInterface
 using ForwardDiff
 using LazyArrays
 
-using StatsFuns         # used in GutmannNormalLikelihood
-using SpecialFunctions  # used in utils/owent.jl: erfc
+# used in utils/owent.jl (erfc)
+using SpecialFunctions
 
 import BOSS.x_dim, BOSS.y_dim
 import BOSS.estimate_parameters!, BOSS.maximize_acquisition, BOSS.eval_objective!

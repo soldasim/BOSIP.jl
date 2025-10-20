@@ -16,6 +16,20 @@ The abstract type `Likelihood` represents the likelihood distribution of the obs
 Likelihood
 ```
 
+To implement a custom likelihood, either subtype `Likelihood` directly and implement its full interface, or alternatively subtype `MonteCarloLikelihood`, which provides a simplified interface. The full `Likelihood` interface can be used to define closed-form solutions for the integrals required to calculate the expected likelihood and its variance with respect to the surrogate model uncertainty. If one subtypes the `MonteCarloLikelihood`, these integrals are automatically approximated using MC integration.
+
+```@docs
+MonteCarloLikelihood
+```
+
+Alternatively, one can simply instantiate the `CustomLikelihood` and provide the mapping from the modeled variable to the log-likelihood. This is functionally equivalent to defining a new `MonteCarloLikelihood` subtype.
+
+```@docs
+CustomLikelihood
+```
+
+A list of some predefined likelihoods follows;
+
 The `NormalLikelihood` assumes that the observation `z_o` has been drawn from a Gaussian distribution with a known diagonal covariance matrix with the `std_obs` values on the diagonal. The simulator is used to learn the mean function.
 
 ```@docs

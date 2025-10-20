@@ -1,4 +1,5 @@
 include("likelihood.jl")
+include("mc_likelihood.jl")
 include("problem.jl")
 include("term_cond.jl")
 include("callback.jl")
