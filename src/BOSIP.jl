@@ -59,9 +59,6 @@ using DifferentiationInterface
 using ForwardDiff
 using LazyArrays
 
-# used in utils/owent.jl (erfc)
-using SpecialFunctions
-
 import BOSS.x_dim, BOSS.y_dim
 import BOSS.estimate_parameters!, BOSS.maximize_acquisition, BOSS.eval_objective!
 import BOSS.construct_acquisition
