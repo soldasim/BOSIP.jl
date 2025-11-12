@@ -26,7 +26,7 @@ z_obs = [1.]
 
 The experiment is assumed to follow a Normal likelihood with observation noise deviation ``\sigma_f = 0.5``.
 ```julia
-likelihood = NormalLikelihood(; z_obs, obs_std=[0.5])
+likelihood = NormalLikelihood(; z_obs, std_obs=[0.5])
 ```
 
 We define the noisy simulation function ``g(x)``. The _unknown_ simulation noise deviatoin is set to ``\sigma_g = 0.001``.
