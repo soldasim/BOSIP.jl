@@ -13,7 +13,11 @@ using BOSIP.Distributions
     plot_data::Bool = true
     plot_samples::Bool = true
     full_matrix::Bool = true
-    plot_cell_res::Int = 400
+    upper_triangle::Bool = true
+    diagonal::Bool = true
+    resolution::Int = 600
+    x_true::Union{Nothing, AbstractVector{<:Real}} = nothing
+    title::Union{Nothing, String} = nothing
 end
 
 BOSIP.PlotSettings(args...; kwargs...) =
@@ -25,18 +29,32 @@ const SAMPLES_SCATTER_KWARGS = (
     markersize = 3,
 )
 const DATA_SCATTER_KWARGS = (
-    color = :red,
+    color = :grey,
     marker = :circle,
     markersize = 5,
+)
+const X_TRUE_VLINE_KWARGS = (
+    color = :red,
+    linestyle = :dash,
+    linewidth = 2,
+)
+const X_TRUE_SCATTER_KWARGS = (
+    color = :red,
+    marker = :star5,
+    markersize = 12,
+)
+const TITLE_KWARGS = (
+    fontsize = 22,
+    font = :bold,
 )
 
 function BOSIP.plot_marginals_int(bosip::BosipProblem;
     func = approx_posterior,
     normalize = true,
-    lhc_grid_size = 1000,
+    lhc_grid_size = 200,
     plot_settings = PlotSettings(),
     info = true,
-    display = true,
+    display = false,
     matrix_ops = true,
 )
     info && @info "Generating a latin hypercube of parameter samples ..."
@@ -82,9 +100,8 @@ function plot_marginals_int(bosip::BosipProblem, grid::AbstractMatrix{<:Real};
     grid_size = plot_settings.grid_size
     steps = plot_steps(grid_size, bounds)
 
-    res = x_dim * plot_settings.plot_cell_res
     fig = Figure(;
-        size = (res, res),
+        size = (plot_settings.resolution, plot_settings.resolution),
     )
     labels = isnothing(plot_settings.param_labels) ? ["x$i" for i in 1:x_dim] : plot_settings.param_labels
     @assert length(labels) == x_dim
@@ -93,32 +110,37 @@ function plot_marginals_int(bosip::BosipProblem, grid::AbstractMatrix{<:Real};
     tmp_row_b = zeros(count)
 
     # single parameter marginals (diagonal)
-    dims = 1:x_dim
+    if plot_settings.diagonal
+        dims = 1:x_dim
 
-    for dim in dims
-        tmp_row_a .= grid[dim,:]
+        for dim in dims
+            tmp_row_a .= grid[dim,:]
 
-        xs = range(bounds[1][dim], bounds[2][dim]; length=grid_size)
-        ys = zeros(length(xs))
-        
-        for (i, x_) in enumerate(xs)
-            grid[dim,:] .= x_
+            xs = range(bounds[1][dim], bounds[2][dim]; length=grid_size)
+            ys = zeros(length(xs))
+            
+            for (i, x_) in enumerate(xs)
+                grid[dim,:] .= x_
 
-            if matrix_ops
-                ys[i] = mean(f(grid))
-            else
-                ys[i] = mean(f.(eachcol(grid)))
+                if matrix_ops
+                    ys[i] = mean(f(grid))
+                else
+                    ys[i] = mean(f.(eachcol(grid)))
+                end
             end
+            normalize && normalize_prob_vals!(ys, steps[dim])
+
+            ax = Axis(fig[dim,dim]; xlabel=labels[dim])
+            lines!(ax, xs, ys)
+            plot_settings.plot_data && scatter!(ax, X[dim,:], zeros(size(X)[2]);
+                DATA_SCATTER_KWARGS...
+            )
+            isnothing(plot_settings.x_true) || vlines!(ax, [plot_settings.x_true[dim]];
+                X_TRUE_VLINE_KWARGS...
+            )
+
+            grid[dim,:] .= tmp_row_a
         end
-        normalize && normalize_prob_vals!(ys, steps[dim])
-
-        ax = Axis(fig[dim,dim]; xlabel=labels[dim])
-        lines!(ax, xs, ys)
-        plot_settings.plot_data && scatter!(ax, X[dim,:], zeros(size(X)[2]);
-            DATA_SCATTER_KWARGS...
-        )
-
-        grid[dim,:] .= tmp_row_a
     end
 
     # pair marginals
@@ -145,21 +167,39 @@ function plot_marginals_int(bosip::BosipProblem, grid::AbstractMatrix{<:Real};
         end
         normalize && normalize_prob_vals!(ys, steps[dim_a], steps[dim_b])
 
-        ax = Axis(fig[dim_b, dim_a]; xlabel=labels[dim_a], ylabel=labels[dim_b])
-        contourf!(ax, xs_a, xs_b, ys)
-        plot_settings.plot_data && scatter!(ax, X[dim_a,:], X[dim_b,:];
-            DATA_SCATTER_KWARGS...
-        )
-        if plot_settings.full_matrix
+        if plot_settings.full_matrix || !plot_settings.upper_triangle
+            ax = Axis(fig[dim_b, dim_a]; xlabel=labels[dim_a], ylabel=labels[dim_b])
+            contourf!(ax, xs_a, xs_b, ys)
+            plot_settings.plot_data && scatter!(ax, X[dim_a,:], X[dim_b,:];
+                DATA_SCATTER_KWARGS...
+            )
+            isnothing(plot_settings.x_true) || scatter!(ax, [plot_settings.x_true[dim_a]], [plot_settings.x_true[dim_b]];
+                X_TRUE_SCATTER_KWARGS...
+            )
+        end
+
+        if plot_settings.full_matrix || plot_settings.upper_triangle
             ax_t = Axis(fig[dim_a, dim_b]; xlabel=labels[dim_b], ylabel=labels[dim_a])
             contourf!(ax_t, xs_b, xs_a, ys')
             plot_settings.plot_data && scatter!(ax_t, X[dim_b,:], X[dim_a,:];
                 DATA_SCATTER_KWARGS...
             )
+            isnothing(plot_settings.x_true) || scatter!(ax_t, [plot_settings.x_true[dim_b]], [plot_settings.x_true[dim_a]];
+                X_TRUE_SCATTER_KWARGS...
+            )
         end
 
         grid[dim_a,:] .= tmp_row_a
         grid[dim_b,:] .= tmp_row_b
+    end
+
+    # eliminate empty cols/rows
+    trim!(fig.layout)
+    # fix for single col figures properly scaling to full width
+    (length(fig.content) == 1) && colsize!(fig.layout, 1, Relative(1))
+
+    if !isnothing(plot_settings.title)
+        fig[0,:] = Label(fig, plot_settings.title; TITLE_KWARGS...)
     end
 
     display && CairoMakie.display(fig)
@@ -179,33 +219,35 @@ function plot_marginals_kde(bosip::BosipProblem, samples::AbstractMatrix{<:Real}
     grid_size = plot_settings.grid_size
     steps = plot_steps(grid_size, bounds)
 
-    res = x_dim * plot_settings.plot_cell_res
     fig = Figure(;
-        size = (res, res),
+        size = (plot_settings.resolution, plot_settings.resolution),
+        plot_settings.fig_kwargs...,
     )
     limits = [(bounds[1][i], bounds[2][i]) for i in 1:x_dim]
     labels = isnothing(plot_settings.param_labels) ? ["x$i" for i in 1:x_dim] : plot_settings.param_labels
     @assert length(labels) == x_dim
 
     # single parameter marginals (diagonal)
-    for dim in 1:x_dim
-        xs = range(bounds[1][dim], bounds[2][dim]; length=grid_size) |> collect
-        ys = zeros(length(xs))
-        
-        k = with_lengthscale(kernel, lengthscale[dim])
-        for i in eachindex(xs)
-            ys[i] = mean(k.(Ref(xs[i]), samples[dim,:]))
-        end
-        normalize_prob_vals!(ys, steps[dim])
+    if plot_settings.diagonal
+        for dim in 1:x_dim
+            xs = range(bounds[1][dim], bounds[2][dim]; length=grid_size) |> collect
+            ys = zeros(length(xs))
+            
+            k = with_lengthscale(kernel, lengthscale[dim])
+            for i in eachindex(xs)
+                ys[i] = mean(k.(Ref(xs[i]), samples[dim,:]))
+            end
+            normalize_prob_vals!(ys, steps[dim])
 
-        ax = Axis(fig[dim,dim]; xlabel=labels[dim], limits=(limits[dim],nothing))
-        lines!(ax, xs, ys)
-        plot_settings.plot_samples && scatter!(ax, samples[dim,:], zeros(count);
-            SAMPLES_SCATTER_KWARGS...
-        )
-        plot_settings.plot_data && scatter!(ax, X[dim,:], zeros(size(X)[2]);
-            DATA_SCATTER_KWARGS...
-        )
+            ax = Axis(fig[dim,dim]; xlabel=labels[dim], limits=(limits[dim],nothing))
+            lines!(ax, xs, ys)
+            plot_settings.plot_samples && scatter!(ax, samples[dim,:], zeros(count);
+                SAMPLES_SCATTER_KWARGS...
+            )
+            plot_settings.plot_data && scatter!(ax, X[dim,:], zeros(size(X)[2]);
+                DATA_SCATTER_KWARGS...
+            )
+        end
     end
 
     # pair marginals
@@ -222,15 +264,18 @@ function plot_marginals_kde(bosip::BosipProblem, samples::AbstractMatrix{<:Real}
             end
             normalize_prob_vals!(ys, steps[dim_a], steps[dim_b])
 
-            ax = Axis(fig[dim_b, dim_a]; xlabel=labels[dim_a], ylabel=labels[dim_b], limits=(limits[dim_a],limits[dim_b]))
-            contourf!(ax, xs_a, xs_b, ys)
-            plot_settings.plot_samples && scatter!(ax, samples[dim_a,:], samples[dim_b,:];
-                SAMPLES_SCATTER_KWARGS...
-            )
-            plot_settings.plot_data && scatter!(ax, X[dim_a,:], X[dim_b,:];
-                DATA_SCATTER_KWARGS...
-            )
-            if plot_settings.full_matrix
+            if plot_settings.full_matrix || !plot_settings.upper_triangle
+                ax = Axis(fig[dim_b, dim_a]; xlabel=labels[dim_a], ylabel=labels[dim_b], limits=(limits[dim_a],limits[dim_b]))
+                contourf!(ax, xs_a, xs_b, ys)
+                plot_settings.plot_samples && scatter!(ax, samples[dim_a,:], samples[dim_b,:];
+                    SAMPLES_SCATTER_KWARGS...
+                )
+                plot_settings.plot_data && scatter!(ax, X[dim_a,:], X[dim_b,:];
+                    DATA_SCATTER_KWARGS...
+                )
+            end
+
+            if plot_settings.full_matrix || plot_settings.upper_triangle
                 ax_t = Axis(fig[dim_a, dim_b]; xlabel=labels[dim_b], ylabel=labels[dim_a], limits=(limits[dim_b],limits[dim_a]))
                 contourf!(ax_t, xs_b, xs_a, ys')
                 plot_settings.plot_samples && scatter!(ax_t, samples[dim_b,:], samples[dim_a,:];
@@ -241,6 +286,15 @@ function plot_marginals_kde(bosip::BosipProblem, samples::AbstractMatrix{<:Real}
                 )
             end
         end
+    end
+
+    # eliminate empty cols/rows
+    trim!(fig.layout)
+    # fix for single col figures properly scaling to full width
+    (length(fig.content) == 1) && colsize!(fig.layout, 1, Relative(1))
+    
+    if !isnothing(plot_settings.title)
+        fig[0,:] = Label(fig, plot_settings.title; TITLE_KWARGS...)
     end
 
     display && CairoMakie.display(fig)
