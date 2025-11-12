@@ -15,7 +15,15 @@ Aggregates all plot settings for the `plot_marginals_int` and `plot_marginals_kd
         from the posterior are also plotted.
 - `full_matrix::Bool`: Set to `full_matrix=false` to only plot the marginals below the diagonal
         and skipped the redundant mirrored plots above the diagonal.
-- `plot_cell_res::Int64`: The resolution (in pixels) of a single plot in the plot matrix.
+- `upper_triangle::Bool` Switch between plotting the lower triangle (`upper_triangle=false`)
+        or the upper triangle (`upper_triangle=true`) of the marginal matrix. Only has
+        an effect if `full_matrix=false`.
+- `diagonal::Bool`: Set to `diagonal=false` to skip plotting the univariate parameter marginals
+        on the diagonal of the marginal matrix.
+- `resolution::Int`: The resolution of the individual plots in the marginal matrix.
+- `x_true::Union{Nothing, AbstractVector{<:Real}}`: The true parameter values
+        to be indicated in the plots.
+- `title::Union{Nothing, String}`: A plot title.
 """
 abstract type PlotSettings end
 
@@ -30,6 +38,9 @@ Approximates the marginals by numerically integrating the marginal integrals
 over a generated latin hypercube grid of parameter samples.
 The plots are normalized according to the plotting grid.
 
+It is necessary to adapt the number of samples (defined through the `lhc_grid_size` keyword)
+according to the dimensionality of the parameter space.
+
 Also provides an option to plot "marginals" of different functions by using the `func` and `normalize` keywords.
 
 # Kwargs
@@ -43,6 +54,7 @@ Also provides an option to plot "marginals" of different functions by using the 
         Defaults to `true`.
 - `lhc_grid_size::Int`: The number of samples in the generate LHC grid.
         The higher the number, the more precise marginal plots.
+        This settings affects the computational cost of the plotting significantly.
 - `plot_settings::PlotSettings`: Settings for the plotting.
 - `info::Bool`: Set to `false` to disable prints.
 - `display::Bool`: Set to `false` to not display the figure. It is still returned.
@@ -63,6 +75,9 @@ Approximates the marginals by kernel density estimation
 over parameter samples drawn by MCMC methods from the Turing.jl package.
 The plots are normalized according to the plotting grid.
 
+It is necessary to adapt the number of samples (defined through the `turing_options` keyword)
+according to the dimensionality of the parameter space.
+
 One should experiment with different kernel length-scales to obtain a good approximation
 of the marginals. The kernel and length-scales are provided via the `kernel` and `lengthscale`
 keyword arguments.
@@ -70,6 +85,8 @@ keyword arguments.
 # Kwargs
 
 - `turing_options::TuringOptions`: Settings for the MCMC sampling.
+        Define the number of samples used to approximate the marginals through this argument.
+        This settings affects the computational cost of the plotting significantly.
 - `kernel::Kernel`: The kernel used in the KDE.
 - `lengthscale::Union{<:Real, <:AbstractVector{<:Real}}`: The lengthscale for the kernel used in the KDE.
         Either provide a single length-scale used for all parameter dimensions as a real number,
