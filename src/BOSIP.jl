@@ -1,5 +1,6 @@
 module BOSIP
 
+### Functions
 export bosip!
 export estimate_parameters!, maximize_acquisition, eval_objective!
 export BosipProblem
@@ -15,11 +16,11 @@ export construct_acquisition
 export sample_approx_posterior, sample_expected_posterior
 export sample_posterior, sample_posterior_pure, resample
 export calculate_metric
-export plot_marginals_int, plot_marginals_kde, PlotSettings
 export find_cutoff, approx_cutoff_area, set_iou
 export get_subset
 export approx_by_gauss_mix, GaussMixOptions
 
+### Types
 export Likelihood, MonteCarloLikelihood, CustomLikelihood
 export IdentityLikelihood
 export ExpLikelihood, SqExpLikelihood
@@ -47,6 +48,13 @@ export DistributionMetric, SampleMetric, PDFMetric
 export MMDMetric, OptMMDMetric
 export TVMetric
 
+### plotting
+export plot_marginals_int, plot_marginals_kde
+export compute_marginals_int, compute_marginals_kde
+export plot_marginals
+export PlotSettings, PlotData
+
+### Dependencies
 using BOSS
 using Distributions
 using LinearAlgebra
@@ -63,6 +71,7 @@ import BOSS.x_dim, BOSS.y_dim
 import BOSS.estimate_parameters!, BOSS.maximize_acquisition, BOSS.eval_objective!
 import BOSS.construct_acquisition
 
+### Code
 include("include.jl")
 
 end
