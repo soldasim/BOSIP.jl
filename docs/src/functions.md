@@ -152,6 +152,21 @@ plot_marginals_int
 plot_marginals_kde
 ```
 
+The visual settings of the marginal plots can be controlled by providing an instance of `PlotSettings` as a keyword argument to either of the aforementioned functions.
+
+```@docs
+PlotSettings
+```
+
+Alternatively, you can precompute the `PlotData` via `compute_marginals_int` or `compute_marginals_kde` and create the marginal plots later via `plot_marginals`.
+
+```@docs
+compute_marginals_int
+compute_marginals_kde
+plot_marginals
+PlotData
+```
+
 # Utils
 
 The function `approx_by_gauss_mix` together with the structure `GaussMixOptions` can be used to obtain a Gaussian mixture approximation the provided probability density function.
