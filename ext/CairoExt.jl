@@ -21,6 +21,8 @@ using ProgressMeter
     upper_triangle::Bool = true
     x_true::Union{Nothing, AbstractVector{<:Real}} = nothing
     title::Union{Nothing, String} = nothing
+    plot_style::Symbol = :heatmap
+    colormap::Symbol = :matter
 end
 
 BOSIP.PlotSettings(args...; kwargs...) = PlotSettings(args...; kwargs...)
@@ -59,7 +61,6 @@ const X_TRUE_SCATTER_KWARGS = (
     markersize = 12,
 )
 const TITLE_KWARGS = (
-    fontsize = 22,
     font = :bold,
 )
 
@@ -355,6 +356,7 @@ function BOSIP.plot_marginals(data::PlotData;
 
     # pair marginals
     if plot_settings.plot_pair_marginals
+        plot_func = getproperty(CairoMakie, Symbol(string(plot_settings.plot_style) * '!'))
         pairs = [(dim_a, dim_b) for dim_a in 1:x_dim for dim_b in dim_a+1:x_dim]
 
         for (dim_a, dim_b) in pairs
@@ -364,7 +366,7 @@ function BOSIP.plot_marginals(data::PlotData;
 
             if plot_settings.full_matrix || !plot_settings.upper_triangle
                 ax = Axis(fig[dim_b, dim_a]; xlabel=labels[dim_a], ylabel=labels[dim_b])
-                contourf!(ax, xs_a, xs_b, ys)
+                plot_func(ax, xs_a, xs_b, ys; plot_settings.colormap)
                 if plot_settings.plot_data
                     @assert !ismissing(X)
                     scatter!(ax, X[dim_a,:], X[dim_b,:];
@@ -378,7 +380,7 @@ function BOSIP.plot_marginals(data::PlotData;
 
             if plot_settings.full_matrix || plot_settings.upper_triangle
                 ax_t = Axis(fig[dim_a, dim_b]; xlabel=labels[dim_b], ylabel=labels[dim_a])
-                contourf!(ax_t, xs_b, xs_a, ys')
+                plot_func(ax_t, xs_b, xs_a, ys'; plot_settings.colormap)
                 if plot_settings.plot_data
                     @assert !ismissing(X)
                     scatter!(ax_t, X[dim_b,:], X[dim_a,:];
