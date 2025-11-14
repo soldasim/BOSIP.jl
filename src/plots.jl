@@ -26,6 +26,8 @@ Aggregates all plot settings for the `plot_marginals_int` and `plot_marginals_kd
 - `x_true::Union{Nothing, AbstractVector{<:Real}}`: The true parameter values
         to be indicated in the plots.
 - `title::Union{Nothing, String}`: A plot title.
+- `plot_style::Symbol`: The style of the 2d plots. Can be `:heatmap`, :contour, or `:contourf`.
+- `colormap::Symbol`: The colormap used for the 2d plots. We recommend trying `:matter`, `:viridis`, or `:plasma`.
 """
 abstract type PlotSettings end
 
