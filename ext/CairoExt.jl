@@ -7,6 +7,7 @@ using Statistics
 using LinearAlgebra
 using Distributions
 using OptimizationPRIMA
+using ProgressMeter
 
 @kwdef struct PlotSettings <: BOSIP.PlotSettings
     grid_size::Int = 200
@@ -93,7 +94,7 @@ function BOSIP.plot_marginals_int(bosip::BosipProblem;
     xs = xs[:, keep]
 
     info && @info "Computing marginals ..."
-    data = _compute_marginals_int(bosip, xs; func, plot_settings, matrix_ops)
+    data = _compute_marginals_int(bosip, xs; func, plot_settings, matrix_ops, info)
 
     if create_plot
         info && @info "Plotting ..."
@@ -122,7 +123,7 @@ function BOSIP.plot_marginals_kde(bosip::BosipProblem;
     
     info && @info "Computing marginals ..."
     (lengthscale isa Real) && (lengthscale = fill(lengthscale, BOSIP.x_dim(bosip)))
-    data = _compute_marginals_kde(bosip, xs, kernel, lengthscale; plot_settings)
+    data = _compute_marginals_kde(bosip, xs, kernel, lengthscale; plot_settings, info)
 
     if create_plot
         info && @info "Plotting ..."
@@ -145,6 +146,7 @@ function _compute_marginals_int(bosip::BosipProblem, grid::AbstractMatrix{<:Real
     func,
     plot_settings,
     matrix_ops,
+    info = true,
 )
     x_dim = BOSIP.x_dim(bosip)
     count = size(grid)[2]
@@ -168,6 +170,7 @@ function _compute_marginals_int(bosip::BosipProblem, grid::AbstractMatrix{<:Real
     if plot_settings.plot_diagonal
         dims = 1:x_dim
 
+        info && (prog = Progress(length(dims) * grid_size; desc="Diagonal marginals: "))
         for dim in dims
             tmp_row_a .= grid[dim,:]
 
@@ -182,6 +185,7 @@ function _compute_marginals_int(bosip::BosipProblem, grid::AbstractMatrix{<:Real
                 else
                     ys[i] = mean(f.(eachcol(grid)))
                 end
+                info && next!(prog)
             end
             normalize_prob_vals!(ys, steps[dim])
 
@@ -196,9 +200,10 @@ function _compute_marginals_int(bosip::BosipProblem, grid::AbstractMatrix{<:Real
     end
 
     # pair marginals
-    pairs = [(dim_a, dim_b) for dim_a in 1:x_dim for dim_b in dim_a+1:x_dim]
-
     if plot_settings.plot_pair_marginals
+        pairs = [(dim_a, dim_b) for dim_a in 1:x_dim for dim_b in dim_a+1:x_dim]
+
+        info && (prog = Progress(length(pairs) * grid_size^2; desc="Pairwise marginals: "))
         for (dim_a, dim_b) in pairs
             tmp_row_a .= grid[dim_a,:]
             tmp_row_b .= grid[dim_b,:]
@@ -217,6 +222,7 @@ function _compute_marginals_int(bosip::BosipProblem, grid::AbstractMatrix{<:Real
                 else
                     ys[i] = mean(f.(eachcol(grid)))
                 end
+                info && next!(prog)
             end
             normalize_prob_vals!(ys, steps[dim_a], steps[dim_b])
 
@@ -240,6 +246,7 @@ end
 
 function _compute_marginals_kde(bosip::BosipProblem, samples::AbstractMatrix{<:Real}, kernel::Kernel, lengthscale::AbstractVector{<:Real};
     plot_settings,
+    info = true,
 )
     x_dim = BOSIP.x_dim(bosip)
     bounds = bosip.problem.domain.bounds
@@ -258,6 +265,7 @@ function _compute_marginals_kde(bosip::BosipProblem, samples::AbstractMatrix{<:R
     if plot_settings.plot_diagonal
         dims = 1:x_dim
 
+        info && (prog = Progress(length(dims) * grid_size; desc="Diagonal marginals: "))
         for dim in dims
             xs = range(bounds[1][dim], bounds[2][dim]; length=grid_size) |> collect
             ys = zeros(length(xs))
@@ -265,6 +273,7 @@ function _compute_marginals_kde(bosip::BosipProblem, samples::AbstractMatrix{<:R
             k = with_lengthscale(kernel, lengthscale[dim])
             for i in eachindex(xs)
                 ys[i] = mean(k.(Ref(xs[i]), samples[dim,:]))
+                info && next!(prog)
             end
             normalize_prob_vals!(ys, steps[dim])
 
@@ -280,6 +289,7 @@ function _compute_marginals_kde(bosip::BosipProblem, samples::AbstractMatrix{<:R
     if plot_settings.plot_pair_marginals
         pairs = [(dim_a, dim_b) for dim_a in 1:x_dim for dim_b in dim_a+1:x_dim]
 
+        info && (prog = Progress(length(pairs) * grid_size^2; desc="Pairwise marginals: "))
         for (dim_a, dim_b) in pairs
             xs_a = range(bounds[1][dim_a], bounds[2][dim_a]; length=grid_size)
             xs_b = range(bounds[1][dim_b], bounds[2][dim_b]; length=grid_size)
@@ -289,6 +299,7 @@ function _compute_marginals_kde(bosip::BosipProblem, samples::AbstractMatrix{<:R
             k = with_lengthscale(kernel, lengthscale[[dim_a,dim_b]])
             for i in eachindex(xs)
                 ys[i] = mean(k.(Ref(xs[i]), eachcol(samples[[dim_a,dim_b],:])))
+                info && next!(prog)
             end
             normalize_prob_vals!(ys, steps[dim_a], steps[dim_b])
 
