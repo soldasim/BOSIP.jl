@@ -10,6 +10,7 @@ to provide closed-form solutions for the integrals in `log_likelihood_mean`, `lo
 
 Each subtype of `MonteCarloLikelihood` *should* implement:
 - `loglike(::MonteCarloLikelihood, δ::AbstractVector{<:Real}, [x::AbstractVector{<:Real}]) -> ::Real`
+- `δ_dim(::MonteCarloLikelihood) -> ::Int`
 - `mc_samples(::MonteCarloLikelihood) -> ::Int`
 
 The rest of the `Likelihood` interface is already implemented via Monte Carlo integration.
@@ -17,6 +18,13 @@ The rest of the `Likelihood` interface is already implemented via Monte Carlo in
 abstract type MonteCarloLikelihood <: Likelihood end
 
 # function loglike end
+
+"""
+    δ_dim(::MonteCarloLikelihood) -> ::Int
+
+Return the dimension of the proxy variable `δ` used in the likelihood.
+"""
+function δ_dim end
 
 """
     mc_samples(::MonteCarloLikelihood) -> ::Int

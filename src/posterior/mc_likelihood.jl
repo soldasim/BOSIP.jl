@@ -1,15 +1,15 @@
 
-function log_likelihood_mean(like::MonteCarloLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
-    E = _sample_E(y_dim(bosip), mc_samples(like))
+function log_likelihood_mean(like::MonteCarloLikelihood, model_post::ModelPosterior)
+    E = _sample_E(δ_dim(like), mc_samples(like))
     return _integrate_over_delta(model_post, (δ, x) -> loglike(like, δ, x), E)
 end
-function log_sq_likelihood_mean(like::MonteCarloLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
-    E = _sample_E(y_dim(bosip), mc_samples(like))
+function log_sq_likelihood_mean(like::MonteCarloLikelihood, model_post::ModelPosterior)
+    E = _sample_E(δ_dim(like), mc_samples(like))
     return _integrate_over_delta(model_post, (δ, x) -> 2 * loglike(like, δ, x), E)
 end
 
-function log_likelihood_variance(like::MonteCarloLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
-    E = _sample_E(y_dim(bosip), mc_samples(like))
+function log_likelihood_variance(like::MonteCarloLikelihood, model_post::ModelPosterior)
+    E = _sample_E(δ_dim(like), mc_samples(like))
     
     function log_like_var(x::AbstractVector{<:Real})
         μ_δ, σ_δ = mean_and_std(model_post, x)

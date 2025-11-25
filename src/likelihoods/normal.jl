@@ -13,11 +13,9 @@ as `z_o \\sim Normal(f(x), Diagonal(std_obs))`. We can use the simulator to quer
         provide `std_obs = nothing`` and the adaptively trained simulation noise deviation will be used
         in place of the experiment noise deviation as well. This may be the case for some toy problems or benchmarks.)
 """
-@kwdef struct NormalLikelihood{
-    S<:Union{Vector{Float64}, Nothing},
-} <: Likelihood
+@kwdef struct NormalLikelihood <: Likelihood
     z_obs::Vector{Float64}
-    std_obs::S
+    std_obs::Vector{Float64}
 end
 
 """
@@ -32,9 +30,9 @@ function loglike(like::NormalLikelihood, Y::AbstractVecOrMat{<:Real})
     return logpdf(MvNormal(like.z_obs, like.std_obs), Y)
 end
 
-function log_likelihood_mean(like::NormalLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
+function log_likelihood_mean(like::NormalLikelihood, model_post::ModelPosterior)
     z_obs = like.z_obs
-    std_obs = _std_obs(like, bosip)
+    std_obs = like.std_obs
 
     function log_like_mean(x::AbstractVector{<:Real})
         μ_y, std_y = mean_and_std(model_post, x)
@@ -55,9 +53,9 @@ function log_likelihood_mean(like::NormalLikelihood, bosip::BosipProblem, model_
     return log_like_mean
 end
 
-function log_sq_likelihood_mean(like::NormalLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
+function log_sq_likelihood_mean(like::NormalLikelihood, model_post::ModelPosterior)
     z_obs = like.z_obs
-    std_obs = _std_obs(like, bosip)
+    std_obs = like.std_obs
 
     function log_sq_like_mean(x::AbstractVector{<:Real})
         μ_y, std_y = mean_and_std(model_post, x)
@@ -81,20 +79,6 @@ function log_sq_likelihood_mean(like::NormalLikelihood, bosip::BosipProblem, mod
     return log_sq_like_mean
 end
 
-function _std_obs(like::NormalLikelihood{Nothing}, bosip::BosipProblem)
-    @assert bosip.problem.params isa UniFittedParams
-    return bosip.problem.params.σ
-end
-function _std_obs(like::NormalLikelihood, bosip)
-    return like.std_obs
-end
-
-function get_subset(like::NormalLikelihood{Nothing}, y_set::AbstractVector{<:Bool})
-    return NormalLikelihood(
-        like.z_obs[y_set],
-        nothing,
-    )
-end
 function get_subset(like::NormalLikelihood, y_set::AbstractVector{<:Bool})
     return NormalLikelihood(
         like.z_obs[y_set],

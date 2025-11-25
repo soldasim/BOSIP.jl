@@ -13,9 +13,9 @@ end
 
 # The default method for `Likelihood`s implementing `sq_likelihood_mean`
 # instead of `likelihood_variance`.
-function log_likelihood_variance(like::Likelihood, bosip::BosipProblem, model_post::ModelPosterior)
-    log_like_mean = log_likelihood_mean(like, bosip, model_post)
-    log_sq_like_mean = log_sq_likelihood_mean(like, bosip, model_post)
+function log_likelihood_variance(like::Likelihood, model_post::ModelPosterior)
+    log_like_mean = log_likelihood_mean(like, model_post)
+    log_sq_like_mean = log_sq_likelihood_mean(like, model_post)
 
     function log_like_var(x::AbstractVector{<:Real})
         # return sq_like_mean(x) - like_mean(x)^2

@@ -50,7 +50,7 @@ function loglike(like::LogNormalSumLikelihood, log_Y::AbstractMatrix{<:Real})
     return map(log_y -> loglike(like, log_y), eachcol(log_Y))
 end
 
-function log_likelihood_mean(like::LogNormalSumLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
+function log_likelihood_mean(like::LogNormalSumLikelihood, model_post::ModelPosterior)
     z_obs = like.z_obs
     σ_log = like.σ_log
 
@@ -68,7 +68,7 @@ function log_likelihood_mean(like::LogNormalSumLikelihood, bosip::BosipProblem, 
     return log_like_mean
 end
 
-function log_sq_likelihood_mean(like::LogNormalSumLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
+function log_sq_likelihood_mean(like::LogNormalSumLikelihood, model_post::ModelPosterior)
     z_obs = like.z_obs
     σ_log = like.σ_log
 
