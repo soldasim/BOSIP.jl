@@ -24,7 +24,6 @@ export approx_by_gauss_mix, GaussMixOptions
 export Likelihood, MonteCarloLikelihood, CustomLikelihood
 export IdentityLikelihood
 export ExpLikelihood, SqExpLikelihood
-export GutmannNormalLikelihood, GutmannGaussianLikelihood
 export NormalLikelihood, GaussianLikelihood
 export LogNormalLikelihood
 export BinomialLikelihood
