@@ -83,7 +83,7 @@ end
 function log_likelihood_mean(::Type{<:UniFittedParams}, bosip::BosipProblem)
     model_post = BOSS.model_posterior(bosip.problem)
     
-    log_like_mean = log_likelihood_mean(bosip.likelihood, bosip, model_post)
+    log_like_mean = log_likelihood_mean(bosip.likelihood, model_post)
     return log_like_mean
 end
 
@@ -127,7 +127,7 @@ end
 function log_likelihood_variance(::Type{<:UniFittedParams}, bosip::BosipProblem)
     model_post = BOSS.model_posterior(bosip.problem)
     
-    log_like_var = log_likelihood_variance(bosip.likelihood, bosip, model_post)
+    log_like_var = log_likelihood_variance(bosip.likelihood, model_post)
     return log_like_var
 end
 

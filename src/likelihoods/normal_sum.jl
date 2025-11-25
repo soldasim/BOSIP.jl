@@ -13,22 +13,17 @@ to obtain the observations `z_o`. The subsets are assumed to be contiguous.
 # Kwargs
 - `sum_lengths::Vector{Int}`: The lengths of each sum group. Assure that `length(sum_lengths) == length(z_obs)`.
 - `z_obs::Vector{Float64}`: The observed values from the real experiment.
-- `std_obs::Union{Vector{Float64}, Nothing}`: The standard deviations of the Gaussian
+- `std_obs::Vector{Float64}`: The standard deviations of the Gaussian
         observation noise on each dimension of the "ground truth" observation.
-        (If the observation is considered to be generated from the simulator and not some "real" experiment,
-        provide `std_obs = nothing`` and the adaptively trained simulation noise deviation will be used
-        in place of the experiment noise deviation as well. This may be the case for some toy problems or benchmarks.)
 """
-@kwdef struct NormalSumLikelihood{
-    S<:Union{Vector{Float64}, Nothing},
-} <: Likelihood
+@kwdef struct NormalSumLikelihood <: Likelihood
     sum_lengths::Vector{Int}
     z_obs::Vector{Float64}
-    std_obs::S
+    std_obs::Vector{Float64}
 
-    function NormalSumLikelihood(sum_lengths::Vector{Int}, z_obs::Vector{Float64}, std_obs::S) where {S}
+    function NormalSumLikelihood(sum_lengths::Vector{Int}, z_obs::Vector{Float64}, std_obs::Vector{Float64})
         @assert length(sum_lengths) == length(z_obs) "sum_lengths and z_obs must have the same length"
-        new{S}(sum_lengths, z_obs, std_obs)
+        new(sum_lengths, z_obs, std_obs)
     end
 end
 
@@ -79,9 +74,9 @@ function loglike(like::NormalSumLikelihood, Y::AbstractMatrix{<:Real})
     return map(y -> logpdf(dist, _indexed_sum(y, like.sum_lengths)), eachcol(Y))
 end
 
-function log_likelihood_mean(like::NormalSumLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
+function log_likelihood_mean(like::NormalSumLikelihood, model_post::ModelPosterior)
     z_obs = like.z_obs
-    std_obs = _std_obs(like, bosip)
+    std_obs = like.std_obs
 
     function log_like_mean(x::AbstractVector{<:Real})
         μ_y, var_y = mean_and_var(model_post, x)
@@ -104,9 +99,9 @@ function log_likelihood_mean(like::NormalSumLikelihood, bosip::BosipProblem, mod
     return log_like_mean
 end
 
-function log_sq_likelihood_mean(like::NormalSumLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
+function log_sq_likelihood_mean(like::NormalSumLikelihood, model_post::ModelPosterior)
     z_obs = like.z_obs
-    std_obs = _std_obs(like, bosip)
+    std_obs = like.std_obs
 
     function log_sq_like_mean(x::AbstractVector{<:Real})
         μ_y, var_y = mean_and_var(model_post, x)
@@ -132,20 +127,6 @@ function log_sq_likelihood_mean(like::NormalSumLikelihood, bosip::BosipProblem, 
     return log_sq_like_mean
 end
 
-function _std_obs(like::NormalSumLikelihood{Nothing}, bosip::BosipProblem)
-    @assert bosip.problem.params isa UniFittedParams
-    return bosip.problem.params.σ
-end
-function _std_obs(like::NormalSumLikelihood, bosip)
-    return like.std_obs
-end
-
-function get_subset(like::NormalSumLikelihood{Nothing}, y_set::AbstractVector{<:Bool})
-    return NormalSumLikelihood(
-        like.z_obs[y_set],
-        nothing,
-    )
-end
 function get_subset(like::NormalSumLikelihood, y_set::AbstractVector{<:Bool})
     return NormalSumLikelihood(
         like.z_obs[y_set],

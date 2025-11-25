@@ -54,7 +54,7 @@ function loglike(like::LogNormalLikelihood, log_Y::AbstractMatrix{<:Real})
 end
 
 # Almost identical to `likelihood_mean(::GaussianLikelihood)`, just swapped `MvNormal` for `MvLogNormal`
-function log_likelihood_mean(like::LogNormalLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
+function log_likelihood_mean(like::LogNormalLikelihood, model_post::ModelPosterior)
     z_obs = like.z_obs
     σ_log = like.σ_log
 
@@ -71,7 +71,7 @@ function log_likelihood_mean(like::LogNormalLikelihood, bosip::BosipProblem, mod
 end
 
 # Almost identical to `sq_likelihood_mean(::GaussianLikelihood)`, just swapped `MvNormal` for `MvLogNormal`
-function log_sq_likelihood_mean(like::LogNormalLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
+function log_sq_likelihood_mean(like::LogNormalLikelihood, model_post::ModelPosterior)
     z_obs = like.z_obs
     σ_log = like.σ_log
 

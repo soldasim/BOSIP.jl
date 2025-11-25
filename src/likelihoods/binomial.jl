@@ -39,7 +39,7 @@ function loglike(like::BinomialLikelihood, Y::AbstractMatrix{<:Real})
     return loglike.(Ref(like), eachcol(Y))
 end
 
-function log_likelihood_mean(like::BinomialLikelihood, bosip::BosipProblem, model_post::ModelPosterior;
+function log_likelihood_mean(like::BinomialLikelihood, model_post::ModelPosterior;
     ϵs = nothing,    
 )
     z_obs = like.z_obs
@@ -69,7 +69,7 @@ end
 
 # The `log_likelihood_variance` method for `BinomialLikelihood` is implemented.
 # However, `log_sq_likelihood_mean` is still called if the `ϵs` kwarg is used.
-function log_sq_likelihood_mean(like::BinomialLikelihood, bosip::BosipProblem, model_post::ModelPosterior;
+function log_sq_likelihood_mean(like::BinomialLikelihood, model_post::ModelPosterior;
     ϵs = nothing,    
 )
     z_obs = like.z_obs
@@ -98,11 +98,11 @@ function log_sq_likelihood_mean(like::BinomialLikelihood, bosip::BosipProblem, m
 end
 
 # share the noise samples `ϵs`
-function log_likelihood_variance(like::BinomialLikelihood, bosip::BosipProblem, model_post::ModelPosterior)
+function log_likelihood_variance(like::BinomialLikelihood, model_post::ModelPosterior)
     ϵs = rand(Uniform(0, 1), like.int_grid_size)
 
-    log_like_mean = log_likelihood_mean(like, bosip, model_post; ϵs)
-    log_sq_like_mean = log_sq_likelihood_mean(like, bosip, model_post; ϵs)
+    log_like_mean = log_likelihood_mean(like, model_post; ϵs)
+    log_sq_like_mean = log_sq_likelihood_mean(like, model_post; ϵs)
 
     function log_like_var(x::AbstractVector{<:Real})
         # return sq_like_mean(x) - like_mean(x)^2

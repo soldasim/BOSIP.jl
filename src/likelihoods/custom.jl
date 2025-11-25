@@ -14,16 +14,22 @@ is used, which is based on the input parameters.
         for a given model output `δ` and input parameters `x`.
         Here, `δ` is the proxy variable modeled by the surrogate model
         and `x` are the input parameters (which will usually not be used for the calculation).
+- `δ_dim::Int`: The dimension of the proxy variable `δ` used in the likelihood.
 - `mc_samples::Int = 1000`: Number of Monte Carlo samples to use when computing the expected log-likelihood
         and its variance.
 """
 @kwdef struct CustomLikelihood <: MonteCarloLikelihood
     log_ψ::Function
+    δ_dim::Int
     mc_samples::Int
 end
 
 function loglike(like::CustomLikelihood, δ::AbstractVector{<:Real}, x::AbstractVector{<:Real})
     return like.log_ψ(δ, x)
+end
+
+function δ_dim(like::CustomLikelihood)
+    return like.δ_dim
 end
 
 function mc_samples(like::CustomLikelihood)
