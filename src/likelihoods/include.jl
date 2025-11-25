@@ -1,3 +1,4 @@
+include("combined.jl")
 include("custom.jl")
 include("exp.jl")
 include("sqexp.jl")
