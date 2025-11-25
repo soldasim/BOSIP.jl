@@ -28,6 +28,12 @@ Alternatively, one can simply instantiate the `CustomLikelihood` and provide the
 CustomLikelihood
 ```
 
+To combine multiple `Likelihood`s into one, use the `CombinedLikelihood`.
+
+```@docs
+CombinedLikelihood
+```
+
 A list of some predefined likelihoods follows;
 
 The `NormalLikelihood` assumes that the observation `z_o` has been drawn from a Gaussian distribution with a known diagonal covariance matrix with the `std_obs` values on the diagonal. The simulator is used to learn the mean function.

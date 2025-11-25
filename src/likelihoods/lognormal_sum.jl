@@ -150,12 +150,6 @@ function _indexed_logsumexp!(log_z::AbstractVector{<:Real}, log_y::AbstractVecto
     return log_z
 end
 
-function logsumexp(x::AbstractVector{<:Real})
-    x_max = maximum(x)
-    isinf(x_max) && return x_max
-    return x_max + log(sum(exp.(x .- x_max)))
-end
-
 function get_subset(like::LogNormalSumLikelihood, y_set::AbstractVector{<:Bool})
     return LogNormalSumLikelihood(
         like.sum_lengths[y_set],

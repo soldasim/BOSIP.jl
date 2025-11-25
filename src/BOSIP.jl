@@ -21,7 +21,8 @@ export get_subset
 export approx_by_gauss_mix, GaussMixOptions
 
 ### Types
-export Likelihood, MonteCarloLikelihood, CustomLikelihood
+export Likelihood, MonteCarloLikelihood
+export CombinedLikelihood, CustomLikelihood
 export IdentityLikelihood
 export ExpLikelihood, SqExpLikelihood
 export NormalLikelihood, GaussianLikelihood
@@ -65,6 +66,7 @@ using ProgressMeter
 using DifferentiationInterface
 using ForwardDiff
 using LazyArrays
+using Combinatorics
 
 import BOSS.x_dim, BOSS.y_dim
 import BOSS.estimate_parameters!, BOSS.maximize_acquisition, BOSS.eval_objective!

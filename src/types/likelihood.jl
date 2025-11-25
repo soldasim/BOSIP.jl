@@ -2,7 +2,9 @@
 """
 Represents the assumed likelihood of the experiment observation ``z_o``.
 
-See also the [`MonteCarloLikelihood`](@ref) for a simplified interface for likelihoods.
+See [`MonteCarloLikelihood`](@ref) for a simplified interface for likelihoods.
+
+See also [`CombinedLikelihood`](@ref), which facilitates combining multiple likelihoods.
 
 ## Defining a Custom Likelihood
 
