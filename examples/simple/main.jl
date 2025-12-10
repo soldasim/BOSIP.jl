@@ -150,5 +150,5 @@ function main(problem;
     # lines!(ax, 1:length(metric_cb.score_history), metric_cb.score_history, color = :blue)
     # display(fig)
 
-    return problem, metric_cb.score_history # TODO rem
+    return problem
 end

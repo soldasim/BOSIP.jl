@@ -58,39 +58,38 @@ function plot_state_2d(bosip, new_datum;
         @assert false
     end
 
-    # ax = Axis(f[2,1];
-    #     title = "abs. val. of GP mean",
-    # )
-    # plot_func_2d!(ax, (x,y) -> abs(mean(gp_post, [x,y])[1]), bosip, new_datum; plt)
-    # plot_data_2d!(ax, bosip, new_datum; plt)
-    # # axislegend(ax; position = :rt)
-
+    ax = Axis(f[2,1];
+        title = "GP mean",
+    )
+    plot_func_2d!(ax, (x,y) -> mean(gp_post, [x,y])[1], bosip, new_datum; plt)
+    plot_data_2d!(ax, bosip, new_datum; plt)
+    # axislegend(ax; position = :rt)
     # ax = Axis(f[2,1];
     #     title = "acquisition",
     # )
     # plot_func_2d!(ax, (x,y) -> acq([x,y]), bosip, new_datum; plt, step=plt.step*10)
     # hasfield(typeof(acq), :xs) && scatter!(ax, acq.xs[1,:], acq.xs[2,:])
     # plot_data_2d!(ax, bosip, new_datum; plt)
-    # axislegend(ax; position = :rt)
-    ax = Axis(f[2,1];
-        title = "median log-likelihood",
-    )
-    plot_func_2d!(ax, (x,y) -> loglike([x,y]), bosip, new_datum; plt, grid=plt.acq_grid)
-    plot_data_2d!(ax, bosip, new_datum; plt)
-    # axislegend(ax; position = :rt)
-
-    # ax = Axis(f[2,2];
-    #     title = "posterior variance",
+    # # axislegend(ax; position = :rt)
+    # ax = Axis(f[2,1];
+    #     title = "median log-likelihood",
     # )
-    # plot_func_2d!(ax, (x,y) -> post_var([x,y]), bosip, new_datum; plt, grid=plt.acq_grid)
+    # plot_func_2d!(ax, (x,y) -> loglike([x,y]), bosip, new_datum; plt, grid=plt.acq_grid)
     # plot_data_2d!(ax, bosip, new_datum; plt)
     # # axislegend(ax; position = :rt)
+
     ax = Axis(f[2,2];
-        title = "median likelihood",
+        title = "posterior variance",
     )
-    plot_func_2d!(ax, (x,y) -> like([x,y]), bosip, new_datum; plt, grid=plt.acq_grid)
+    plot_func_2d!(ax, (x,y) -> post_var([x,y]), bosip, new_datum; plt, grid=plt.acq_grid)
     plot_data_2d!(ax, bosip, new_datum; plt)
     # axislegend(ax; position = :rt)
+    # ax = Axis(f[2,2];
+    #     title = "median likelihood",
+    # )
+    # plot_func_2d!(ax, (x,y) -> like([x,y]), bosip, new_datum; plt, grid=plt.acq_grid)
+    # plot_data_2d!(ax, bosip, new_datum; plt)
+    # # axislegend(ax; position = :rt)
 
     return f
 end

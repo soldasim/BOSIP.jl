@@ -77,8 +77,8 @@ end
 # - - - HYPERPARAMETERS - - - - -
 
 # TODO loglike
-get_acquisition() = MaxVar()
-# get_acquisition() = LogMaxVar()
+# get_acquisition() = MaxVar()
+get_acquisition() = LogMaxVar()
 # get_acquisition() = IMMD(;
 #     y_samples = 20,    # 2 * 10^(y_dim)
 #     x_samples = 200,   # 2 * 10^(x_dim)
