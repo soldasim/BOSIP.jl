@@ -40,12 +40,12 @@ function log_likelihood_mean(like::NormalDiffLikelihood, model_post::ModelPoster
     function log_like_mean(X::AbstractMatrix{<:Real})
         μs_δ, stds_δ = mean_and_std(model_post, X)
         
-        # return logpdf.(MvNormal.(eachrow(μs_δ), eachrow(stds_δ)), Ref(z_obs))
-        std_obs_mat = repeat(std_obs', size(stds_δ, 1))
+        # return logpdf.(MvNormal.(eachcol(μs_δ), eachcol(stds_δ)), Ref(z_obs))
+        std_obs_mat = repeat(std_obs, 1, size(stds_δ, 2))
         std_mat = sqrt.(std_obs_mat.^2 .+ stds_δ.^2)
-        y_mat = repeat(zero_diff', size(μs_δ, 1))
+        y_mat = repeat(zero_diff, 1, size(μs_δ, 2))
         lls = ((μ, std, y) -> logpdf(Normal(μ, std), y)).(μs_δ, std_mat, y_mat)
-        return sum(lls; dims=2)
+        return sum.(eachcol(lls))
     end
     return log_like_mean
 end
@@ -67,13 +67,13 @@ function log_sq_likelihood_mean(like::NormalDiffLikelihood, model_post::ModelPos
     function log_sq_like_mean(X::AbstractMatrix{<:Real})
         μs_δ, stds_δ = mean_and_std(model_post, X)
 
-        std_obs_mat = repeat(std_obs', size(stds_δ, 1))
+        std_obs_mat = repeat(std_obs, 1, size(stds_δ, 2))
         std_mat = sqrt.((std_obs_mat.^2 .+ (2 .* stds_δ.^2)) ./ 2)
-        y_mat = repeat(zero_diff', size(μs_δ, 1))
+        y_mat = repeat(zero_diff, 1, size(μs_δ, 2))
         lls = ((μ, std, y) -> logpdf(Normal(μ, std), y)).(μs_δ, std_mat, y_mat)
         # log_C = log( 1 / prod(2 * sqrt(π) .* std_obs) )
         log_C = (-1) * sum(log.(2 * sqrt(π) .* std_obs))
-        return log_C .+ sum(lls; dims=2)
+        return log_C .+ sum.(eachcol(lls))
     end
     return log_sq_like_mean
 end

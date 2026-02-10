@@ -46,21 +46,18 @@ function _mean_and_var_sum(μ_y::AbstractVector{<:Real}, var_y::AbstractVector{<
     return μ_z, var_z
 end
 function _mean_and_var_sum(μs_y::AbstractMatrix{<:Real}, vars_y::AbstractMatrix{<:Real}, sum_lengths::Vector{Int})
-    # μs_z = mapslices(μ_y -> _indexed_sum(μ_y, like.sum_lengths), μs_y; dims=1) # by row
-    # vars_z = mapslices(var_y -> _indexed_sum(var_y, like.sum_lengths), vars_y; dims=1) # by row
+    # μs_z = mapslices(μ_y -> _indexed_sum(μ_y, like.sum_lengths), μs_y; dims=2) # by col
+    # vars_z = mapslices(var_y -> _indexed_sum(var_y, like.sum_lengths), vars_y; dims=2) # by col
     
-    # indexed by col
-    μs_z = similar(μs_y, length(sum_lengths), size(μs_y, 1))
-    vars_z = similar(vars_y, length(sum_lengths), size(vars_y, 1))
+    μs_z = similar(μs_y, length(sum_lengths), size(μs_y, 2))
+    vars_z = similar(vars_y, length(sum_lengths), size(vars_y, 2))
     
-    # Threads.@threads for i in 1:size(μs_y, 1)
-    Threads.@threads for i in 1:size(μs_y, 1)
-        _indexed_sum!((@view μs_z[:, i]), (@view μs_y[i, :]), sum_lengths)
-        _indexed_sum!((@view vars_z[:, i]), (@view vars_y[i, :]), sum_lengths)
+    Threads.@threads for i in 1:size(μs_y, 2)
+        _indexed_sum!((@view μs_z[:, i]), (@view μs_y[:, i]), sum_lengths)
+        _indexed_sum!((@view vars_z[:, i]), (@view vars_y[:, i]), sum_lengths)
     end
 
-    # indexed by row
-    return μs_z', vars_z'
+    return μs_z, vars_z
 end
 
 function loglike(like::NormalSumLikelihood, y::AbstractVector{<:Real})
@@ -81,7 +78,7 @@ function log_likelihood_mean(like::NormalSumLikelihood, model_post::ModelPosteri
     function log_like_mean(x::AbstractVector{<:Real})
         μ_y, var_y = mean_and_var(model_post, x)
         μ_sum, var_sum = _mean_and_var_sum(μ_y, var_y, like.sum_lengths)
-        
+
         std = sqrt.(std_obs.^2 .+ var_sum)
         return logpdf(MvNormal(μ_sum, std), z_obs)
     end
@@ -89,12 +86,12 @@ function log_likelihood_mean(like::NormalSumLikelihood, model_post::ModelPosteri
         μs_y, vars_y = mean_and_var(model_post, X)
         μs_sum, vars_sum = _mean_and_var_sum(μs_y, vars_y, like.sum_lengths)
 
-        # return logpdf.(MvNormal.(eachrow(μs_z), eachrow(vars_z)), Ref(z_obs))
-        std_obs_mat = repeat(std_obs', size(vars_sum, 1))
+        # return logpdf.(MvNormal.(eachcol(μs_z), eachcol(vars_z)), Ref(z_obs))
+        std_obs_mat = repeat(std_obs, 1, size(vars_sum, 2))
         std_mat = sqrt.(std_obs_mat.^2 .+ vars_sum)
-        y_mat = repeat(z_obs', size(μs_sum, 1))
+        y_mat = repeat(z_obs, 1, size(μs_sum, 2))
         lls = ((μ, std, y) -> logpdf(Normal(μ, std), y)).(μs_sum, std_mat, y_mat)
-        return sum(lls; dims=2)
+        return sum.(eachcol(lls))
     end
     return log_like_mean
 end
@@ -116,13 +113,13 @@ function log_sq_likelihood_mean(like::NormalSumLikelihood, model_post::ModelPost
         μs_y, vars_y = mean_and_var(model_post, X)
         μs_sum, vars_sum = _mean_and_var_sum(μs_y, vars_y, like.sum_lengths)
         
-        std_obs_mat = repeat(std_obs', size(vars_sum, 1))
+        std_obs_mat = repeat(std_obs, 1, size(vars_sum, 2))
         std_mat = sqrt.((std_obs_mat.^2 .+ (2 .* vars_sum)) ./ 2)
-        y_mat = repeat(z_obs', size(μs_sum, 1))
+        y_mat = repeat(z_obs, 1, size(μs_sum, 2))
         lls = ((μ, std, y) -> logpdf(Normal(μ, std), y)).(μs_sum, std_mat, y_mat)
         # log_C = log( 1 / prod(2 * sqrt(π) .* std_obs) )
         log_C = (-1) * sum(log.(2 * sqrt(π) .* std_obs))
-        return log_C .+ sum(lls; dims=2)
+        return log_C .+ sum.(eachcol(lls))
     end
     return log_sq_like_mean
 end
