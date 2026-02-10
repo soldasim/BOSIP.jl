@@ -33,7 +33,7 @@ function plot_state_2d(bosip, new_datum;
     ax = Axis(f[1,1];
         title = "true posterior",
     )
-    plot_func_2d!(ax, (x,y) -> exp(ToyProblem.true_logpost([x,y])), bosip, new_datum; plt)
+    plot_func_2d!(ax, (xs) -> exp.(ToyProblem.true_logpost(xs)), bosip, new_datum; plt)
     isfalse(sample_reference) || plot_posterior_samples!(ax, ToyProblem.true_logpost, plt.sampler, sample_reference, bosip)
     plot_data_2d!(ax, bosip, new_datum; plt)
     # axislegend(ax; position = :rt)
@@ -42,7 +42,7 @@ function plot_state_2d(bosip, new_datum;
         ax = Axis(f[1,2];
             title = "posterior mean",
         )
-        plot_func_2d!(ax, (x,y) -> post_mean([x,y]), bosip, new_datum; plt)
+        plot_func_2d!(ax, post_mean, bosip, new_datum; plt)
         isfalse(sample_posterior) || plot_posterior_samples!(ax, log_post_mean, plt.sampler, sample_posterior, bosip)
         plot_data_2d!(ax, bosip, new_datum; plt)
         # axislegend(ax; position = :rt)
@@ -50,7 +50,7 @@ function plot_state_2d(bosip, new_datum;
         ax = Axis(f[1,2];
             title = "median posterior",
         )
-        plot_func_2d!(ax, (x,y) -> approx_post([x,y]), bosip, new_datum; plt)
+        plot_func_2d!(ax, approx_post, bosip, new_datum; plt)
         isfalse(sample_posterior) || plot_posterior_samples!(ax, log_approx_post, plt.sampler, sample_posterior, bosip)
         plot_data_2d!(ax, bosip, new_datum; plt)
         # axislegend(ax; position = :rt)
@@ -61,7 +61,7 @@ function plot_state_2d(bosip, new_datum;
     ax = Axis(f[2,1];
         title = "GP mean",
     )
-    plot_func_2d!(ax, (x,y) -> mean(gp_post, [x,y])[1], bosip, new_datum; plt)
+    plot_func_2d!(ax, (xs) -> mean(gp_post, xs), bosip, new_datum; plt)
     plot_data_2d!(ax, bosip, new_datum; plt)
     # axislegend(ax; position = :rt)
     # ax = Axis(f[2,1];
@@ -81,7 +81,7 @@ function plot_state_2d(bosip, new_datum;
     ax = Axis(f[2,2];
         title = "posterior variance",
     )
-    plot_func_2d!(ax, (x,y) -> post_var([x,y]), bosip, new_datum; plt, grid=plt.acq_grid)
+    plot_func_2d!(ax, post_var, bosip, new_datum; plt, grid=plt.acq_grid)
     plot_data_2d!(ax, bosip, new_datum; plt)
     # axislegend(ax; position = :rt)
     # ax = Axis(f[2,2];
@@ -97,11 +97,9 @@ end
 function plot_func_2d!(ax, func, bosip, new_datum; plt, step=plt.step, label=nothing, grid=nothing, normalize=false, log_scale=false, kwargs...)
     xs, ys = isnothing(grid) ? get_xs_2d(bosip; step) : (grid, grid)
     
-    if plt.parallel
-        vals = calculate_values(t -> func(t...), Iterators.product(xs, ys))
-    else
-        vals = map(t -> func(t...), Iterators.product(xs, ys))
-    end
+    # batched computation
+    vals = func(hcat([[t...] for t in Iterators.product(xs, ys)]...))
+    vals = reshape(vals, (length(xs), length(ys)))
 
     if log_scale
         M = minimum(vals)

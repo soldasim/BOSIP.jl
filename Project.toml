@@ -28,7 +28,7 @@ CairoExt = "CairoMakie"
 TuringExt = "Turing"
 
 [compat]
-BOSS = "0.5"
+BOSS = "0.6"
 CairoMakie = "0.12.18, 0.13, 0.14, 0.15"
 Combinatorics = "1.0.3"
 DifferentiationInterface = "0.7.3"
