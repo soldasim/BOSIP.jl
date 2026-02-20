@@ -30,7 +30,7 @@ function loglike(like::CombinedLikelihood, δ::AbstractVector{<:Real}, x::Abstra
     return mapreduce((l, rng) -> loglike(l, δ[rng], x), +, like.likelihoods, like.δ_ranges)
 end
 
-function log_likelihood_mean(like::CombinedLikelihood, model_post::SurrogateModel)
+function log_likelihood_mean(like::CombinedLikelihood, model_post::ModelPosterior)
     @error "`CombinedLikelihood` only supports sliceable `SurrogateModel`s for now."
     throw(MethodError(log_likelihood_mean, (like, model_post)))
 end
@@ -47,7 +47,7 @@ function log_likelihood_mean(like::CombinedLikelihood, model_post::BOSS.DefaultM
     return log_like_mean
 end
 
-function log_likelihood_variance(like::CombinedLikelihood, model_post::SurrogateModel)
+function log_likelihood_variance(like::CombinedLikelihood, model_post::ModelPosterior)
     @error "`CombinedLikelihood` only supports sliceable `SurrogateModel`s for now."
     throw(MethodError(log_likelihood_variance, (like, model_post)))
 end

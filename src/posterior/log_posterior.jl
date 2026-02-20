@@ -21,6 +21,7 @@ end
 
 """
     log_approx_likelihood(::BosipProblem)
+    log_approx_likelihood(::Likelihood, ::ModelPosterior)
 
 Return *the log of* the approximate likelihood ``\\hat{p}(z_o|x)`` as a function of `x`.
 
@@ -38,7 +39,7 @@ end
 function log_approx_likelihood(::Type{<:UniFittedParams}, bosip::BosipProblem)
     model_post = BOSS.model_posterior(bosip.problem)
     
-    log_like = log_approx_likelihood(bosip.likelihood, bosip, model_post)
+    log_like = log_approx_likelihood(bosip.likelihood, model_post)
     return log_like
 end
 function log_approx_likelihood(P::Type{<:MultiFittedParams}, bosip::BosipProblem)
@@ -69,6 +70,7 @@ end
 
 """
     log_likelihood_mean(::BosipProblem)
+    log_likelihood_mean(::Likelihood, ::ModelPosterior)
 
 Return *the log of* the expectation of the likelihood approximation ``\\mathbb{E}[\\hat{p}(z_o|x)]`` as a function of ``x``.
 

@@ -174,7 +174,7 @@ function approx_likelihood(::Type{<:MultiFittedParams}, bosip::BosipProblem)
     model_posts = BOSS.model_posterior(bosip.problem)
     sample_count = length(model_posts)
     
-    likes = approx_likelihood.(Ref(bosip.likelihood), Ref(bosip), model_posts)
+    likes = approx_likelihood.(Ref(bosip.likelihood), model_posts)
     
     function exp_like(x)
         return mapreduce(l -> l(x), .+, likes) ./ sample_count
@@ -211,7 +211,7 @@ function likelihood_mean(::Type{<:MultiFittedParams}, bosip::BosipProblem)
     model_posts = BOSS.model_posterior(bosip.problem)
     sample_count = length(model_posts)
     
-    like_means = likelihood_mean.(Ref(bosip.likelihood), Ref(bosip), model_posts)
+    like_means = likelihood_mean.(Ref(bosip.likelihood), model_posts)
     
     function exp_like_mean(x)
         return mapreduce(l -> l(x), .+, like_means) ./ sample_count
@@ -247,7 +247,7 @@ function likelihood_variance(::Type{<:MultiFittedParams}, bosip::BosipProblem)
     model_posts = BOSS.model_posterior(bosip.problem)
     sample_count = length(model_posts)
 
-    like_vars = likelihood_variance.(Ref(bosip.likelihood), Ref(bosip), model_posts)
+    like_vars = likelihood_variance.(Ref(bosip.likelihood), model_posts)
 
     function exp_like_var(x)
         return mapreduce(l -> l(x), .+, like_vars) ./ sample_count
