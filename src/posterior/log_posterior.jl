@@ -35,11 +35,15 @@ function log_approx_likelihood(bosip::BosipProblem)
     return log_approx_likelihood(typeof(bosip.problem.params), bosip)
 end
 
-# the method for `MultiFittedParams` is implemented in `src/posterior/posterior.jl`
 function log_approx_likelihood(::Type{<:UniFittedParams}, bosip::BosipProblem)
     model_post = BOSS.model_posterior(bosip.problem)
     
     log_like = log_approx_likelihood(bosip.likelihood, bosip, model_post)
+    return log_like
+end
+function log_approx_likelihood(P::Type{<:MultiFittedParams}, bosip::BosipProblem)
+    like = approx_likelihood(P, bosip) # --> src/posterior/posterior.jl
+    log_like(x) = log.(like(x))
     return log_like
 end
 
@@ -79,11 +83,15 @@ function log_likelihood_mean(bosip::BosipProblem)
     return log_likelihood_mean(typeof(bosip.problem.params), bosip)
 end
 
-# the method for `MultiFittedParams` is implemented in `src/posterior/posterior.jl`
 function log_likelihood_mean(::Type{<:UniFittedParams}, bosip::BosipProblem)
     model_post = BOSS.model_posterior(bosip.problem)
     
     log_like_mean = log_likelihood_mean(bosip.likelihood, model_post)
+    return log_like_mean
+end
+function log_likelihood_mean(P::Type{<:MultiFittedParams}, bosip::BosipProblem)
+    like_mean = likelihood_mean(P, bosip) # --> src/posterior/posterior.jl
+    log_like_mean(x) = log.(like_mean(x))
     return log_like_mean
 end
 
@@ -123,11 +131,15 @@ function log_likelihood_variance(bosip::BosipProblem)
     return log_likelihood_variance(typeof(bosip.problem.params), bosip)
 end
 
-# the method for `MultiFittedParams` is implemented in `src/posterior/posterior.jl`
 function log_likelihood_variance(::Type{<:UniFittedParams}, bosip::BosipProblem)
     model_post = BOSS.model_posterior(bosip.problem)
     
     log_like_var = log_likelihood_variance(bosip.likelihood, model_post)
+    return log_like_var
+end
+function log_likelihood_variance(P::Type{<:MultiFittedParams}, bosip::BosipProblem)
+    like_var = likelihood_variance(P, bosip) # --> src/posterior/posterior.jl
+    log_like_var(x) = log.(like_var(x))
     return log_like_var
 end
 
