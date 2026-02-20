@@ -1,5 +1,5 @@
 
-function log_approx_likelihood(like::Likelihood, bosip::BosipProblem, model_post::ModelPosterior)
+function log_approx_likelihood(like::Likelihood, model_post::ModelPosterior)
     function log_approx_like(x::AbstractVector{<:Real})
         μy = mean(model_post, x)
         return loglike(like, μy, x)
