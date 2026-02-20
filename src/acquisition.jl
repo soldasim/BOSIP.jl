@@ -23,7 +23,7 @@ function (acq::BosipAcquisition)(::Type{<:MultiFittedParams}, bosip::BosipProble
     # change pointers to data
     for i in 1:sample_count
         bosips[i].problem = problems[i]
-        problems[i].params = params[i]
+        problems[i].params = SampledParams(params[i])
     end
 
     # average posterior variance over the samples
