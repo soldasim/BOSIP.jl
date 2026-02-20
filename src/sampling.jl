@@ -18,7 +18,7 @@ function sample_approx_posterior(bosip::BosipProblem, sampler::DistributionSampl
     options::BosipOptions = BosipOptions(),
 )
     loglike = log_approx_likelihood(bosip)
-    return sample_posterior(sampler, loglike, bosip.x_prior, count; options)
+    return sample_posterior(sampler, loglike, bosip.x_prior, bosip.problem.domain, count; options)
 end
 
 """
@@ -40,7 +40,7 @@ function sample_expected_posterior(bosip::BosipProblem, sampler::DistributionSam
     options::BosipOptions = BosipOptions(),
 )
     loglike = log_likelihood_mean(bosip)
-    return sample_posterior(sampler, loglike, bosip.x_prior, count; options)
+    return sample_posterior(sampler, loglike, bosip.x_prior, bosip.problem.domain, count; options)
 end
 
 """
