@@ -62,7 +62,7 @@ with mean in the mode and variance according to the second derivation of the tru
 function approx_by_gauss_mix(logpost, domain::Domain, opt::GaussMixOptions)
     μs = opt_for_modes(logpost, domain, opt)
 
-    gausses = laplace_approx.(Ref(logpost), μs, Ref(domain.bounds))
+    gausses = laplace_approx.(Ref(logpost), μs, Ref(domain.bounds); opt.autodiff)
     gausses = [filter(!isnothing, gausses)...] # init new vector to correct the eltype
     
     # discard gausses which are too wide
@@ -164,8 +164,8 @@ end
 
 euclidean(a, b) = sqrt(sum((b .- a) .^ 2))
 
-function laplace_approx(logpost, μ, bounds; ϵ=0.)
-    second_derivative = hessian(logpost, AutoForwardDiff(), μ)
+function laplace_approx(logpost, μ, bounds; autodiff=AutoForwardDiff(), ϵ=0.)
+    second_derivative = hessian(logpost, autodiff, μ)
 
     if any(isnan.(second_derivative)) || any(isinf.(second_derivative))
         @warn "Laplace approx.: Failed due to numerical issues in Hessian."

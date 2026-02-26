@@ -9,7 +9,7 @@ include("distribution_fitters/optimization.jl")
 include("amis_method.jl")
 
 """
-    AMIS(; kwargs...)
+    AMISSampler(; kwargs...)
 
 Adaptive Metropolis Importance Sampling (AMIS) sampler for posterior distributions.
 
@@ -24,8 +24,8 @@ re-fitted in each iteration.
 - `iters::Int`: Number of iterations of the AMIS algorithm.
 - `proposal_fitter::DistributionFitter`: The algorithm used to re-fit the proposal distribution
         in each iteration. Defaults to the `AnalyticalFitter`.
-- `gauss_mix_options::Union{Nothing, GaussMixOptions}`: Options for the Gaussian mixture approximation
-        used for the 0th iteration. Defaults to `nothing`, which means the Laplace approximation is used instead.
+- `gauss_mix_options::GaussMixOptions`: Options for the Gaussian mixture approximation
+        used for the 0th iteration.
 """
 @kwdef struct AMISSampler <: WeightedSampler
     iters::Int
