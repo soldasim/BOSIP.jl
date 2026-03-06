@@ -8,10 +8,12 @@ export x_dim, y_dim
 
 export approx_posterior, posterior_mean, posterior_variance
 export approx_likelihood, likelihood_mean, likelihood_variance
+export approx_marginal_likelihood, marginal_likelihood_mean
 export log_approx_posterior, log_posterior_mean, log_posterior_variance
 export log_approx_likelihood, log_likelihood_mean, log_likelihood_variance
+export log_approx_marginal_likelihood, log_marginal_likelihood_mean
 export evidence
-export loglike, like
+export like, loglike, loglike_marginal
 export construct_acquisition
 export sample_approx_posterior, sample_expected_posterior
 export sample_posterior, sample_posterior_pure, resample
@@ -23,7 +25,6 @@ export approx_by_gauss_mix, GaussMixOptions
 ### Types
 export Likelihood, MonteCarloLikelihood
 export CombinedLikelihood, CustomLikelihood
-export IdentityLikelihood
 export ExpLikelihood, SqExpLikelihood
 export NormalLikelihood, GaussianLikelihood
 export LogNormalLikelihood
@@ -67,6 +68,7 @@ using DifferentiationInterface
 using ForwardDiff
 using LazyArrays
 using Combinatorics
+using OptimizationPRIMA # only used in CairoExt
 
 import BOSS.x_dim, BOSS.y_dim
 import BOSS.estimate_parameters!, BOSS.maximize_acquisition, BOSS.eval_objective!

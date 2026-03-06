@@ -19,35 +19,29 @@ This likelihood is just for showcasing how discarding the sign can decrease perf
     std_obs::Vector{Float64}
 end
 
-function loglike(like::NormalDiffLikelihood, Δ::AbstractVecOrMat{<:Real})
-    # return logpdf(MvNormal(y, like.std_obs), like.z_obs)
-    # return logpdf(MvNormal(like.z_obs, like.std_obs), Y)
-    return logpdf(MvNormal(zero(like.std_obs), like.std_obs), Δ)
+function loglike_marginal(like::NormalDiffLikelihood, δ::AbstractVector{<:Real})
+    return logpdf.(Normal.(zero(like.std_obs), like.std_obs), δ)
 end
 
 # (!) This is only an approximation. We ignore that the non-negative discrepancy δ is modeled by real-valued GP
 #     in order to maintain the analytical solution. The difference should be negligible as long as `std_obs` is small.
-function log_likelihood_mean(like::NormalDiffLikelihood, model_post::ModelPosterior)
+function log_marginal_likelihood_mean(like::NormalDiffLikelihood, model_post::ModelPosterior)
     zero_diff = zero(like.std_obs)
     std_obs = like.std_obs
 
-    function log_like_mean(x::AbstractVector{<:Real})
+    function log_ml_mean(x::AbstractVector{<:Real})
         μ_δ, std_δ = mean_and_std(model_post, x)
-        
         std = sqrt.(std_obs.^2 .+ std_δ.^2)
-        return logpdf(MvNormal(μ_δ, std), zero_diff)
+        return logpdf.(Normal.(μ_δ, std), zero_diff)
     end
-    function log_like_mean(X::AbstractMatrix{<:Real})
+    function log_ml_mean(X::AbstractMatrix{<:Real})
         μs_δ, stds_δ = mean_and_std(model_post, X)
-        
-        # return logpdf.(MvNormal.(eachcol(μs_δ), eachcol(stds_δ)), Ref(z_obs))
         std_obs_mat = repeat(std_obs, 1, size(stds_δ, 2))
         std_mat = sqrt.(std_obs_mat.^2 .+ stds_δ.^2)
         y_mat = repeat(zero_diff, 1, size(μs_δ, 2))
-        lls = ((μ, std, y) -> logpdf(Normal(μ, std), y)).(μs_δ, std_mat, y_mat)
-        return sum.(eachcol(lls))
+        return ((μ, std, y) -> logpdf(Normal(μ, std), y)).(μs_δ, std_mat, y_mat)
     end
-    return log_like_mean
+    return log_ml_mean
 end
 
 # (!) This is only an approximation. We ignore that the non-negative discrepancy δ is modeled by real-valued GP

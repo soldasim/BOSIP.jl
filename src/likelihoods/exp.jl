@@ -13,7 +13,7 @@ function loglike(::ExpLikelihood, y::AbstractVector{<:Real})
 end
 function loglike(::ExpLikelihood, Y::AbstractMatrix{<:Real})
     @assert size(Y, 1) == 1
-    return Y[:,1]
+    return vec(Y[1,:])
 end
 
 function log_likelihood_mean(::ExpLikelihood, model_post::ModelPosterior)

@@ -60,40 +60,30 @@ function _mean_and_var_sum(μs_y::AbstractMatrix{<:Real}, vars_y::AbstractMatrix
     return μs_z, vars_z
 end
 
-function loglike(like::NormalSumLikelihood, y::AbstractVector{<:Real})
-    # return logpdf(MvNormal(z, like.std_obs), like.z_obs)
+function loglike_marginal(like::NormalSumLikelihood, y::AbstractVector{<:Real})
     z = _indexed_sum(y, like.sum_lengths)
-    return logpdf(MvNormal(z, like.std_obs), like.z_obs)
-end
-function loglike(like::NormalSumLikelihood, Y::AbstractMatrix{<:Real})
-    # return logpdf(MvNormal(z, like.std_obs), like.z_obs)
-    dist = MvNormal(like.z_obs, like.std_obs)
-    return map(y -> logpdf(dist, _indexed_sum(y, like.sum_lengths)), eachcol(Y))
+    return logpdf.(Normal.(z, like.std_obs), like.z_obs)
 end
 
-function log_likelihood_mean(like::NormalSumLikelihood, model_post::ModelPosterior)
+function log_marginal_likelihood_mean(like::NormalSumLikelihood, model_post::ModelPosterior)
     z_obs = like.z_obs
     std_obs = like.std_obs
 
-    function log_like_mean(x::AbstractVector{<:Real})
+    function log_ml_mean(x::AbstractVector{<:Real})
         μ_y, var_y = mean_and_var(model_post, x)
         μ_sum, var_sum = _mean_and_var_sum(μ_y, var_y, like.sum_lengths)
-
         std = sqrt.(std_obs.^2 .+ var_sum)
-        return logpdf(MvNormal(μ_sum, std), z_obs)
+        return logpdf.(Normal.(μ_sum, std), z_obs)
     end
-    function log_like_mean(X::AbstractMatrix{<:Real})
+    function log_ml_mean(X::AbstractMatrix{<:Real})
         μs_y, vars_y = mean_and_var(model_post, X)
         μs_sum, vars_sum = _mean_and_var_sum(μs_y, vars_y, like.sum_lengths)
-
-        # return logpdf.(MvNormal.(eachcol(μs_z), eachcol(vars_z)), Ref(z_obs))
         std_obs_mat = repeat(std_obs, 1, size(vars_sum, 2))
         std_mat = sqrt.(std_obs_mat.^2 .+ vars_sum)
         y_mat = repeat(z_obs, 1, size(μs_sum, 2))
-        lls = ((μ, std, y) -> logpdf(Normal(μ, std), y)).(μs_sum, std_mat, y_mat)
-        return sum.(eachcol(lls))
+        return ((μ, std, y) -> logpdf(Normal(μ, std), y)).(μs_sum, std_mat, y_mat)
     end
-    return log_like_mean
+    return log_ml_mean
 end
 
 function log_sq_likelihood_mean(like::NormalSumLikelihood, model_post::ModelPosterior)

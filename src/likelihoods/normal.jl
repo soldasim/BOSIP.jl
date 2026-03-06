@@ -25,22 +25,21 @@ Alias for [`NormalLikelihood`](@ref).
 """
 const GaussianLikelihood = NormalLikelihood
 
-function loglike(like::NormalLikelihood, Y::AbstractVecOrMat{<:Real})
-    # return logpdf(MvNormal(y, like.std_obs), like.z_obs)
-    return logpdf(MvNormal(like.z_obs, like.std_obs), Y)
+function loglike_marginal(like::NormalLikelihood, y::AbstractVector{<:Real})
+    return logpdf.(Normal.(y, like.std_obs), like.z_obs)
 end
 
-function log_likelihood_mean(like::NormalLikelihood, model_post::ModelPosterior)
+function log_marginal_likelihood_mean(like::NormalLikelihood, model_post::ModelPosterior)
     z_obs = like.z_obs
     std_obs = like.std_obs
 
-    function log_like_mean(x::AbstractVector{<:Real})
+    function log_ml_mean(x::AbstractVector{<:Real})
         μ_y, std_y = mean_and_std(model_post, x)
-        
+
         std = sqrt.(std_obs.^2 .+ std_y.^2)
-        return logpdf(MvNormal(μ_y, std), z_obs)
+        return logpdf.(Normal.(μ_y, std), z_obs)
     end
-    function log_like_mean(X::AbstractMatrix{<:Real})
+    function log_ml_mean(X::AbstractMatrix{<:Real})
         μs_y, stds_y = mean_and_std(model_post, X)
         
         # return logpdf.(MvNormal.(eachrow(μs_y), eachrow(stds_y)), Ref(z_obs))
@@ -48,9 +47,9 @@ function log_likelihood_mean(like::NormalLikelihood, model_post::ModelPosterior)
         std_mat = sqrt.(std_obs_mat.^2 .+ stds_y.^2)
         y_mat = repeat(z_obs, 1, size(μs_y, 2))
         lls = ((μ, std, y) -> logpdf(Normal(μ, std), y)).(μs_y, std_mat, y_mat)
-        return sum.(eachcol(lls))
+        return lls
     end
-    return log_like_mean
+    return log_ml_mean
 end
 
 function log_sq_likelihood_mean(like::NormalLikelihood, model_post::ModelPosterior)
@@ -85,3 +84,35 @@ function get_subset(like::NormalLikelihood, y_set::AbstractVector{<:Bool})
         like.std_obs[y_set],
     )
 end
+
+# ### Non-marginal likelihood versions:
+# ### These are unnecessary, as they are already defined by the marginal likelihood versions.
+# ### Commented-out to simplify the code as the performance benefits should be minimal.
+
+# function loglike(like::NormalLikelihood, Y::AbstractVecOrMat{<:Real})
+#     # return logpdf(MvNormal(y, like.std_obs), like.z_obs)
+#     return logpdf(MvNormal(like.z_obs, like.std_obs), Y)
+# end
+
+# function log_likelihood_mean(like::NormalLikelihood, model_post::ModelPosterior)
+#     z_obs = like.z_obs
+#     std_obs = like.std_obs
+
+#     function log_like_mean(x::AbstractVector{<:Real})
+#         μ_y, std_y = mean_and_std(model_post, x)
+        
+#         std = sqrt.(std_obs.^2 .+ std_y.^2)
+#         return logpdf(MvNormal(μ_y, std), z_obs)
+#     end
+#     function log_like_mean(X::AbstractMatrix{<:Real})
+#         μs_y, stds_y = mean_and_std(model_post, X)
+        
+#         # return logpdf.(MvNormal.(eachrow(μs_y), eachrow(stds_y)), Ref(z_obs))
+#         std_obs_mat = repeat(std_obs, 1, size(stds_y, 2))
+#         std_mat = sqrt.(std_obs_mat.^2 .+ stds_y.^2)
+#         y_mat = repeat(z_obs, 1, size(μs_y, 2))
+#         lls = ((μ, std, y) -> logpdf(Normal(μ, std), y)).(μs_y, std_mat, y_mat)
+#         return sum.(eachcol(lls))
+#     end
+#     return log_like_mean
+# end

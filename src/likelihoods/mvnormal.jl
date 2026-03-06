@@ -14,8 +14,11 @@ as `z_obs \\sim Normal(f(x), Σ_obs)`. We can use the simulator to query `y = f(
     Σ_obs::Matrix{Float64}
 end
 
-function loglike(like::MvNormalLikelihood, Y::AbstractVecOrMat{<:Real})
+function loglike(like::MvNormalLikelihood, y::AbstractVector{<:Real})
     # return logpdf(MvNormal(y, like.Σ_obs), like.z_obs)
+    return logpdf(MvNormal(like.z_obs, like.Σ_obs), y)
+end
+function loglike(like::MvNormalLikelihood, Y::AbstractMatrix{<:Real})
     return logpdf(MvNormal(like.z_obs, like.Σ_obs), Y)
 end
 

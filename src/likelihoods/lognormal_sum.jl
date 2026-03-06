@@ -40,32 +40,27 @@ end
 # _μ_log_z(log_y::Real, σ_log::Real) = log_y - (σ_log^2) / 2
 # _σ_log_z(CV::Real) = sqrt(log(1 + CV^2))
 
-function loglike(like::LogNormalSumLikelihood, log_ys::AbstractVector{<:Real})
+function loglike_marginal(like::LogNormalSumLikelihood, log_ys::AbstractVector{<:Real})
     log_y = _indexed_logsumexp(log_ys, like.sum_lengths)
-    
     μ_log = _μ_log_z.(log_y, like.σ_log)
-    return logpdf(MvLogNormal(μ_log, like.σ_log), like.z_obs)
-end
-function loglike(like::LogNormalSumLikelihood, log_Y::AbstractMatrix{<:Real})
-    return map(log_y -> loglike(like, log_y), eachcol(log_Y))
+    return logpdf.(LogNormal.(μ_log, like.σ_log), like.z_obs)
 end
 
-function log_likelihood_mean(like::LogNormalSumLikelihood, model_post::ModelPosterior)
+function log_marginal_likelihood_mean(like::LogNormalSumLikelihood, model_post::ModelPosterior)
     z_obs = like.z_obs
     σ_log = like.σ_log
 
-    function log_like_mean(x::AbstractVector{<:Real})
+    function log_ml_mean(x::AbstractVector{<:Real})
         μ_log_ys, var_log_ys = mean_and_var(model_post, x)
         μ_log_y, var_log_y = _approx_mean_and_var_logsum(μ_log_ys, var_log_ys, like.sum_lengths)
-                
         μ_log = _μ_log_z.(μ_log_y, σ_log)
         std = sqrt.(σ_log.^2 .+ var_log_y)
-        return logpdf(MvLogNormal(μ_log, std), z_obs)
+        return logpdf.(LogNormal.(μ_log, std), z_obs)
     end
-    function log_like_mean(X::AbstractMatrix{<:Real})
-        return log_like_mean.(eachcol(X))
+    function log_ml_mean(X::AbstractMatrix{<:Real})
+        return hcat(log_ml_mean.(eachcol(X))...)
     end
-    return log_like_mean
+    return log_ml_mean
 end
 
 function log_sq_likelihood_mean(like::LogNormalSumLikelihood, model_post::ModelPosterior)
