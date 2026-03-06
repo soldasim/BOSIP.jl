@@ -8,16 +8,16 @@ to provide closed-form solutions for the integrals in `log_likelihood_mean`, `lo
 
 ## Defining a Custom Monte Carlo Likelihood
 
-Each subtype of `MonteCarloLikelihood` *should* implement:
-- `loglike(::MonteCarloLikelihood, δ::AbstractVector{<:Real}, [x::AbstractVector{<:Real}]) -> ::Real`
+Each subtype of `MonteCarloLikelihood` must implement:
+- `loglike_marginal(::MonteCarloLikelihood, δ::AbstractVector{<:Real}, [x::AbstractVector{<:Real}]) -> ::AbstractVector{<:Real}`
 - `δ_dim(::MonteCarloLikelihood) -> ::Int`
 - `mc_samples(::MonteCarloLikelihood) -> ::Int`
+
+_(Optionally, only implement `loglike` instead of `loglike_marginal`. The marginal-likelihood functions will not work then.)_
 
 The rest of the `Likelihood` interface is already implemented via Monte Carlo integration.
 """
 abstract type MonteCarloLikelihood <: Likelihood end
-
-# function loglike end
 
 """
     δ_dim(::MonteCarloLikelihood) -> ::Int

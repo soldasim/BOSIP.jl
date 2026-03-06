@@ -1,3 +1,4 @@
+# Non-log versions of functions from "log_posterior.jl" + normalization.
 
 """
     approx_posterior(::BosipProblem; kwargs...)
@@ -169,18 +170,6 @@ function approx_likelihood(args...)
     return like
 end
 
-# the method for `UniFittedParams` is implemented in `src/posterior/log_posterior.jl`
-function approx_likelihood(::Type{<:MultiFittedParams}, bosip::BosipProblem)
-    model_posts = BOSS.model_posterior(bosip.problem)
-    sample_count = length(model_posts)
-    
-    likes = approx_likelihood.(Ref(bosip.likelihood), model_posts)
-    
-    function exp_like(x)
-        return mapreduce(l -> l(x), .+, likes) ./ sample_count
-    end
-end
-
 """
     likelihood_mean(::BosipProblem)
 
@@ -204,18 +193,6 @@ function likelihood_mean(args...)
     log_like_mean = log_likelihood_mean(args...)
     like_mean(x) = exp.(log_like_mean(x))
     return like_mean
-end
-
-# the method for `UniFittedParams` is implemented in `src/posterior/log_posterior.jl`
-function likelihood_mean(::Type{<:MultiFittedParams}, bosip::BosipProblem)
-    model_posts = BOSS.model_posterior(bosip.problem)
-    sample_count = length(model_posts)
-    
-    like_means = likelihood_mean.(Ref(bosip.likelihood), model_posts)
-    
-    function exp_like_mean(x)
-        return mapreduce(l -> l(x), .+, like_means) ./ sample_count
-    end
 end
 
 """
@@ -242,14 +219,60 @@ function likelihood_variance(args...)
     return like_var
 end
 
-# the method for `UniFittedParams` is implemented in `src/posterior/log_posterior.jl`
-function likelihood_variance(::Type{<:MultiFittedParams}, bosip::BosipProblem)
-    model_posts = BOSS.model_posterior(bosip.problem)
-    sample_count = length(model_posts)
+"""
+    approx_marginal_likelihood(bosip::BosipProblem) -> ::Function
 
-    like_vars = likelihood_variance.(Ref(bosip.likelihood), model_posts)
+Return the MAP estimation of the per-dimension likelihoods ``\\hat{p}(z_o^{(i)}|x)`` as a function of ``x``.
+The product of the returned values recovers [`approx_likelihood`](@ref).
 
-    function exp_like_var(x)
-        return mapreduce(l -> l(x), .+, like_vars) ./ sample_count
-    end
+See [`approx_likelihood`](@ref) for details on the approximation approach and the difference
+between using `approx_marginal_likelihood` vs. `marginal_likelihood_mean`.
+
+# See Also
+
+[`marginal_likelihood_mean`](@ref),
+[`approx_likelihood`](@ref),
+[`log_approx_marginal_likelihood`](@ref)
+"""
+function approx_marginal_likelihood(bosip::BosipProblem)
+    log_approx_ml = log_approx_marginal_likelihood(bosip)
+    return x -> exp.(log_approx_ml(x))
+end
+
+function approx_marginal_likelihood(like::Likelihood, model_post::ModelPosterior)
+    log_ml = log_approx_marginal_likelihood(like, model_post)
+    return x -> exp.(log_ml(x))
+end
+function approx_marginal_likelihood(P::Type{<:MultiFittedParams}, bosip::BosipProblem)
+    log_ml = log_approx_marginal_likelihood(P, bosip)
+    return x -> exp.(log_ml(x))
+end
+
+"""
+    marginal_likelihood_mean(bosip::BosipProblem) -> ::Function
+
+Return the expectation of the per-dimension likelihoods ``\\mathbb{E}[\\hat{p}(z_o^{(i)}|x)]`` as a function of ``x``.
+The product of the returned values recovers [`likelihood_mean`](@ref).
+
+See [`likelihood_mean`](@ref) for details on the approximation approach and the difference
+between using `approx_marginal_likelihood` vs. `marginal_likelihood_mean`.
+
+# See Also
+
+[`approx_marginal_likelihood`](@ref),
+[`likelihood_mean`](@ref),
+[`log_marginal_likelihood_mean`](@ref)
+"""
+function marginal_likelihood_mean(bosip::BosipProblem)
+    log_ml_mean = log_marginal_likelihood_mean(bosip)
+    return x -> exp.(log_ml_mean(x))
+end
+
+function marginal_likelihood_mean(like::Likelihood, model_post::ModelPosterior)
+    log_ml_mean = log_marginal_likelihood_mean(like, model_post)
+    return x -> exp.(log_ml_mean(x))
+end
+function marginal_likelihood_mean(P::Type{<:MultiFittedParams}, bosip::BosipProblem)
+    log_ml_mean = log_marginal_likelihood_mean(P, bosip)
+    return x -> exp.(log_ml_mean(x))
 end

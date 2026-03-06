@@ -3,6 +3,10 @@ function log_likelihood_mean(like::MonteCarloLikelihood, model_post::ModelPoster
     E = _sample_E(δ_dim(like), mc_samples(like))
     return _integrate_over_delta(model_post, (δ, x) -> loglike(like, δ, x), E)
 end
+function log_marginal_likelihood_mean(like::MonteCarloLikelihood, model_post::ModelPosterior)
+    E = _sample_E(δ_dim(like), mc_samples(like))
+    return _integrate_over_delta_marginal(model_post, (δ, x) -> loglike_marginal(like, δ, x), E)
+end
 function log_sq_likelihood_mean(like::MonteCarloLikelihood, model_post::ModelPosterior)
     E = _sample_E(δ_dim(like), mc_samples(like))
     return _integrate_over_delta(model_post, (δ, x) -> 2 * loglike(like, δ, x), E)
@@ -41,14 +45,30 @@ function _integrate_over_delta(
 )
     function log_int(x::AbstractVector{<:Real})
         μ_δ, σ_δ = mean_and_std(model_post, x)
-        
-        # Monte Carlo integration
         δ_samples = μ_δ .+ σ_δ .* E
         log_samples = log_func.(eachcol(δ_samples), Ref(x))
         return log(mean(exp.(log_samples)))
     end
     function log_int(X::AbstractMatrix{<:Real})
         return log_int.(eachcol(X))
+    end
+    return log_int
+end
+
+function _integrate_over_delta_marginal(
+    model_post::ModelPosterior,
+    log_func::Function,
+    E::AbstractMatrix{<:Real}
+)
+    function log_int(x::AbstractVector{<:Real})
+        μ_δ, σ_δ = mean_and_std(model_post, x)
+        δ_samples = μ_δ .+ σ_δ .* E
+        # each log_func call returns a vector (one per obs dim); stack into (obs_dim × n_samples)
+        log_samples = hcat(log_func.(eachcol(δ_samples), Ref(x))...)
+        return vec(log.(mean(exp.(log_samples), dims=2)))
+    end
+    function log_int(X::AbstractMatrix{<:Real})
+        return hcat(log_int.(eachcol(X))...)
     end
     return log_int
 end

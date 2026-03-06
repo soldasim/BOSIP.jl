@@ -26,6 +26,27 @@ function CombinedLikelihood(likelihoods, δ_ranges)
     return CombinedLikelihood(likelihoods, δ_ranges)
 end
 
+function loglike_marginal(like::CombinedLikelihood, δ::AbstractVector{<:Real}, x::AbstractVector{<:Real})
+    return vcat([loglike_marginal(l, δ[rng], x) for (l, rng) in zip(like.likelihoods, like.δ_ranges)]...)
+end
+
+function log_marginal_likelihood_mean(like::CombinedLikelihood, model_post::ModelPosterior)
+    @error "`CombinedLikelihood` only supports sliceable `SurrogateModel`s for now."
+    throw(MethodError(log_marginal_likelihood_mean, (like, model_post)))
+end
+function log_marginal_likelihood_mean(like::CombinedLikelihood, model_post::BOSS.DefaultModelPosterior)
+    model_posts = [BOSS.DefaultModelPosterior(model_post.slices[rng]) for rng in like.δ_ranges]
+    ml_means = log_marginal_likelihood_mean.(like.likelihoods, model_posts)
+
+    function log_ml_mean(x::AbstractVector{<:Real})
+        return vcat([f(x) for f in ml_means]...)
+    end
+    function log_ml_mean(X::AbstractMatrix{<:Real})
+        return vcat([f(X) for f in ml_means]...)
+    end
+    return log_ml_mean
+end
+
 function loglike(like::CombinedLikelihood, δ::AbstractVector{<:Real}, x::AbstractVector{<:Real})
     return mapreduce((l, rng) -> loglike(l, δ[rng], x), +, like.likelihoods, like.δ_ranges)
 end

@@ -25,22 +25,13 @@ The simulator should only return values between 0 and 1. The GP estimates are cl
     end
 end
 
-function loglike(like::BinomialLikelihood, y::AbstractVector{<:Real})
-    # if any(z .< 0.) || any(z .> 1.)
-    #     @warn "Called `loglike(::BinomialLikelihood, z)`, where `z = $z` is outside of range `[0, 1]`."
-    #     z .= clamp.(z, 0., 1.)
-    # end
-    y .= clamp.(y, 0., 1.)
-
-    # return sum(logpdf.(Binomial.(like.trials, z), like.z_obs))
-    return mapreduce((t, p, y) -> logpdf(Binomial(t, p), y), +, like.trials, y, like.z_obs)
-end
-function loglike(like::BinomialLikelihood, Y::AbstractMatrix{<:Real})
-    return loglike.(Ref(like), eachcol(Y))
+function loglike_marginal(like::BinomialLikelihood, y::AbstractVector{<:Real})
+    y_ = clamp.(y, 0., 1.)
+    return logpdf.(Binomial.(like.trials, y_), like.z_obs)
 end
 
-function log_likelihood_mean(like::BinomialLikelihood, model_post::ModelPosterior;
-    ϵs = nothing,    
+function log_marginal_likelihood_mean(like::BinomialLikelihood, model_post::ModelPosterior;
+    ϵs = nothing,
 )
     z_obs = like.z_obs
     trials = like.trials
@@ -49,26 +40,21 @@ function log_likelihood_mean(like::BinomialLikelihood, model_post::ModelPosterio
         ϵs = rand(Uniform(0, 1), like.int_grid_size)
     end
 
-    # TODO refactor
-    function log_like_mean(x::AbstractVector{<:Real})
+    function log_ml_mean(x::AbstractVector{<:Real})
         ps_dists = truncated.(Normal.(mean_and_std(model_post, x)...); lower=0., upper=1.)
-        
-        ll = 0.
-        for i in eachindex(z_obs)
+        return map(eachindex(z_obs)) do i
             zs = quantile.(Ref(ps_dists[i]), ϵs)
             vals = pdf.(Binomial.(Ref(trials[i]), zs), Ref(z_obs[i]))
-            ll += log(mean(vals))
+            log(mean(vals))
         end
-        return ll
     end
-    function log_like_mean(X::AbstractMatrix{<:Real})
-        return log_like_mean.(eachcol(X))
+    function log_ml_mean(X::AbstractMatrix{<:Real})
+        return hcat(log_ml_mean.(eachcol(X))...)
     end
-    return log_like_mean
+    return log_ml_mean
 end
 
-# The `log_likelihood_variance` method for `BinomialLikelihood` is implemented.
-# However, `log_sq_likelihood_mean` is still called if the `ϵs` kwarg is used.
+# `log_likelihood_variance` shares `ϵs` with `log_sq_likelihood_mean` for noise cancellation.
 function log_sq_likelihood_mean(like::BinomialLikelihood, model_post::ModelPosterior;
     ϵs = nothing,    
 )
@@ -101,12 +87,14 @@ end
 function log_likelihood_variance(like::BinomialLikelihood, model_post::ModelPosterior)
     ϵs = rand(Uniform(0, 1), like.int_grid_size)
 
-    log_like_mean = log_likelihood_mean(like, model_post; ϵs)
+    log_ml_mean = log_marginal_likelihood_mean(like, model_post; ϵs)
     log_sq_like_mean = log_sq_likelihood_mean(like, model_post; ϵs)
 
     function log_like_var(x::AbstractVector{<:Real})
         # return sq_like_mean(x) - like_mean(x)^2
-        return log( exp(log_sq_like_mean(x)) - exp(2 * log_like_mean(x)) )
+        log_lm = sum(log_ml_mean(x))
+        log_sqlm = log_sq_like_mean(x)
+        return log( exp(log_sqlm) - exp(2 * log_lm) )
     end
     function log_like_var(X::AbstractMatrix{<:Real})
         return log_like_var.(eachcol(X))
