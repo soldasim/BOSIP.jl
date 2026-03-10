@@ -24,7 +24,7 @@ end
 function LogpdfMaximizer(;
     algorithm,
     multistart,
-    parallel = true,
+    parallel = false,
     static_schedule = false,
     kwargs...
 )
