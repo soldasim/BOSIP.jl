@@ -162,13 +162,13 @@ We need to define the algorithms used to estimate the model (hyper)parameters an
 ```julia
 model_fitter = OptimizationMAP(;
     algorithm = NEWUOA(),
-    parallel = true,
+    parallel = false,
     multistart = 200,
     rhoend = 1e-2,
 )
 acq_maximizer = OptimizationAM(;
     algorithm = BOBYQA(),
-    parallel = true,
+    parallel = false,
     multistart = 200,
     rhoend = 1e-2,
 )

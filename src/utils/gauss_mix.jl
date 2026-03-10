@@ -39,7 +39,7 @@ end
 GaussMixOptions(;
     algorithm,
     multistart = 200,
-    parallel = true,
+    parallel = false,
     static_schedule = false,
     autodiff = AutoForwardDiff(),
     cluster_ϵs = nothing,
