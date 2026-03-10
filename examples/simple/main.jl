@@ -1,154 +1,98 @@
 using BOSIP
 using BOSS
+using BOSS.KernelFunctions
+using CairoMakie
 using Distributions
 using OptimizationPRIMA
-using Turing
-using KernelFunctions
-using JLD2
-
-# TODO rem
-using CairoMakie
-using Optimization
-using OptimizationOptimJL
 
 using Random
 Random.seed!(555)
 
-# TODO rem
-log_posterior_estimate() = log_posterior_mean
-# log_posterior_estimate() = log_approx_posterior
-
 include("toy_problem.jl")
-include("makie/makie.jl")
+include("plot_callback.jl")
 
-function main(;
-    init_data = 3,
-    kwargs...
+println("="^60)
+println("BOSIP.jl - Simple Example")
+println("="^60)
+
+# Sample some random initial data
+n_init = 3
+X = rand(x_prior, n_init)
+Y = hcat(f.(eachcol(X))...)
+data = ExperimentData(X, Y)
+
+println("\nInitial data points: $n_init")
+println("Observation: z_obs = $(z_obs)")
+println("True parameter satisfies: x[1] * x[2] = $(z_obs[1])")
+
+# Initialize the BosipProblem
+bosip = BosipProblem(data;
+    f,
+    domain = Domain(; bounds),
+    acquisition = LogMaxVar(),
+    model = GaussianProcess(;
+        kernel = Matern52Kernel(),
+        lengthscale_priors,
+        amplitude_priors,
+        # we have no simulation noise here:
+        noise_std_priors = fill(Dirac(0.), y_dim),
+    ),
+    likelihood,
+    x_prior,
 )
-    problem = ToyProblem.bosip_problem(init_data)
-    return main(problem; kwargs...)
-end
 
-function main(problem;
-    plots = true,
-    metric = false,
-    parallel = true,
+# Setup optimization algorithms
+parallel = false
+model_fitter = OptimizationMAP(;
+    algorithm = NEWUOA(),
+    multistart = 24,
+    parallel,
+    rhoend = 1e-4,
 )
-    bounds = ToyProblem.get_bounds()
+acq_maximizer = OptimizationAM(;
+    algorithm = BOBYQA(),
+    multistart = 24,
+    parallel,
+    rhoend = 1e-4,
+)
 
-    ### algorithms
-    model_fitter = OptimizationMAP(;
-        algorithm = NEWUOA(),
-        multistart = 24,
-        parallel,
-        rhoend = 1e-4,
-    )
-    acq_maximizer = OptimizationAM(;
-        algorithm = BOBYQA(),
-        multistart = 24,
-        parallel,
-        rhoend = 1e-4,
-    )
-    term_cond = IterLimit(50)
+# Set termination condition
+# (e.g., max 20 evaluations including initial data)
+term_cond = DataLimit(20)
 
-    ### sampler
-    # sampler = RejectionSampler(;
-    #     logpdf_maximizer = LogpdfMaximizer(;
-    #         algorithm = BOBYQA(),
-    #         multistart = 24,
-    #         parallel,
-    #         static_schedule = true, # issues with PRIMA.jl
-    #         rhoend = 1e-4,
-    #     ),
-    # )
-    sampler = AMISSampler(;
-        iters = 10,
-        proposal_fitter = BOSIP.AnalyticalFitter(), # re-fit the proposal analytically
-        # proposal_fitter = OptimizationFitter(;      # re-fit the proposal by MAP optimization
-        #     algorithm = NEWUOA(),
-        #     multistart = 6,
-        #     parallel,
-        #     rhoend = 1e-2,
-        # ),
-        # gauss_mix_options = nothing,                # use Laplace approximation for the 0th iteration
-        gauss_mix_options = GaussMixOptions(;       # use Gaussian mixture for the 0th iteration
-            algorithm = BOBYQA(),
-            multistart = 24,
-            parallel,
-            cluster_ϵs = nothing,
-            rel_min_weight = 1e-8,
-            rhoend = 1e-4,
-        ),
-    )
-    # sampler = TuringSampler(;
-    #     sampler = NUTS(1000, 0.65),
-    #     warmup = 400,
-    #     chain_count = 6,
-    #     leap_size = 5,
-    #     parallel,
-    # )
+# Setup options with plotting callback
+plot_callback = SimplePlotCallback(; 
+    plot_dir = "./examples/simple/plots",
+    plot_name = "bosip_state",
+    step = 0.1,
+    display = true,
+    save_plots = true,
+)
+options = BosipOptions(; callback = plot_callback)
 
-    ### metrics
-    λ_count = 10
-    ds = (bounds[2] .- bounds[1])
-    λ_ranges = [range(0., d; length=λ_count+1)[2:end] for d in ds]
-    ls = Iterators.product(λ_ranges...)
-    ks = map(l -> with_lengthscale(GaussianKernel(), [l...]), ls)
-    
-    metric_cb = MetricCallback(;
-        reference = ToyProblem.true_logpost,
-        logpost_estimator = log_posterior_estimate(),
-        sampler,
-        sample_count = 200,
-        # TODO
-        # metric = MMDMetric(;
-        #     kernel = with_lengthscale(GaussianKernel(), (bounds[2] .- bounds[1]) ./ 3),
-        #     # kernel = KernelSum(vec(ks)),
-        # ),
-        metric = OptMMDMetric(;
-            kernel = GaussianKernel(),
-            bounds,
-            algorithm = BOBYQA(),
-        ),
-    )
+println("\n" * "="^60)
+println("Running BOSIP...")
+println("="^60)
 
-    ### plotting
-    plt = MakiePlots.PlotCallback(;
-        title = "",
-        plot_each = 10,
-        display = true,
-        save_plots = true,
-        plot_dir = "./examples/simple/plots/_new_",
-        plot_name = "p",
-        step = 0.05,
-        sampler,
-    )
-    options = BosipOptions(;
-        callback = BOSIP.CombinedCallback(
-            metric ? metric_cb : BOSIP.NoCallback(),
-            plots ? plt : BOSIP.NoCallback(),
-        ),
-    )
+# Run BOSIP
+bosip!(bosip; model_fitter, acq_maximizer, term_cond, options)
 
-    # RUN
-    MakiePlots.init_plotting(plt)
-    bosip!(problem; model_fitter, acq_maximizer, term_cond, options)
+println("\n" * "="^60)
+println("BOSIP Complete!")
+println("="^60)
+println("\nTotal evaluations: $(size(bosip.problem.data.X, 2))")
+println("\nComputing posterior marginals with plot_marginals_int...")
+marg_fig = BOSIP.plot_marginals_int(
+    bosip;
+    func = BOSIP.posterior_mean,
+    lhc_grid_size = 200,
+    matrix_ops = false,
+    display = true,
+)
+save("./examples/simple/plots/marginals.png", marg_fig)
+println("Saved marginals plot to ./examples/simple/plots/marginals.png")
+println("\nTo analyze the posterior, you can use:")
+println("  post = BOSIP.posterior_mean(bosip)")
+println("  post(x)")
 
-    # final plot
-    # plots && MakiePlots.plot_state(problem, nothing; plt, iter=term_cond.iter_max)
-
-    # marginals
-    # plot_marginals_int(problem; func=posterior_mean, lhc_grid_size=200, matrix_ops=false) # TODO
-
-    ### save
-    pname = "test"
-    @save "./examples/data/results_0/$pname.jld2" score=metric_cb.score_history problem=problem
-    
-    # # TODO rem
-    # fig = Figure(resolution = (600, 400))
-    # ax = Axis(fig[1, 1], xlabel = "Iteration", ylabel = "Score", title = "Metric Score History")
-    # lines!(ax, 1:length(metric_cb.score_history), metric_cb.score_history, color = :blue)
-    # display(fig)
-
-    return problem
-end
+nothing
