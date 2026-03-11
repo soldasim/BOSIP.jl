@@ -22,13 +22,14 @@ function plot_state(p::BosipProblem; n_points::Int = 500, separate_figures::Bool
 	obs_lower = obs_mean - 2 * obs_std
 	obs_upper = obs_mean + 2 * obs_std
 
-	ys_true = [f_true([x])[1] for x in xs]
+	_f_y(x) = let r = f_true(x); r isa Tuple ? r[1] : r end
+	ys_true = [_f_y([x])[1] for x in xs]
 	ys_surrogate = [mean(gp_post, [x])[1] for x in xs]
 	ys_surrogate_std = [std(gp_post, [x])[1] for x in xs]
 	ys_surrogate_lower = ys_surrogate .- (2 .* ys_surrogate_std)
 	ys_surrogate_upper = ys_surrogate .+ (2 .* ys_surrogate_std)
 
-	logpost_true = [Distributions.logpdf(p.x_prior, [x]) + loglike(p.likelihood, f_true([x])) for x in xs]
+	logpost_true = [Distributions.logpdf(p.x_prior, [x]) + loglike(p.likelihood, _f_y([x])) for x in xs]
 	post_true = exp.(logpost_true)
 	post_approx = [approx_post([x])[1] for x in xs]
 	post_approx_std = [sqrt(max(post_var([x])[1], 0.0)) for x in xs]

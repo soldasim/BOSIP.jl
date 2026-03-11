@@ -5,6 +5,7 @@ authors = ["Šimon Soldát"]
 
 [deps]
 BOSS = "15052f3f-a82a-4ca3-bbc4-f478a3bd1ae2"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
 DifferentiationInterface = "a0c0ee7d-e4b9-4e03-894e-1c5f64a51d63"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
@@ -20,7 +21,6 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [weakdeps]
-CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
 [extensions]

@@ -1,6 +1,10 @@
 # Types
 include("types/include.jl")
 
+# Gradient GP extension (data type must come before model)
+include("data/gradient_data.jl")
+include("models/gradient_gp.jl")
+
 # Code
 include("utils/include.jl")
 include("posterior/include.jl")
