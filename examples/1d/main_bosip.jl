@@ -12,7 +12,7 @@ include("problem.jl")
 include("plot_bosip.jl")
 
 # TODO change the mode here
-mode = :bosip
+mode = :dkg
 # mode = :dkg    # like :bosip but uses dKG acquisition
 # mode = :grid
 
