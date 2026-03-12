@@ -35,6 +35,7 @@ export NormalDiffLikelihood
 
 export GradientExperimentData
 export GradientGaussianProcess, GradientGaussianProcessParams
+export dKGAcquisition
 
 export BosipAcquisition, MaxVar, LogMaxVar, MWMV, IMMD, EIV, IMIQR
 export BosipTermCond, AEConfidence, UBLBConfidence

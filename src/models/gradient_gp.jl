@@ -88,6 +88,8 @@ struct GradientGPPosteriorSlice <: ModelPosteriorSlice{GradientGaussianProcess}
     X_train::Matrix{Float64}     # x_dim × n
     alpha::Vector{Float64}       # K_aug⁻¹ỹ, length n*(1 + x_dim)
     chol::Cholesky{Float64, Matrix{Float64}}
+    σ::Float64                   # function observation noise std (stored for dKG)
+    σ_∂::Float64                 # gradient observation noise std (stored for dKG)
 end
 
 
@@ -234,6 +236,33 @@ function _build_cross_cov(k_fn, x_star::AbstractVector, X_train::AbstractMatrix)
 end
 
 """
+Build the `N × (1+d)` matrix of prior covariances between all training observations
+and the augmented new observation `(f(x_new), ∂f/∂x₁(x_new), ..., ∂f/∂x_d(x_new))`.
+
+Row layout matches `_build_obs_vector`: [f obs₁…fobsₙ, ∂/∂x₁ obs₁…, …, ∂/∂x_d obs₁…].
+Column layout: [f(x_new), ∂f(x_new)/∂x₁, …, ∂f(x_new)/∂x_d].
+"""
+function _build_cross_cov_matrix(k_fn, x_new::AbstractVector, X_train::AbstractMatrix)
+    n = size(X_train, 2)
+    d = length(x_new)
+    N = n * (1 + d)
+    K = zeros(N, 1 + d)
+    for j in 1:n
+        # xi = x_new, xj = training point
+        k_val, dk_dxnew, dk_dxtrain, d2k = _kernel_and_derivs(k_fn, x_new, X_train[:, j])
+        K[j, 1] = k_val
+        for l in 1:d
+            K[j,               1+l] = dk_dxnew[l]     # Cov(f(xⱼ),        ∂f(x_new)/∂xₗ)
+            K[n+(l-1)*n+j,       1] = dk_dxtrain[l]   # Cov(∂f(xⱼ)/∂xⱼₗ, f(x_new))
+            for m in 1:d
+                K[n+(l-1)*n+j, 1+m] = d2k[m, l]       # Cov(∂f(xⱼ)/∂xⱼₗ, ∂f(x_new)/∂xₘ)
+            end
+        end
+    end
+    return K
+end
+
+"""
 Build the augmented observation vector from function values and gradient matrix.
 
   ỹ = [y₁,...,yₙ,  ∂y₁/∂x₁,...,∂yₙ/∂x₁,  ...,  ∂y₁/∂x_d,...,∂yₙ/∂x_d]
@@ -267,7 +296,7 @@ function model_posterior_slice(
     C     = cholesky(K_aug)
     alpha = C \ ỹ
 
-    return GradientGPPosteriorSlice(k_fn, Matrix(X), alpha, C)
+    return GradientGPPosteriorSlice(k_fn, Matrix(X), alpha, C, σ, σ_∂)
 end
 
 
