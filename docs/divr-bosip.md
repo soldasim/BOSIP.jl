@@ -100,7 +100,29 @@ where $\ell(\mu, \sigma^2) = \mathbb{E}_{y \sim \mathcal{N}(\mu,\sigma^2)}[\log 
 is the expected log-likelihood under the GP predictive (closed form for common
 likelihoods; see `dkg-bosip.md §4.4`).
 
-### 4.2 Monte Carlo approximation
+### 4.2 Likelihood-variance reduction
+
+BOSIP seeks to reduce uncertainty in **likelihood space**: the quantity that matters
+is $\mathrm{Var}_{f(x') \sim \mathcal{N}(\mu_n, \sigma_n^2)}[p(z_o \mid f(x'))]$,
+not the GP output variance $\sigma_n^2(x')$.
+
+Define the likelihood variance at a grid point as:
+
+$$V_n(x') = \mathrm{Var}_{y \sim \mathcal{N}(\mu_n(x'),\, \sigma_n^2(x'))}\bigl[p(z_o \mid y)\bigr]$$
+
+After observing the augmented $(f, \nabla f)$ at $x_\text{new}$, the GP variance
+reduces deterministically to $\sigma_{n+1}^2(x') = \sigma_n^2(x') - \|b_m\|^2$, giving:
+
+$$\Delta V(x'_m) = V_n(x'_m) - V_{n+1}(x'_m)$$
+
+For common likelihoods $V_n$ has a closed form:
+
+| Likelihood | $V_n(x')$ |
+|-----------|-----------|
+| $\mathcal{N}(z_o;\, f,\, \sigma_\text{obs}^2)$ | $\mathrm{E}[L^2] - \mathrm{E}[L]^2$ via analytic Gaussian moments |
+| $\text{Exp}$ (log-space GP) | $\exp(2\mu + \sigma^2)(\exp(\sigma^2)-1)$ (lognormal variance) |
+
+### 4.3 Monte Carlo approximation
 
 The integral over $q_n$ is approximated by a Monte Carlo sum over a fantasy grid
 $\{x'_1, \ldots, x'_M\}$ sampled from the prior and reweighted by the unnormalised
@@ -108,14 +130,15 @@ posterior:
 
 $$\boxed{
 \text{dIVR}(x_\text{new})
-  = \sum_{m=1}^M \tilde{w}_m \cdot \|b_m\|^2,
+  = \sum_{m=1}^M \tilde{w}_m \cdot \Delta V(x'_m),
   \qquad
   \tilde{w}_m = \frac{q_n(x'_m)}{\sum_{m'} q_n(x'_{m'})}
 }$$
 
-where $b_m = L_\text{new}^{-1} c(x'_m, x_\text{new})$.
+where $b_m = L_\text{new}^{-1} c(x'_m, x_\text{new})$ and
+$\Delta V(x'_m) = V_\text{like}(\mu_m, \sigma_n^2(x'_m)) - V_\text{like}(\mu_m, \sigma_n^2(x'_m) - \|b_m\|^2)$.
 
-### 4.3 Why dIVR does not cluster at the posterior mode
+### 4.4 Why dIVR does not cluster at the posterior mode
 
 The key structural difference from dKG is the **sum** instead of **max**:
 
@@ -128,7 +151,7 @@ With the sum, the acquisition landscape is smooth and free from winner-take-all
 dynamics.  Points far from the mode contribute if they carry significant posterior
 weight, naturally spreading simulator evaluations across the posterior support.
 
-### 4.4 Connection to LogMaxVar
+### 4.5 Connection to LogMaxVar
 
 `LogMaxVar` also avoids mode-seeking but selects the single point of maximum
 posterior-weighted variance:
@@ -159,10 +182,12 @@ For each candidate x_new (O(M · (1+d)²) per candidate):
   3. K_cross_new = _build_cross_cov_matrix(k_fn, x_new, X_train)   (N × 1+d)
   4. total = 0
      For m = 1…M:
-       c_m  = k_prior(x'_m, x_new) - K_cross_new' alpha_star_m     (1+d vector)
-       b_m  = L_new \ c_m                                           (1+d vector)
-       bsq  = min(‖b_m‖², σ²_grid[m])                              (clip invariant)
-       total += w̃[m] * bsq
+       c_m       = k_prior(x'_m, x_new) - K_cross_new' alpha_star_m   (1+d vector)
+       b_m       = L_new \ c_m                                         (1+d vector)
+       bsq       = min(‖b_m‖², σ²_grid[m])                            (clip invariant)
+       v_current = V_like(μ_grid[m], σ²_grid[m])                      (likelihood variance)
+       v_updated = V_like(μ_grid[m], σ²_grid[m] - bsq)               (after GP update)
+       total += w̃[m] * max(0, v_current - v_updated)
   5. dIVR(x_new) = total
 
 Output:  x*_new = argmax_{x_new} dIVR(x_new)

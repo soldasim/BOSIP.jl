@@ -8,14 +8,16 @@ Selects the next simulator evaluation point by maximising the expected reduction
 GP posterior variance, integrated over the parameter space and weighted by the current
 approximate posterior:
 
-    dIVR(x_new) = Σₘ ‖bₘ‖² · w̃ₘ
+    dIVR(x_new) = Σₘ ΔV_like(x'_m) · w̃ₘ
 
 where:
 
 - `{x'_m}` is a fantasy grid over the domain,
 - `w̃_m ∝ exp(ℓ(μₙ(x'_m), σ²ₙ(x'_m)) + log p(x'_m))` are normalised posterior weights,
-- `bₘ = L_new⁻¹ cₘ` is the influence vector (see below),
-- `‖bₘ‖² = σ²ₙ(x'_m) − σ²ₙ₊₁(x'_m)` is the deterministic variance reduction at x'_m.
+- `bₘ = L_new⁻¹ cₘ` is the influence vector,
+- `‖bₘ‖² = σ²ₙ(x'_m) − σ²ₙ₊₁(x'_m)` is the deterministic GP variance reduction at x'_m,
+- `ΔV_like(x'_m) = V[p(z_o|f(x'_m)) | σ²ₙ] − V[p(z_o|f(x'_m)) | σ²ₙ₊₁]` is the
+  resulting **likelihood variance** reduction (the quantity BOSIP reduces).
 
 **How the gradient GP changes IVR**
 
@@ -97,7 +99,10 @@ function (acq::dIVRAcquisition)(::Type{<:UniFittedParams}, bosip::BosipProblem{N
         # (2) Cross-cov between training obs and augmented obs at x_new
         K_cross_new = _build_cross_cov_matrix(ps.k_fn, x_new, ps.X_train)
 
-        # (3) Weighted sum of variance reductions ‖bₘ‖²
+        # (3) Weighted sum of likelihood-variance reductions ΔV_like
+        #     GP variance update: σ²_{n+1}(x'_m) = σ²_n(x'_m) - ‖b_m‖²  (deterministic)
+        #     Likelihood variance reduction: ΔV_like = V_like(σ²_n) - V_like(σ²_n - ‖b_m‖²)
+        #     This is what BOSIP actually reduces: Var[p(z_o|f(x'))] not Var[f(x')].
         total = 0.0
         for m in 1:acq.n_grid
             c_m = _posterior_cross_cov(ps, grid[:, m], x_new, K_cross_new, alpha_stars[m])
@@ -106,7 +111,9 @@ function (acq::dIVRAcquisition)(::Type{<:UniFittedParams}, bosip::BosipProblem{N
             # Near training points, catastrophic cancellation in c_m inflates b_m
             # numerically; the clip prevents the acquisition from peaking there.
             bsq = min(b_m ⋅ b_m, σ²_grid[m])
-            total += w[m] * bsq
+            v_current = _like_var(like, μ_grid[m], σ²_grid[m])
+            v_updated = _like_var(like, μ_grid[m], σ²_grid[m] - bsq)
+            total += w[m] * max(0.0, v_current - v_updated)
         end
 
         return total

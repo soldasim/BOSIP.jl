@@ -75,6 +75,44 @@ function _ell(like::Likelihood, μ::Real, ::Real)
 end
 
 
+# ── Likelihood variance ℓ_var(μ, σ²) per likelihood type ─────────────────────
+
+"""
+    _like_var(likelihood, μ, σ²) -> scalar ≥ 0
+
+Variance of the likelihood `Var_{y ~ N(μ,σ²)}[ p(z_obs | y) ]` for a scalar GP output.
+
+This is the quantity reduced by BOSIP acquisitions (MaxVar, LogMaxVar, EIV all work
+in likelihood-variance space, not in GP-output-variance space).
+
+Specific formulas:
+- `NormalLikelihood`: `E[L²] - E[L]²` via analytic Gaussian moments
+- `ExpLikelihood`:    `exp(2μ + σ²)(exp(σ²) - 1)` (lognormal variance)
+- Fallback:           `0.0` (plug-in gives no variance; dIVR falls back to GP variance)
+"""
+function _like_var(like::NormalLikelihood, μ::Real, σ²::Real)
+    σ_obs = like.std_obs[1]
+    z     = like.z_obs[1]
+    σ²_c  = max(0.0, σ²)
+    # E[L]  = N(z; μ, σ²+σ_obs²)
+    # E[L²] = 1/(2π σ_obs √(2σ²+σ_obs²)) · exp(-(z-μ)²/(2σ²+σ_obs²))
+    log_EL  = logpdf(Normal(μ, sqrt(σ²_c + σ_obs^2)), z)
+    log_EL2 = -log(2π) - log(σ_obs) - 0.5*log(2σ²_c + σ_obs^2) - (z - μ)^2 / (2σ²_c + σ_obs^2)
+    return max(0.0, exp(log_EL2) - exp(2*log_EL))
+end
+
+function _like_var(::ExpLikelihood, μ::Real, σ²::Real)
+    # V[exp(y)] = exp(2μ + σ²)(exp(σ²) - 1)
+    σ²_c = max(0.0, σ²)
+    return exp(2μ + σ²_c) * expm1(σ²_c)
+end
+
+function _like_var(::Likelihood, ::Real, ::Real)
+    # Generic fallback: no closed form; dIVR caller should fall back to GP variance
+    return 0.0
+end
+
+
 # ── dKG helper functions ───────────────────────────────────────────────────────
 
 """
