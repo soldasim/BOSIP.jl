@@ -13,11 +13,12 @@ include("plot_bosip.jl")
 
 # TODO change the mode here
 mode = :bosip
+# mode = :dkg    # like :bosip but uses dKG acquisition
 # mode = :grid
 
 
 ### Query initial data
-if mode == :bosip
+if mode == :bosip || mode == :dkg
     # 1 random point + run BOSIP
     X = [1.;;] # TODO
     results = f.(eachcol(X))
@@ -48,7 +49,7 @@ domain_size = bounds[2][1] - bounds[1][1]
 bosip = BosipProblem(data;
     f,
     domain = Domain(; bounds),
-    acquisition = LogMaxVar(),
+    acquisition = mode == :dkg ? dKGAcquisition() : LogMaxVar(),
     model = GradientGaussianProcess(;
         kernel = Matern52Kernel(),
         lengthscale_priors = [product_distribution([calc_inverse_gamma(domain_size / 20, domain_size / 2)])],
