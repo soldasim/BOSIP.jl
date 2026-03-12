@@ -12,13 +12,14 @@ include("problem.jl")
 include("plot_bosip.jl")
 
 # TODO change the mode here
-mode = :dkg
-# mode = :dkg    # like :bosip but uses dKG acquisition
+mode = :divr
+# mode = :dkg    # derivative Knowledge Gradient (mode-seeking, for reference)
+# mode = :bosip  # LogMaxVar acquisition
 # mode = :grid
 
 
 ### Query initial data
-if mode == :bosip || mode == :dkg
+if mode == :bosip || mode == :dkg || mode == :divr
     # 1 random point + run BOSIP
     X = [1.;;] # TODO
     results = f.(eachcol(X))
@@ -49,7 +50,8 @@ domain_size = bounds[2][1] - bounds[1][1]
 bosip = BosipProblem(data;
     f,
     domain = Domain(; bounds),
-    acquisition = mode == :dkg ? dKGAcquisition() : LogMaxVar(),
+    acquisition = mode == :dkg ? dKGAcquisition() :
+                  mode == :divr ? dIVRAcquisition() : LogMaxVar(),
     model = GradientGaussianProcess(;
         kernel = Matern52Kernel(),
         lengthscale_priors = [product_distribution([calc_inverse_gamma(domain_size / 20, domain_size / 2)])],

@@ -246,7 +246,31 @@ operations, which completes in well under a second.
 
 ---
 
-## 7. References
+## 7. Comparison with dIVR
+
+dKG and dIVR share the same derivative-GP infrastructure (influence vectors $b_m$,
+posterior predictive covariance $\Sigma_n$) but differ fundamentally in their
+acquisition objective:
+
+| Property | dKG | dIVR |
+|----------|-----|------|
+| Aggregation over grid | $\max_m$ | $\sum_m \tilde{w}_m$ |
+| Grid weights | Uniform | Posterior $q_n(x')$ |
+| Stochastic | Yes — MC over $\varepsilon$ | No — deterministic |
+| Cost per candidate | $O(S \cdot M \cdot (1+d))$ | $O(M \cdot (1+d)^2)$ |
+| Objective | Expected best log-posterior | Expected total posterior variance reduction |
+| Mode-seeking? | **Yes** — $\max$ concentrates on the mode | **No** — sum spreads over posterior |
+| Best use case | Optimization (find the MAP) | Inference (characterise the posterior) |
+
+**When dKG clusters at the mode**: for a concave likelihood (e.g. Normal), the
+$\max_m$ in the MC loop is always dominated by the fantasy point nearest to $z_o$.
+Observing a point near this winner maximally improves it, so $x_\text{new}$ converges
+to the posterior mode.  This makes dKG well-suited for optimisation but poorly suited
+for inference.  See [divr-bosip.md §4.3](divr-bosip.md) for the full argument.
+
+---
+
+## 8. References
 
 - **Wu, J., Poloczek, M., Wilson, A. G., & Frazier, P. I. (2017).**
   *Bayesian Optimization with Gradients.*

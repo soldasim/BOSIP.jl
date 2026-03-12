@@ -28,10 +28,21 @@ Requires the surrogate to be a `GradientGaussianProcess` with `y_dim == 1`.
 
 - `n_fantasy::Int`: Number of fantasy grid points for the inner maximisation. Default: 64.
 - `n_mc::Int`: Number of Monte Carlo samples for the expectation. Default: 512.
+- `temperature::Float64`: Softmax temperature for aggregating fantasy values (default: 0.0 = hard max).
+    Positive values replace `max_m` with `τ log Σ_m exp(aₘ/τ)`, spreading credit across all
+    high-likelihood fantasy points and preventing collapse near the posterior mode.
+    Typical range: 0.5–5.0 (larger = more exploratory).
 """
 @kwdef struct dKGAcquisition <: BosipAcquisition
     n_fantasy::Int = 64
     n_mc::Int = 512
+    """
+    Softmax temperature for aggregating fantasy-grid values (default: 0.0 = hard max).
+    Positive values smooth the max into a log-sum-exp, encouraging exploration of
+    all high-likelihood regions rather than just the absolute best fantasy point.
+    Try values in [0.5, 5.0] when points cluster near the posterior mode.
+    """
+    temperature::Float64 = 0.0
 end
 
 
@@ -104,6 +115,25 @@ function _posterior_cross_cov(
 end
 
 
+# ── Aggregation helper ────────────────────────────────────────────────────────
+
+"""
+    _softmax_agg(vals, τ) -> scalar
+
+Aggregate a vector of values:
+- `τ == 0`:  hard maximum  (`maximum(vals)`)
+- `τ  > 0`:  log-sum-exp smoothed maximum  (`τ * log Σ exp(vᵢ/τ)`)
+
+The log-sum-exp form distributes credit across *all* high-value fantasy points
+rather than concentrating on the single winner, encouraging broader exploration.
+"""
+function _softmax_agg(vals::AbstractVector, τ::Real)
+    τ == 0.0 && return maximum(vals)
+    v_max = maximum(vals)
+    return v_max + τ * log(sum(exp((v - v_max) / τ) for v in vals))
+end
+
+
 # ── Acquisition construction ──────────────────────────────────────────────────
 
 function (acq::dKGAcquisition)(::Type{<:UniFittedParams}, bosip::BosipProblem{Nothing}, ::BosipOptions)
@@ -131,7 +161,7 @@ function (acq::dKGAcquisition)(::Type{<:UniFittedParams}, bosip::BosipProblem{No
 
     # Current expected log-posterior: ℓ(μ_m, σ²_m) + log p(x'_m)
     a      = [_ell(like, μ_grid[m], σ²_grid[m]) + log_prior[m] for m in 1:acq.n_fantasy]
-    best_a = maximum(a)
+    best_a = _softmax_agg(a, acq.temperature)
 
     # Precompute K_aug⁻¹ k_cross(x′ₘ) for each fantasy point (fixed across candidates)
     k_crosses   = [_build_cross_cov(ps.k_fn, grid[:, m], ps.X_train) for m in 1:acq.n_fantasy]
@@ -155,21 +185,31 @@ function (acq::dKGAcquisition)(::Type{<:UniFittedParams}, bosip::BosipProblem{No
         for m in 1:acq.n_fantasy
             c_m = _posterior_cross_cov(ps, grid[:, m], x_new, K_cross_new, alpha_stars[m])
             b_m = L_new \ c_m
+            # Mathematically ‖b_m‖² ≤ σ²_grid[m] (variance reduction ≤ current variance).
+            # Near training points, catastrophic cancellation in c_m inflates b_m numerically.
+            # Clipping enforces the invariant and prevents dKG from peaking artificially
+            # at already-observed locations.
+            bsq = b_m ⋅ b_m
+            if bsq > σ²_grid[m]
+                b_m .*= sqrt(σ²_grid[m] / bsq)
+                bsq   = σ²_grid[m]
+            end
             B[:, m]       = b_m
-            σ²_updated[m] = max(0.0, σ²_grid[m] - b_m ⋅ b_m)
+            σ²_updated[m] = max(0.0, σ²_grid[m] - bsq)
         end
 
-        # (4) MC estimate of E_ε[ max_m ( ℓ(μₙ(x'_m)+δₘ, σ²ₙ₊₁(x'_m)) + log p(x'_m) ) ]
-        expected_max = 0.0
+        # (4) MC estimate of E_ε[ agg_m ( ℓ(μₙ(x'_m)+δₘ, σ²ₙ₊₁(x'_m)) + log p(x'_m) ) ]
+        #     agg = hard max (temperature==0) or log-sum-exp (temperature>0)
+        expected_agg = 0.0
         for _ in 1:acq.n_mc
             ε = randn(rng, 1 + d)
             δ = B' * ε
             vals = [_ell(like, μ_grid[m] + δ[m], σ²_updated[m]) + log_prior[m]
                     for m in 1:acq.n_fantasy]
-            expected_max += maximum(vals)
+            expected_agg += _softmax_agg(vals, acq.temperature)
         end
 
-        return expected_max / acq.n_mc - best_a
+        return expected_agg / acq.n_mc - best_a
     end
 
     return dkg
