@@ -43,7 +43,7 @@ posterior contributes proportionally to its posterior weight w̃_m.  The acquisi
 naturally seeks x_new that reduces uncertainty across the full posterior mass, not
 only at its peak.
 
-See `docs/divr-bosip.md` for the full theoretical derivation.
+See `docs/dgp-bosip.md` for the full theoretical derivation.
 
 Requires the surrogate to be a `GradientGaussianProcess` with `y_dim == 1`.
 

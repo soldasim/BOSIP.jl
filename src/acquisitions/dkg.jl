@@ -20,7 +20,7 @@ where `ℓ(μ, σ²) = E_y[log p(z_obs | y)]` (expected log-likelihood under GP 
 `bₘ = L⁻¹ cₘ` is the influence vector, and the posterior variance reduces deterministically
 as `σ²ₙ₊₁ = σ²ₙ − ‖bₘ‖²`.
 
-See `docs/dkg-bosip.md` for the full theoretical derivation.
+See `docs/dgp-bosip.md` for the full theoretical derivation.
 
 Requires the surrogate to be a `GradientGaussianProcess` with `y_dim == 1`.
 
