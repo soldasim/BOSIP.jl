@@ -7,7 +7,7 @@ Stores miscellaneous settings.
 # Keywords
 - `info::Bool`: Setting `info=false` silences the algorithm.
 - `debug::Bool`: Set `debug=true` to print stactraces of caught optimization errors.
-- `parallel_evals::Symbol`: Possible values: `:serial`, `:parallel`, `:distributed`. Defaults to `:parallel`.
+- `parallel_evals::Bool`: Possible values: `:serial`, `:parallel`, `:distributed`. Defaults to `:parallel`.
         Determines whether to run multiple objective function evaluations
         within one batch in serial, parallel, or distributed fashion.
         (Only has an effect if batching AM is used.)
@@ -19,7 +19,7 @@ Stores miscellaneous settings.
 }
     info::Bool = true
     debug::Bool = false
-    parallel_evals::Symbol = :parallel
+    parallel_evals::Bool = true
     callback::CB = NoCallback()
 end
 
