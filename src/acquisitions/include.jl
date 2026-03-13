@@ -1,5 +1,6 @@
 include("dkg.jl")
 include("divr.jl")
+include("dimmd.jl")
 include("maxvar.jl")
 include("logmaxvar.jl")
 include("mwmv.jl")

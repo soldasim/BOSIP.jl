@@ -281,15 +281,30 @@ dIVR is cheaper by a factor of $S$ while being fully deterministic.
 (i.e. $y_\text{new} = \mu_n(x_\text{new})$, so $\varepsilon = 0$) and integrates the
 IQR of the resulting posterior log-likelihood over the domain.
 
-The IQR of $p(z_o \mid f(x'))$ under $f(x') \mid \mathcal{D}_{n+1} \sim \mathcal{N}(\mu_n(x'), \sigma_{n+1}^2(x'))$
-depends only on the **variance** $\sigma_{n+1}^2$, not on the specific value observed.
-For the two likelihood types:
+#### BOSIP adaptation
 
-**Normal likelihood** — $\ell(y) = \log \mathcal{N}(z_o; y, \sigma_\text{obs}^2)$:
+The IQR formulas below are computed in **likelihood space** — they measure the
+interquartile range of $p(z_o \mid f(x'))$ as $f(x')$ varies over its GP predictive,
+not the IQR of $f(x')$ itself.  The BOSIP adaptation adds posterior weights
+$\tilde{w}_m \propto q_n(x'_m)$ to focus the integral on regions of high posterior mass.
+
+The plain-GP `IMIQR` implementation in the codebase adds a median-augmented observation
+and refits the GP — cost $O(N^3)$ per candidate evaluation.  dIMIQR replaces this with
+the analytic variance formula $\sigma_{n+1}^2 = \sigma_n^2 - \|b_m\|^2$, reducing cost
+to $O(M \cdot (1+d)^2)$ per candidate.
+
+#### Formulas (already in likelihood space)
+
+The IQR of $p(z_o \mid f(x'))$ after the derivative-GP update depends only on
+$\sigma_{n+1}^2(x'_m) = \sigma_n^2(x'_m) - \|b_m\|^2$.
+
+**Normal likelihood** — $p(z_o \mid f) = \mathcal{N}(z_o; f, \sigma_\text{obs}^2)$,
+marginal predictive $z_o \mid \mathcal{D}_{n+1} \sim \mathcal{N}(\mu_m, \sigma_{n+1}^2 + \sigma_\text{obs}^2)$:
 
 $$\text{IQR}_{n+1}(x'_m) = 2\Phi^{-1}(0.75) \cdot \sqrt{\sigma_n^2(x'_m) - \|b_m\|^2 + \sigma_\text{obs}^2}$$
 
-**Exponential likelihood** — GP models $\log p(z_o \mid x)$ directly:
+**Exponential likelihood** — GP models $\log p(z_o \mid x)$ directly; IQR of the
+log-likelihood value $f(x') \sim \mathcal{N}(\mu_m, \sigma_{n+1}^2)$:
 
 $$\text{IQR}_{n+1}(x'_m) = 2\sinh\!\bigl(u \cdot \sqrt{\sigma_n^2(x'_m) - \|b_m\|^2}\bigr), \qquad u = \Phi^{-1}(0.75)$$
 
@@ -304,23 +319,39 @@ observation).
 
 ### 6.3 dIMMD — Integrated Mean Maximum Discrepancy
 
-**Plain-GP IMMD** measures the expected absolute mean shift, integrated over the
-posterior, as a proxy for information gain.  With a derivative GP, the mean update at
-$x'_m$ is $b_m^\top \varepsilon$ with $\varepsilon \sim \mathcal{N}(0, I_{1+d})$:
+**Plain-GP IMMD** measures the expected absolute GP mean shift as a proxy for
+information gain.  For a derivative GP the mean update at $x'_m$ is
+$\delta_m = b_m^\top \varepsilon$, $\varepsilon \sim \mathcal{N}(0, I_{1+d})$, so:
 
-$$b_m^\top \varepsilon \sim \mathcal{N}(0,\, \|b_m\|^2)$$
+$$b_m^\top \varepsilon \sim \mathcal{N}(0,\, \|b_m\|^2) \implies \mathbb{E}_\varepsilon\!\bigl[|\delta_m|\bigr] = \|b_m\| \cdot \sqrt{2/\pi}$$
 
-The expected absolute mean shift is the half-normal mean:
+#### BOSIP adaptation: expected likelihood shift
 
-$$\mathbb{E}_\varepsilon\!\bigl[|b_m^\top \varepsilon|\bigr] = \|b_m\| \cdot \sqrt{2/\pi}$$
+Plain IMMD operates in GP output space.  The BOSIP-correct metric is the expected
+absolute shift in **expected log-likelihood** $\ell(\mu, \sigma^2)$.
+By first-order Taylor expansion:
 
-Integrating over the posterior:
+$$\Delta\ell_m \approx \frac{\partial\ell}{\partial\mu}\!\bigl(\mu_m,\, \sigma_n^2(x'_m)\bigr) \cdot \delta_m$$
 
-$$\boxed{\text{dIMMD}(x_\text{new}) = \sqrt{\frac{2}{\pi}}\sum_m \tilde{w}_m\, \|b_m\|}$$
+Taking the expectation:
 
-The constant $\sqrt{2/\pi}$ is irrelevant for maximisation.  This acquisition is also
-**deterministic** despite involving the mean update, because only the expected
-magnitude (norm of $b_m$) matters, not the direction.
+$$\mathbb{E}\!\bigl[|\Delta\ell_m|\bigr] \approx \left|\frac{\partial\ell}{\partial\mu}\right|_m \cdot \|b_m\| \cdot \sqrt{2/\pi}$$
+
+The **likelihood sensitivity** $\partial\ell/\partial\mu$ depends on the likelihood:
+
+| Likelihood | $\partial\ell/\partial\mu$ | Interpretation |
+|-----------|---------------------------|----------------|
+| $\mathcal{N}(z_o;\, f,\, \sigma_\text{obs}^2)$ | $(z_o - \mu) / (\sigma^2 + \sigma_\text{obs}^2)$ | Zero at the posterior mode; large where likelihood slope is steep |
+| Exponential (log-space GP) | $1$ | Constant — reduces to plain dIMMD |
+
+The BOSIP-dIMMD acquisition is:
+
+$$\boxed{\text{dIMMD}(x_\text{new}) = \sqrt{\frac{2}{\pi}}\sum_m \tilde{w}_m\, \left|\frac{\partial\ell}{\partial\mu}\right|_m \cdot \|b_m\|}$$
+
+This acquisition is **fully deterministic**.  For Normal likelihoods, the sensitivity
+weight $|\partial\ell/\partial\mu|_m$ naturally suppresses sampling at the posterior
+mode (where the likelihood is flat and a GP mean shift causes no change in
+log-likelihood) and promotes sampling where the likelihood is sensitive to the GP mean.
 
 ---
 
@@ -349,8 +380,8 @@ derivation in §8 below and the note on mode-seeking behaviour in §7.
 | LogMaxVar | $\max_x \log\sigma_n^2(x) + \log q_n(x)$ | — | No | Mild | Direct |
 | MWMV | Weighted $\sigma_n^2$ across sensor subsets | — | No | No | Direct |
 | **dIVR** | $\sum_m \tilde{w}_m \Delta V_\text{like}(x'_m)$ | No | **No** | No | Via $\|b_m\|^2$ → $V_\text{like}$ |
-| **dIMIQR** | $-\sum_m \tilde{w}_m \text{IQR}_{n+1}(x'_m)$ | No | **No** | No | Via $\sigma_{n+1}^2$ |
-| **dIMMD** | $\sum_m \tilde{w}_m \|b_m\|$ | Yes (expected) | **No** | No | Via $\|b_m\|$ |
+| **dIMIQR** | $-\sum_m \tilde{w}_m \text{IQR}_{n+1}(x'_m)$ | No | **No** | No | Via $\sigma_{n+1}^2$ → IQR in likelihood space |
+| **dIMMD** | $\sum_m \tilde{w}_m \|\partial\ell/\partial\mu\|_m \cdot \|b_m\|$ | Yes (expected) | **No** | No | Via $|\partial\ell/\partial\mu| \cdot \|b_m\|$ |
 | **dKG** | $\mathbb{E}[\max_m \ell(\mu_{n+1}(x'_m),\sigma^2_{n+1}(x'_m)) + \log p]$ | Yes | Yes | **Yes** | Via $\|b_m\|^2$ |
 
 **Notes:**
@@ -362,8 +393,9 @@ derivation in §8 below and the note on mode-seeking behaviour in §7.
 - *Relationship between dIVR, dIMMD, dIMIQR*: all three are deterministic and use the
   same influence vectors $b_m$.  They differ in how variance reduction $\|b_m\|^2$ is
   translated into an inference improvement score: $\Delta V_\text{like}$ (likelihood
-  variance), $\|b_m\|$ (standard deviation / mean absolute shift), $\text{IQR}_{n+1}$
-  (quantile range).
+  variance via `_like_var`), $|\partial\ell/\partial\mu| \cdot \|b_m\|$ (expected
+  absolute likelihood shift via `_dell_dmu`), $\text{IQR}_{n+1}$ (IQR in likelihood
+  space).  dIMMD and dIMIQR are both already in likelihood space by design.
 
 - *dIVR = derivative-GP EIV*: the original EIV samples $y_\text{new}$ and refits the GP.
   For derivative GPs this is unnecessary because the variance reduction is deterministic;

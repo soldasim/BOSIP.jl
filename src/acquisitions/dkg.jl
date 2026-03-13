@@ -113,6 +113,36 @@ function _like_var(::Likelihood, ::Real, ::Real)
 end
 
 
+# ── Likelihood mean sensitivity ∂ℓ/∂μ per likelihood type ────────────────────
+
+"""
+    _dell_dmu(likelihood, μ, σ²) -> scalar
+
+Partial derivative ∂ℓ/∂μ of the expected log-likelihood
+`ℓ(μ, σ²) = 𝔼_{y ~ N(μ,σ²)}[log p(z_obs | y)]` with respect to μ.
+
+Used by dIMMD to convert the GP mean shift `‖b_m‖` into the expected
+absolute shift in expected log-likelihood:
+`𝔼[|Δℓ|] ≈ |∂ℓ/∂μ| · ‖b_m‖ · √(2/π)`
+
+Specific formulas:
+- `NormalLikelihood`: `(z_obs - μ) / (σ² + std_obs²)`  (zero at posterior mode)
+- `ExpLikelihood`:    `1.0`  (ℓ = μ + σ²/2, constant sensitivity)
+- Fallback:           `1.0`
+"""
+function _dell_dmu(like::NormalLikelihood, μ::Real, σ²::Real)
+    return (like.z_obs[1] - μ) / (max(0.0, σ²) + like.std_obs[1]^2)
+end
+
+function _dell_dmu(::ExpLikelihood, ::Real, ::Real)
+    return 1.0
+end
+
+function _dell_dmu(::Likelihood, ::Real, ::Real)
+    return 1.0
+end
+
+
 # ── dKG helper functions ───────────────────────────────────────────────────────
 
 """
