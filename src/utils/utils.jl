@@ -9,3 +9,7 @@ function logsumexp(x::AbstractVector{<:Real})
     isinf(x_max) && return x_max
     return x_max + log(sum(exp.(x .- x_max)))
 end
+
+function logmeanexp(x::AbstractVector{<:Real})
+    return logsumexp(x) - log(length(x))
+end
