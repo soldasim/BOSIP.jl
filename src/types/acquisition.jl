@@ -29,5 +29,13 @@ mutable struct AcqWrapper{
     options::BosipOptions
 end
 
-construct_acquisition(wrap::AcqWrapper, ::BossProblem, ::BossOptions) =
-    wrap.acq(wrap.bosip, wrap.options)
+function construct_acquisition(wrap::AcqWrapper, boss::BossProblem, ::BossOptions)
+    @assert wrap.bosip.problem === boss
+    # This assert succeeds even if the BossProblem is deep-copied in BOSS.jl (e.g. in SequentialBatchAM),
+    # since BossProblem.acquisition is this AcqWrapper and AcqWrapper.bosip is the BosipProblem,
+    # so the BosipProblem is recursively copied as well.
+    # This way, the whole structure remains consistent while not affecting the original BosipProblem.
+    # This is a bit convoluted, but a wanted behavior.
+
+    return wrap.acq(wrap.bosip, wrap.options)
+end
