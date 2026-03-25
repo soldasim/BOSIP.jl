@@ -217,7 +217,90 @@ experiments; for $d \geq 5$ the factor grows to $\geq 3$ and becomes clearly vis
 
 ---
 
-## 10. Prior Art and Novelty
+## 10. Effect of the Exponential Transformation (BOSIP case)
+
+The analysis in §§2–9 concerns approximating $f(x)$ in $L^2$.  BOSIP operates in
+**likelihood space**: the quantity of interest is the posterior
+
+$$p(x \mid z_o) \propto \exp(f(x))\, p(x)$$
+
+(for `ExpLikelihood`, where $f$ models the log-likelihood directly).  This section
+analyses how the exp transformation modifies the convergence results.
+
+### 10.1 Relevant error norm shifts from $L^2$ to $L^\infty$
+
+Posterior quality metrics (total variation, KL divergence) are sensitive to
+**pointwise** errors in $\exp(f(x))$, not average errors.  Using the bound
+
+$$\|q_n - p\|_\text{TV} \leq \tfrac{1}{2}\,\mathbb{E}_p\!\bigl[|\exp(\delta(x)) - 1|\bigr]
+\approx \tfrac{1}{2}\|\delta\|_{L^1(p)} \lesssim \|\mu_n - f\|_{L^\infty}$$
+
+where $\delta(x) = \mu_n(x) - f(x)$.  The relevant convergence rate is therefore
+**$L^\infty$**, not $L^2$:
+
+| Error norm | GP rate (per call, plain) | GP rate (per call, gradient) |
+|------------|--------------------------|------------------------------|
+| $L^2$ | $n^{-\nu/d - 1/2}$ | $n^{-(\nu+1)/d - 1/2}$ |
+| $L^\infty$ | $n^{-\nu/d}$ | $n^{-(\nu+1)/d}$ |
+
+The $L^\infty$ rate is **slower** (missing the $-1/2$ bonus term) but the
+**relative advantage of gradient GP is unchanged**: the slope ratio formula from §5
+and the cost advantage formula from §4 apply in both norms, because both derive from
+the fill-distance and Hermite order arguments which are norm-independent.
+
+### 10.2 Mode identification: an additional benefit not in the general theory
+
+At the posterior mode $x^* = \operatorname{argmax} f(x)$, the gradient vanishes:
+$\nabla f(x^*) = 0$.  A gradient observation at any point $x_0$ near $x^*$ provides
+the **signed distance** to the mode in each dimension via the first-order condition.
+This is qualitatively different from a value observation, which only gives the scalar
+height $f(x_0)$.
+
+With value only at $x_0$, locating $x^*$ requires $O(d)$ evaluations (one per
+dimension for a finite-difference gradient estimate).  With exact gradient at $x_0$,
+the Newton step $x_0 - H^{-1} \nabla f(x_0)$ (where $H$ is an estimated Hessian)
+gives a $O(\|x_0 - x^*\|^2)$ update — quadratic convergence to the mode.
+
+> **Consequence**: For posteriors that concentrate around a single mode, gradient GP
+> convergence is **faster than the $(1+d)/r_c$ formula predicts**, because the
+> formula counts only information content about $f$, not the mode-finding acceleration.
+
+This benefit grows with $d$: in high dimensions, locating the mode from value-only
+observations requires $O(d)$ evaluations (curse of dimensionality on finite
+differences), while gradient observations locate it in $O(1)$ steps (like gradient
+descent), giving an additional factor of $d$ advantage on top of the $(1+d)/r_c$ formula.
+
+### 10.3 Posterior concentration amplifies the Hermite advantage
+
+As $n$ grows and the posterior concentrates on a neighbourhood $\mathcal{N}$ of $x^*$
+of radius $r \sim n^{-1/(d+2)}$, only the behaviour of $f$ on $\mathcal{N}$ matters.
+Value+gradient at $x_0 \in \mathcal{N}$ gives a **Hermite-1** (quadratic) local
+approximation of $f$, which directly constrains:
+
+- the mode location (from $\nabla f = 0$)
+- the posterior covariance (from the Hessian, approximated by the local curvature of the Hermite fit)
+
+A value-only observation only constrains the height at $x_0$.  As the posterior
+tightens, the quadratic information from gradient observations becomes progressively
+more useful relative to the scalar height information.
+
+### 10.4 Summary: does the analysis transfer?
+
+| Claim | Transfers? | Modification |
+|-------|-----------|--------------|
+| $(1+d)/r_c$ cost advantage formula | **Yes** (conservative) | Actual advantage is at least $(1+d)/r_c$; mode-finding adds extra |
+| Slope ratio formula | **Yes** (conservative) | $L^\infty$ norm applies; ratio unchanged |
+| Breakeven $d > r_c - 1$ | **Yes** | Same criterion; may be reached at lower $d$ in practice |
+| Phase transition argument | **Yes** | $L^\infty$ critical sample size is larger ($\sim d^{2d/\nu}$ instead of $d^{d/\nu}$), amplifying the gradient GP advantage |
+
+**Conclusion**: all formulae from §§4–8 are valid lower bounds for the gradient GP
+advantage in the BOSIP posterior convergence setting.  The exp transformation
+introduces two additional benefits (mode identification, Hermite-at-mode) that make
+the actual advantage strictly larger than predicted, particularly in high dimensions.
+
+---
+
+## 11. Prior Art and Novelty
 
 ### What is classical (fully published)
 
@@ -264,7 +347,7 @@ extends that line of work.
 
 ---
 
-## 12. References
+## 13. References
 
 - **Wendland, H. (2005).** *Scattered Data Approximation.* Cambridge University Press.
   (Hermite RBF approximation orders, §11.)
