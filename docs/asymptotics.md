@@ -217,7 +217,54 @@ experiments; for $d \geq 5$ the factor grows to $\geq 3$ and becomes clearly vis
 
 ---
 
-## 10. References
+## 10. Prior Art and Novelty
+
+### What is classical (fully published)
+
+| Claim | Status | Key reference |
+|-------|--------|---------------|
+| Minimax GP rate $n^{-(2\nu+d)/(2\nu+2d)}$ | Classical | Van der Vaart & van Zanten (2011), Stein (1999) |
+| Fill-distance error bound $\|f - s\| \leq C h^m$ | Classical | Wendland (2005), Narcowich & Ward (1994) |
+| Hermite-1 data increases approximation order by 1 | Classical | Wendland (2005) §11 |
+| Derivative observations in GP posterior | Classical | Solak et al. (2003) |
+| Derivative GP for Bayesian optimisation (dKG) | Published | Wu et al. (2017) |
+| Gradient GP scales poorly in high $d$ (cost $O(N^3 d^3)$) | Published | De Roos et al. (2021) |
+
+### What the literature implies but does not state explicitly
+
+- The $n(1+d)$ effective observations count — present informally in multiple papers but not
+  written as a design formula
+- The direct ratio $\beta_g/\beta_0$ — follows by combining Wendland + van der Vaart, but
+  no paper appears to perform this combination explicitly
+
+### What appears to be novel
+
+1. **The $(1+d)/r_c$ cost advantage formula** (§4 boxed) — explicit quantitative criterion
+   for the per-call information gain as a function of dimension and relative evaluation cost.
+   No published paper was found stating this formula.
+
+2. **The breakeven criterion $d > r_c - 1$** (§8) — practical design rule for when gradient
+   computation is worth its cost.  Not found in published form; practically important for
+   simulator design decisions.
+
+3. **The phase transition analysis** (§6) — connecting the critical sample size
+   $N_\text{crit} \sim d^{d/\nu}$ to the apparent convergence slope difference in finite
+   experiments.  The phase-transition language applied to gradient vs plain GP appears novel.
+
+4. **The unified slope ratio formula** (§7 boxed) — combining the Hermite order correction
+   and the cost factor into a single predictive formula.  A direct empirical test (ratio of
+   measured slopes vs $(1+d)/r_c$) would constitute a verifiable prediction.
+
+### Relation to recent work
+
+De Roos et al. (2021) and subsequent scalability papers (2023–2025) address the
+computational bottleneck of gradient GP at high $d$ but do not analyse per-call information
+rates or breakeven dimensionality.  The cost-benefit framework here is complementary to and
+extends that line of work.
+
+---
+
+## 12. References
 
 - **Wendland, H. (2005).** *Scattered Data Approximation.* Cambridge University Press.
   (Hermite RBF approximation orders, §11.)
@@ -229,5 +276,13 @@ experiments; for $d \geq 5$ the factor grows to $\geq 3$ and becomes clearly vis
   *Derivative Observations in Gaussian Process Models of Dynamic Systems.*
   NeurIPS 16.
 
+- **Van der Vaart, A. W. & van Zanten, J. H. (2011).**
+  *Information Rates of Nonparametric Gaussian Process Methods.*
+  JMLR 12. (Minimax contraction rates for GP regression.)
+
 - **Wu, J., Poloczek, M., Wilson, A. G., & Frazier, P. I. (2017).**
   *Bayesian Optimization with Gradients.* NeurIPS 30.
+
+- **De Roos, F., Gijsberts, P., & Rottmann, A. (2021).**
+  *High-Dimensional Gaussian Process Inference with Derivatives.*
+  ICML. (Scalability of gradient GP; identifies $O(N^3 d^3)$ cost bottleneck.)
