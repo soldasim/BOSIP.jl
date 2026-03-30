@@ -44,13 +44,13 @@ function plot_state(p::BosipProblem; n_points::Int = 500, separate_figures::Bool
 	obs_lower = obs_mean - 2 * obs_std
 	obs_upper = obs_mean + 2 * obs_std
 
-	ys_true = [f_true([x])[1] for x in xs]
+	ys_true = [f_true([x])[1][1] for x in xs] # TODO changed for grads
 	ys_surrogate = [mean(gp_post, [x])[1] for x in xs]
 	ys_surrogate_std = [std(gp_post, [x])[1] for x in xs]
 	ys_surrogate_lower = ys_surrogate .- (2 .* ys_surrogate_std)
 	ys_surrogate_upper = ys_surrogate .+ (2 .* ys_surrogate_std)
 
-	logpost_true = [Distributions.logpdf(p.x_prior, [x]) + loglike(p.likelihood, f_true([x])) for x in xs]
+	logpost_true = [Distributions.logpdf(p.x_prior, [x]) + loglike(p.likelihood, f_true([x])[1]) for x in xs] # TODO changed for grads
 	post_true = exp.(logpost_true)
 	post_approx = [approx_post([x])[1] for x in xs]
 	post_approx_std = [sqrt(max(post_var([x])[1], 0.0)) for x in xs]
@@ -117,7 +117,7 @@ function plot_state(p::BosipProblem; n_points::Int = 500, separate_figures::Bool
 
 	band!(ax_func, xs, fill(obs_lower, length(xs)), fill(obs_upper, length(xs)), color=(:orange, 0.2))
 	hlines!(ax_func, [obs_mean], color=:orange, linewidth=2, label="observation ± 2σ")
-	lines!(ax_func, xs, ys_true, color=:black, linewidth=3, linestyle=:dash, label="true function")
+    lines!(ax_func, xs, ys_true, color=:black, linewidth=3, linestyle=:dash, label="true function")
 	if show_surrogate_in_simulator
 		band!(ax_func, xs, ys_surrogate_lower, ys_surrogate_upper, color=(:blue, 0.2))
 		lines!(ax_func, xs, ys_surrogate, color=:blue, linewidth=3, label="surrogate mean")

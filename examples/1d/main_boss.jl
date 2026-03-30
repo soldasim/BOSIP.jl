@@ -94,4 +94,9 @@ else
 	@info "f(best_x)" f(best_x)
 end
 
+### Plot and save legend
+fig_legend = plot_legend()
+display(fig_legend)
+save("./examples/1d/plots_boss/boss_legend.pdf", fig_legend)
+
 nothing
