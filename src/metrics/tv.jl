@@ -60,8 +60,10 @@ function calc_tv(log_ws, approx_logvals, true_logvals)
     # normalize the distributions
     ev_approx = logmeanexp(log_ws .+ approx_logvals)
     ev_true = logmeanexp(log_ws .+ true_logvals)
-    approx_logvals_norm = approx_logvals .- ev_approx
-    true_logvals_norm = true_logvals .- ev_true
+
+    # handle the case where the distributions are not normalizable (e.g. due to numerical issues)
+    approx_logvals_norm = isinf(ev_approx) ? fill(-Inf, length(approx_logvals)) : approx_logvals .- ev_approx
+    true_logvals_norm = isinf(ev_true) ? fill(-Inf, length(true_logvals)) : true_logvals .- ev_true
 
     # calculate tv
     diffs = @. abs( exp(approx_logvals_norm) - exp(true_logvals_norm) )
