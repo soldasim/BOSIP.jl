@@ -21,7 +21,7 @@ BOSIP.TuringSampler(args...; kwargs...) = TuringSampler(args...; kwargs...)
 function BOSIP.sample_posterior(sampler::TuringSampler, logpost::Function, domain::Domain, count::Int; kwargs...)
     @assert !any(domain.discrete)
     @assert isnothing(domain.cons)
-    
+
     model = turing_model(logpost, domain.bounds)
     return _sample_posterior_turing(model, sampler, count)
 end
@@ -29,7 +29,7 @@ function BOSIP.sample_posterior(sampler::TuringSampler, loglike::Function, prior
     @assert !any(domain.discrete)
     @assert isnothing(domain.cons)
     @assert extrema(prior) == domain.bounds
-    
+
     model = turing_model(loglike, prior)
     return _sample_posterior_turing(model, sampler, count)
 end
@@ -44,24 +44,24 @@ end
 end
 
 function _sample_posterior_turing(model, sampler::TuringSampler, count::Int)
-    # This count will possibly result in a few extra samples. They are discarded later.
+    # This count will possibly result in a few extra samples. They are discarded later.
     count_per_chain = (count / sampler.chain_count) |> ceil |> Int
     samples_in_chain = sampler.warmup + (sampler.leap_size * count_per_chain)
 
     if sampler.parallel
         chains = Turing.sample(model, sampler.sampler, MCMCThreads(), samples_in_chain, sampler.chain_count; progress=false)
     else
-        chains = mapreduce(_ -> Turing.sample(model, sampler.sampler, samples_in_chain; progress=false), chainscat, 1:sampler.chain_count)
+        chains = mapreduce(_ -> Turing.sample(model, sampler.sampler, samples_in_chain; progress=false), Turing.AbstractMCMC.chainscat, 1:sampler.chain_count)
     end
 
-    # `samples_in_chain` × `x_dim` × `options.chain_count` matrix
-    samples = group(chains, :x).value.data
-    # skip warmup samples and leaps
-    samples = samples[sampler.warmup+sampler.leap_size:sampler.leap_size:end, :, :]
-    # concatenate chains
-    samples = reduce(vcat, eachslice(samples; dims=3))
-    # transpose
-    samples = samples'
+    # VNChain (Turing ≥0.45): _data maps Parameter(x) -> Matrix{Vector{Float64}}(n_iters, n_chains)
+    x_key = only(k for k in keys(chains._data) if k isa Turing.FlexiChains.Parameter)
+    x_matrix = chains._data[x_key]  # (n_iters, n_chains)
+
+    # skip warmup samples and apply leap
+    idx = (sampler.warmup + sampler.leap_size):sampler.leap_size:size(x_matrix, 1)
+    # collect into x_dim × n_samples matrix
+    samples = reduce(hcat, [x_matrix[i, j] for j in axes(x_matrix, 2) for i in idx])
 
     # shuffle & discard extra samples
     keep = randperm(size(samples, 2))[1:count]

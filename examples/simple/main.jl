@@ -4,6 +4,8 @@ using BOSS.KernelFunctions
 using CairoMakie
 using Distributions
 using OptimizationPRIMA
+using Statistics
+using Turing
 
 using Random
 Random.seed!(555)
@@ -94,5 +96,24 @@ println("Saved marginals plot to ./examples/simple/plots/marginals.png")
 println("\nTo analyze the posterior, you can use:")
 println("  post = BOSIP.posterior_mean(bosip)")
 println("  post(x)")
+
+println("\n" * "="^60)
+println("Sampling from the posterior with Turing.jl...")
+println("="^60)
+
+turing_sampler = TuringSampler(;
+    sampler = NUTS(0, 0.65),
+    warmup = 500,
+    chain_count = 4,
+    leap_size = 5,
+    parallel = false,
+)
+
+n_samples = 200
+samples, weights = sample_approx_posterior(bosip, turing_sampler, n_samples)
+
+println("\nDrawn $n_samples samples from the approximate posterior.")
+println("Sample matrix size: $(size(samples))")
+println("Sample mean: $(round.(mean(samples; dims=2)[:, 1]; digits=3))")
 
 nothing
