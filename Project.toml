@@ -1,6 +1,6 @@
 name = "BOSIP"
 uuid = "631834c2-07fe-4b6b-876a-15b6a4e37445"
-version = "0.5.1"
+version = "0.5.2"
 authors = ["Šimon Soldát"]
 
 [deps]
@@ -27,7 +27,7 @@ CairoExt = "CairoMakie"
 TuringExt = "Turing"
 
 [compat]
-BOSS = "0.6"
+BOSS = "0.6.1"
 CairoMakie = "0.12.18, 0.13, 0.14, 0.15"
 Combinatorics = "1.0.3"
 DifferentiationInterface = "0.7.3"
