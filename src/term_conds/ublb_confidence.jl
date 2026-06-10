@@ -72,16 +72,18 @@ function calculate(cond::UBLBConfidence, bosip::BosipProblem)
     gp_lb = gp_bound(gp_post, -cond.n)
     gp_ub = gp_bound(gp_post, +cond.n)
 
-    like_lb = approx_likelihood(bosip.likelihood, bosip, gp_lb)
-    like_ub = approx_likelihood(bosip.likelihood, bosip, gp_ub)
+    loglike_lb = log_approx_likelihood(bosip.likelihood, bosip, gp_lb)
+    loglike_ub = log_approx_likelihood(bosip.likelihood, bosip, gp_ub)
 
     x_prior = bosip.x_prior
-    f_lb(x) = pdf(x_prior, x) * like_lb(x)
-    f_ub(x) = pdf(x_prior, x) * like_ub(x)
+    logf_lb(x) = logpdf(x_prior, x) + loglike_lb(x)
+    logf_ub(x) = logpdf(x_prior, x) + loglike_ub(x)
+    f_lb(x) = exp(logf_lb(x))
+    f_ub(x) = exp(logf_ub(x))
 
     xs_logpdf = logpdf.(Ref(x_prior), eachcol(xs))
-    ws_lb = exp.(  log.(f_lb.(eachcol(xs))) .- xs_logpdf )
-    ws_ub = exp.(  log.(f_ub.(eachcol(xs))) .- xs_logpdf )
+    ws_lb = exp.(  logf_lb.(eachcol(xs)) .- xs_logpdf )
+    ws_ub = exp.(  logf_ub.(eachcol(xs)) .- xs_logpdf )
 
     c_lb = find_cutoff(f_lb, xs, ws_lb, cond.q)
     c_ub = find_cutoff(f_ub, xs, ws_ub, cond.q)
