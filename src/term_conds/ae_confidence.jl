@@ -63,12 +63,14 @@ function calculate(cond::AEConfidence, bosip::BosipProblem)
         xs = cond.xs
     end
 
-    f_approx = approx_posterior(bosip; normalize=false, xs)
-    f_expect = posterior_mean(bosip; normalize=false, xs)
+    logf_approx = log_approx_posterior(bosip)
+    logf_expect = log_posterior_mean(bosip)
+    f_approx(x) = exp(logf_approx(x))
+    f_expect(x) = exp(logf_expect(x))
 
     xs_logpdf = logpdf.(Ref(bosip.x_prior), eachcol(xs))
-    ws_approx = exp.( log.(f_approx.(eachcol(xs))) .-  xs_logpdf)
-    ws_expect = exp.( log.(f_expect.(eachcol(xs))) .-  xs_logpdf)
+    ws_approx = exp.( logf_approx.(eachcol(xs)) .-  xs_logpdf)
+    ws_expect = exp.( logf_expect.(eachcol(xs)) .-  xs_logpdf)
 
     c_approx = find_cutoff(f_approx, xs, ws_approx, cond.q)
     c_expect = find_cutoff(f_expect, xs, ws_expect, cond.q)
