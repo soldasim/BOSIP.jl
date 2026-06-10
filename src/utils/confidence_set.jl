@@ -50,7 +50,7 @@ function approx_cutoff_area(target_pdf, xs, c)
 end
 function approx_cutoff_area(target_pdf, xs, ws, c)
     ws = deepcopy(ws)
-    ws .= exp.( log.(ws) .- log(sum(ws)) ) # normalize
+    ws ./= sum(ws)
     V = sum(ws[target_pdf.(eachcol(xs)) .>= c])
     return V
 end
@@ -70,10 +70,9 @@ the parameter samples. The samples have to be drawn from the common prior `x_pri
 [`approx_cutoff_area`](@ref)
 """
 function set_iou(in_A, in_B, x_prior, xs)
-    isnothing(xs) && (xs = rand(x_prior, samples))
-
-    ws = 1 ./ pdf.(Ref(x_prior), eachcol(xs))
-    ws ./= sum(ws)
+    log_ws = 0. .- logpdf.(Ref(x_prior), eachcol(xs))
+    log_ws .-= logsumexp(log_ws)
+    ws = exp.(log_ws)
 
     V_intersect = sum(ws[in_A .&& in_B])
     V_union = sum(ws[in_A .|| in_B])
