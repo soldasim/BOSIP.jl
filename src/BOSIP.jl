@@ -12,7 +12,7 @@ export approx_marginal_likelihood, marginal_likelihood_mean
 export log_approx_posterior, log_posterior_mean, log_posterior_variance
 export log_approx_likelihood, log_likelihood_mean, log_likelihood_variance
 export log_approx_marginal_likelihood, log_marginal_likelihood_mean
-export evidence
+export evidence, log_evidence
 export like, loglike, loglike_marginal
 export construct_acquisition
 export sample_approx_posterior, sample_expected_posterior
