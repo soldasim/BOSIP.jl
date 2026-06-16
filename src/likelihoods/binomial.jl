@@ -44,8 +44,8 @@ function log_marginal_likelihood_mean(like::BinomialLikelihood, model_post::Mode
         ps_dists = truncated.(Normal.(mean_and_std(model_post, x)...); lower=0., upper=1.)
         return map(eachindex(z_obs)) do i
             zs = quantile.(Ref(ps_dists[i]), ϵs)
-            vals = pdf.(Binomial.(Ref(trials[i]), zs), Ref(z_obs[i]))
-            log(mean(vals))
+            log_vals = logpdf.(Binomial.(Ref(trials[i]), zs), Ref(z_obs[i]))
+            logmeanexp(log_vals)
         end
     end
     function log_ml_mean(X::AbstractMatrix{<:Real})
@@ -72,8 +72,8 @@ function log_sq_likelihood_mean(like::BinomialLikelihood, model_post::ModelPoste
         ll = 0.
         for i in eachindex(z_obs)
             zs = quantile.(Ref(ps_dists[i]), ϵs)
-            vals = pdf.(Binomial.(Ref(trials[i]), zs), Ref(z_obs[i])) .^ 2
-            ll += log(mean(vals))
+            log_vals = 2 .* logpdf.(Binomial.(Ref(trials[i]), zs), Ref(z_obs[i]))
+            ll += logmeanexp(log_vals)
         end
         return ll
     end
@@ -94,7 +94,9 @@ function log_likelihood_variance(like::BinomialLikelihood, model_post::ModelPost
         # return sq_like_mean(x) - like_mean(x)^2
         log_lm = sum(log_ml_mean(x))
         log_sqlm = log_sq_like_mean(x)
-        return log( exp(log_sqlm) - exp(2 * log_lm) )
+        
+        # return log( exp(log_sqlm) - exp(2 * log_lm) )
+        return log_sqlm + log1mexp(2 * log_lm - log_sqlm)
     end
     function log_like_var(X::AbstractMatrix{<:Real})
         return log_like_var.(eachcol(X))
