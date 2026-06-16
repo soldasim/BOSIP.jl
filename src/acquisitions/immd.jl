@@ -46,7 +46,7 @@ integrated over `x`.
 end
 
 # info gain on the posterior approximation
-function (acq::IMMD)(bosip::BosipProblem{Nothing}, options::BosipOptions)
+function (acq::IMMD)(::Type{<:UniFittedParams}, bosip::BosipProblem{Nothing}, options::BosipOptions)
     problem = bosip.problem
     y_dim = BOSS.y_dim(problem)
 
@@ -55,7 +55,7 @@ function (acq::IMMD)(bosip::BosipProblem{Nothing}, options::BosipOptions)
     
     # w_i = 1 / pdf(x_proposal, x_i)
     log_ws = 0 .- logpdf.(Ref(acq.x_proposal), eachcol(xs))
-    ws = exp.( log_ws .- log(sum(exp.(log_ws))) ) # normalize to sum up to 1
+    ws = exp.(log_ws .- logsumexp(log_ws)) # normalize to sum up to 1
 
     # Sample noise variables (makes the resulting acquisition function deterministic)
     ϵs_y = sample_ϵs(y_dim, acq.y_samples) # vector-vector
@@ -69,9 +69,9 @@ function (acq::IMMD)(bosip::BosipProblem{Nothing}, options::BosipOptions)
     σs_ = std.(Ref(model_post), eachcol(xs))
     σy = sum(ws .* σs_)  # sum(ws) == 1
     # calculate `M` used for the s lengthscale
-    post_ = approx_posterior(bosip)
-    ss_ = post_.(eachcol(xs))
-    M = maximum(ss_)
+    logpost_ = log_approx_posterior(bosip)
+    log_ss_ = logpost_.(eachcol(xs))
+    M = maximum(log_ss_)
 
     return IMMDFunc(acq, bosip, model_post, xs, ws, ϵs_y, Es_s, σy, M)
 end
