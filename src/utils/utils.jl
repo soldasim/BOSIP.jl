@@ -13,3 +13,8 @@ end
 function logmeanexp(x::AbstractVector{<:Real})
     return logsumexp(x) - log(length(x))
 end
+
+function log1mexp(t::Real)
+    # log(1 - exp(t)) for t < 0
+    t < -log(2) ? log1p(-exp(t)) : log(-expm1(t))
+end
