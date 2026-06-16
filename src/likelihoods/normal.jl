@@ -25,6 +25,8 @@ Alias for [`NormalLikelihood`](@ref).
 """
 const GaussianLikelihood = NormalLikelihood
 
+likelihood_kind(::NormalLikelihood) = Marginalizable()
+
 function loglike_marginal(like::NormalLikelihood, y::AbstractVector{<:Real})
     return logpdf.(Normal.(y, like.std_obs), like.z_obs)
 end

@@ -27,6 +27,8 @@ to obtain the observations `z_o`. The subsets are assumed to be contiguous.
     end
 end
 
+likelihood_kind(::NormalSumLikelihood) = Marginalizable()
+
 function _indexed_sum(y::AbstractVector{<:Real}, sum_lengths::Vector{Int})
     z = similar(y, length(sum_lengths))
     return _indexed_sum!(z, y, sum_lengths)

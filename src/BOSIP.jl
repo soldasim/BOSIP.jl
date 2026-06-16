@@ -13,7 +13,7 @@ export log_approx_posterior, log_posterior_mean, log_posterior_variance
 export log_approx_likelihood, log_likelihood_mean, log_likelihood_variance
 export log_approx_marginal_likelihood, log_marginal_likelihood_mean
 export evidence, log_evidence
-export like, loglike, loglike_marginal
+export like, like_marginal, loglike, loglike_marginal
 export construct_acquisition
 export sample_approx_posterior, sample_expected_posterior
 export sample_posterior, sample_posterior_pure, resample
@@ -24,6 +24,7 @@ export approx_by_gauss_mix, GaussMixOptions
 
 ### Types
 export Likelihood, MonteCarloLikelihood
+export LikelihoodKind, Marginalizable, JointOnly, likelihood_kind
 export CombinedLikelihood, CustomLikelihood
 export ExpLikelihood, SqExpLikelihood
 export NormalLikelihood, GaussianLikelihood

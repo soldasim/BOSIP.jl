@@ -7,6 +7,9 @@ Only exponentiates the model prediction.
 """
 @kwdef struct ExpLikelihood <: Likelihood end
 
+# defined directly through `loglike` (models the scalar log-likelihood), not `loglike_marginal`
+likelihood_kind(::ExpLikelihood) = JointOnly()
+
 function loglike(::ExpLikelihood, y::AbstractVector{<:Real})
     @assert length(y) == 1
     return y[1]

@@ -7,6 +7,9 @@ Squares and then exponentiates the model prediction to obtain the likelihood.
 """
 @kwdef struct SqExpLikelihood <: Likelihood end
 
+# defined directly through `loglike` (models the scalar sqrt-log-likelihood), not `loglike_marginal`
+likelihood_kind(::SqExpLikelihood) = JointOnly()
+
 function loglike(::SqExpLikelihood, y::AbstractVector{<:Real})
     @assert length(y) == 1
     return y[1]^2

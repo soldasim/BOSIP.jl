@@ -19,6 +19,8 @@ This likelihood is just for showcasing how discarding the sign can decrease perf
     std_obs::Vector{Float64}
 end
 
+likelihood_kind(::NormalDiffLikelihood) = Marginalizable()
+
 function loglike_marginal(like::NormalDiffLikelihood, δ::AbstractVector{<:Real})
     return logpdf.(Normal.(zero(like.std_obs), like.std_obs), δ)
 end

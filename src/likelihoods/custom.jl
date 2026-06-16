@@ -24,6 +24,9 @@ is used, which is based on the input parameters.
     mc_samples::Int
 end
 
+# defined directly through `loglike` (the user-provided `log_ψ`), not `loglike_marginal`
+likelihood_kind(::CustomLikelihood) = JointOnly()
+
 function loglike(like::CustomLikelihood, δ::AbstractVector{<:Real}, x::AbstractVector{<:Real})
     return like.log_ψ(δ, x)
 end

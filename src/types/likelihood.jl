@@ -10,17 +10,26 @@ See also [`CombinedLikelihood`](@ref), which facilitates combining multiple like
 
 Each subtype of `Likelihood` must implement the following API;
 
-**Mandatory:** Define the log-likelihood and its expectation - ideally through the marginal contributions.
-- `loglike_marginal(like::Likelihood, δ::AbstractVector{<:Real}, [x::AbstractVector{<:Real}])`
-- `log_marginal_likelihood_mean(::Likelihood, ::ModelPosterior)`
+**Mandatory:** Declare whether the likelihood is marginalizable via [`likelihood_kind`](@ref),
+and define the log-likelihood and its expectation accordingly. One of:
 
-_(Alternatively, implement the non-marginal versions: `loglike`, `log_likelihood_mean`.
-It is better to implement the marginal versions, as then both are available.)_
+- **Marginalizable** — factorizes over observation dimensions (preferred when possible, as both the
+    marginal and joint quantities then become available):
+    - `likelihood_kind(::MyLikelihood) = Marginalizable()`
+    - `loglike_marginal(like::MyLikelihood, δ::AbstractVector{<:Real}, [x::AbstractVector{<:Real}])`
+    - `log_marginal_likelihood_mean(::MyLikelihood, ::ModelPosterior)`
+- **Joint-only** — does not factorize (e.g. a full-covariance likelihood):
+    - `likelihood_kind(::MyLikelihood) = JointOnly()`
+    - `loglike(like::MyLikelihood, δ::AbstractVector{<:Real}, [x::AbstractVector{<:Real}])`
+    - `log_likelihood_mean(::MyLikelihood, ::ModelPosterior)`
 
-**Optional:** (for performance optimization)
+The input parameters `x` are optional, it is preferable to define the method without `x` if it is not needed.
+See [`LikelihoodKind`](@ref) for which fallbacks each kind provides.
+
+**Optional:** For performance optimization, implement the corresponding matrix-variate methods.
 - `loglike_marginal(like::Likelihood, Δ::AbstractMatrix{<:Real}, [X::AbstractMatrix{<:Real}])` or `loglike(like::Likelihood, Δ::AbstractMatrix{<:Real}, [X::AbstractMatrix{<:Real}])`
 
-**Mandatory at least one of:** Define the likelihood variance.
+**Mandatory at least one of:** Define the likelihood variance via one of the following methods.
 - `log_sq_likelihood_mean(::Likelihood, ::ModelPosterior)`
 - `log_likelihood_variance(::Likelihood, ::ModelPosterior)`
 
@@ -30,14 +39,68 @@ or it is computed by definition as the difference of the mean of the square and 
 **Necessary only if** `BosipProblem` where `!isnothing(problem.y_sets)` is used:
 - `get_subset(::Likelihood, y_set::AbstractVector{<:Bool})`:
 
-**Provided by default:**
-- `loglike(::Likelihood, δ::AbstractVector{<:Real}, [x::AbstarctVector{<:Real}])`
-- `log_likelihood_mean(::Likelihood, ::ModelPosterior)`
-- `log_approx_marginal_likelihood(::Likelihood, ::ModelPosterior)`
+Additional provided functions which **need not be defined**:
 - `log_approx_likelihood(::Likelihood, ::ModelPosterior)`
+- `log_approx_marginal_likelihood(::Likelihood, ::ModelPosterior)` for marginalizable likelihoods
 - `like(::Likelihood, δ::AbstractVector{<:Real}, [x::AbstractVector{<:Real}])`
+- `like_marginal(::Likelihood, δ::AbstractVector{<:Real}, [x::AbstractVector{<:Real}])` for marginalizable likelihoods
 """
 abstract type Likelihood end
+
+"""
+    LikelihoodKind
+
+Trait describing how a [`Likelihood`](@ref) defines its log-likelihood, and thus which fallbacks
+apply. Each `Likelihood` subtype declares its kind via [`likelihood_kind`](@ref).
+
+- [`Marginalizable`](@ref) defined through `loglike_marginal`. The `loglike` methods
+    fall back on summing the per-dimension marginal contributions.
+- [`JointOnly`](@ref) defined directly through `loglike` (e.g. a non-factorizable full-covariance
+    likelihood, for which no per-dimension marginal exists). The `loglike_marginal` is not defined.
+"""
+abstract type LikelihoodKind end
+
+"The likelihood is defined through `loglike_marginal`. See [`LikelihoodKind`](@ref)."
+struct Marginalizable <: LikelihoodKind end
+
+"The likelihood is defined directly through `loglike`. See [`LikelihoodKind`](@ref)."
+struct JointOnly <: LikelihoodKind end
+
+"""
+    likelihood_kind(::Likelihood) -> ::LikelihoodKind
+
+Return the [`LikelihoodKind`](@ref) trait of the likelihood. **Has no default**: every `Likelihood`
+subtype must define it, as either [`Marginalizable`](@ref) (and implement `loglike_marginal`) or
+[`JointOnly`](@ref) (and implement `loglike`).
+"""
+function likelihood_kind end
+
+"""
+    loglike(::Likelihood, δ::AbstractVector{<:Real}, [x::AbstractVector{<:Real}]) -> ::Real
+    loglike(::Likelihood, Δ::AbstractMatrix{<:Real}, [X::AbstractMatrix{<:Real}]) -> ::AbstractVector{<:Real}
+
+Return the log-likelihood of the observation given the proxy variable `δ`.
+Rarely, some `Likelihood`s may require the input parameters `x` to compute the log-likelihood as well.
+
+For [`Marginalizable`](@ref) likelihoods the vector methods fall back on summing `loglike_marginal`
+(with or without `x`). For [`JointOnly`](@ref) likelihoods the `x`-independent vector method is
+implemented directly by the subtype, and the `x`-dependent one falls back on it. The matrix methods
+broadcast the vector methods over the columns (subtypes may override them for efficiency).
+"""
+# vector methods are trait-dispatched
+loglike(l::Likelihood, δ::AbstractVector{<:Real}) = _loglike(likelihood_kind(l), l, δ)
+loglike(l::Likelihood, δ::AbstractVector{<:Real}, x::AbstractVector{<:Real}) = _loglike(likelihood_kind(l), l, δ, x)
+
+# marginalizable -> sum the marginals (with or without x)
+_loglike(::Marginalizable, l::Likelihood, δ::AbstractVector{<:Real}) = sum(loglike_marginal(l, δ))
+_loglike(::Marginalizable, l::Likelihood, δ::AbstractVector{<:Real}, x::AbstractVector{<:Real}) = sum(loglike_marginal(l, δ, x))
+
+# joint-only -> check if a method without x exists
+_loglike(::JointOnly, l::Likelihood, δ::AbstractVector{<:Real}, x::AbstractVector{<:Real}) = loglike(l, δ)
+
+# default broadcasting (subtypes may override the matrix methods for efficiency)
+loglike(l::Likelihood, Δ::AbstractMatrix{<:Real}) = loglike.(Ref(l), eachcol(Δ))
+loglike(l::Likelihood, Δ::AbstractMatrix{<:Real}, X::AbstractMatrix{<:Real}) = loglike.(Ref(l), eachcol(Δ), eachcol(X))
 
 """
     loglike_marginal(like::Likelihood, δ::AbstractVector{<:Real}, [x::AbstractVector{<:Real}]) -> ::AbstractVector{<:Real}
@@ -49,26 +112,20 @@ The result is a vector with one entry per observation dimension, such that
 
 The batched method returns a matrix where each column corresponds to one sample in `Δ`.
 Rarely, some `Likelihood`s may require the input parameters `x` to compute the log-likelihood as well.
-"""
-loglike_marginal(like::Likelihood, δ::AbstractVector{<:Real}, x::AbstractVector{<:Real}) = loglike_marginal(like, δ)
 
-# default broadcasting
+Only defined for [`Marginalizable`](@ref) likelihoods, which implement the `δ`-only method;
+the rest is provided by the fallbacks below.
+"""
+loglike_marginal(l::Likelihood, δ::AbstractVector{<:Real}, x::AbstractVector{<:Real}) =
+    _loglike_marginal(likelihood_kind(l), l, δ, x)
+
+# marginalizable -> check if a method without x exists
+_loglike_marginal(::Marginalizable, l::Likelihood, δ::AbstractVector{<:Real}, x::AbstractVector{<:Real}) =
+    loglike_marginal(l, δ)
+
+# default broadcasting (subtypes may override the matrix methods for efficiency)
 loglike_marginal(l::Likelihood, Δ::AbstractMatrix{<:Real}) = hcat(loglike_marginal.(Ref(l), eachcol(Δ))...)
 loglike_marginal(l::Likelihood, Δ::AbstractMatrix{<:Real}, X::AbstractMatrix{<:Real}) = hcat(loglike_marginal.(Ref(l), eachcol(Δ), eachcol(X))...)
-
-"""
-    loglike(::Likelihood, δ::AbstractVector{<:Real}, [x::AbstractVector{<:Real}]) -> ::Real
-    loglike(::Likelihood, Δ::AbstractMatrix{<:Real}, [X::AbstractMatrix{<:Real}]) -> ::AbstractVector{<:Real}
-
-Return the log-likelihood of the observation given the proxy variable `δ`.
-Rarely, some `Likelihood`s may require the input parameters `x` to compute the log-likelihood as well.
-"""
-loglike(l::Likelihood, δ::AbstractVector{<:Real}) = sum(loglike_marginal(l, δ))
-loglike(l::Likelihood, δ::AbstractVector{<:Real}, x::AbstractVector{<:Real}) = sum(loglike_marginal(l, δ, x))
-
-# default broadcasting
-loglike(l::Likelihood, Δ::AbstractMatrix{<:Real}) = loglike.(Ref(l), eachcol(Δ))
-loglike(l::Likelihood, Δ::AbstractMatrix{<:Real}, X::AbstractMatrix{<:Real}) = loglike.(Ref(l), eachcol(Δ), eachcol(X))
 
 """
     like(::Likelihood, δ::AbstractVector{<:Real}, [x::AbstractVector{<:Real}]) -> ::Real
@@ -77,6 +134,15 @@ loglike(l::Likelihood, Δ::AbstractMatrix{<:Real}, X::AbstractMatrix{<:Real}) = 
 Return the likelihood of the observation given the model output `δ`.
 """
 like(args...) = exp.(loglike(args...))
+
+"""
+    like_marginal(::Likelihood, δ::AbstractVector{<:Real}, [x::AbstractVector{<:Real}]) -> ::AbstractVector{<:Real}
+    like_marginal(l::Likelihood, Δ::AbstractMatrix{<:Real}, [X::AbstractMatrix{<:Real}]) -> ::AbstractMatrix{<:Real}
+
+Return the per-dimension likelihoods of the observation given the model output `δ`.
+Only defined for [`Marginalizable`](@ref) likelihoods.
+"""
+like_marginal(args...) = exp.(loglike_marginal(args...))
 
 """
     log_approx_marginal_likelihood(::Likelihood, ::ModelPosterior)
