@@ -25,6 +25,8 @@ The simulator should only return values between 0 and 1. The GP estimates are cl
     end
 end
 
+likelihood_kind(::BinomialLikelihood) = Marginalizable()
+
 function loglike_marginal(like::BinomialLikelihood, y::AbstractVector{<:Real})
     y_ = clamp.(y, 0., 1.)
     return logpdf.(Binomial.(like.trials, y_), like.z_obs)

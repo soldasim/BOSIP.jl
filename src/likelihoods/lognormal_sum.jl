@@ -36,6 +36,8 @@ function LogNormalSumLikelihood(; sum_lengths, log_z_obs, CV)
     return LogNormalSumLikelihood(sum_lengths, log_z_obs, CV)
 end
 
+likelihood_kind(::LogNormalSumLikelihood) = Marginalizable()
+
 ### from lognormal.jl
 # _μ_log_z(log_y::Real, σ_log::Real) = log_y - (σ_log^2) / 2
 # _σ_log_z(CV::Real) = sqrt(log(1 + CV^2))

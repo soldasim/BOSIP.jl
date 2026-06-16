@@ -41,6 +41,8 @@ function LogNormalLikelihood(; log_z_obs, CV)
     return LogNormalLikelihood(log_z_obs, CV)
 end
 
+likelihood_kind(::LogNormalLikelihood) = Marginalizable()
+
 # Transformations for the LogNormal distribution parameters
 _μ_log_z(log_y::Real, σ_log::Real) = log_y - (σ_log^2) / 2
 _σ_log_z(CV::Real) = sqrt(log(1 + CV^2))

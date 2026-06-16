@@ -14,6 +14,10 @@ as `z_obs \\sim Normal(f(x), Σ_obs)`. We can use the simulator to query `y = f(
     Σ_obs::Matrix{Float64}
 end
 
+# `MvNormal` does not factorize over observation dimensions (full covariance `Σ_obs`),
+# so it is defined directly through `loglike` rather than `loglike_marginal`.
+likelihood_kind(::MvNormalLikelihood) = JointOnly()
+
 function loglike(like::MvNormalLikelihood, y::AbstractVector{<:Real})
     # return logpdf(MvNormal(y, like.Σ_obs), like.z_obs)
     return logpdf(MvNormal(like.z_obs, like.Σ_obs), y)

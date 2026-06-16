@@ -26,6 +26,16 @@ function CombinedLikelihood(likelihoods, δ_ranges)
     return CombinedLikelihood(likelihoods, δ_ranges)
 end
 
+# `CombinedLikelihood` concatenates its sub-likelihoods' per-dimension marginals,
+# so it is marginalizable iff every constituent is; determined at runtime from the constituents.
+# This is type-unstable, but almost never called as all `loglike` and `loglike_marginal`
+# methods are overriden for `CombinedLikelihood`.
+likelihood_kind(like::CombinedLikelihood) =
+    all(isa.(likelihood_kind.(like.likelihoods), Marginalizable)) ? Marginalizable() : JointOnly()
+
+function loglike_marginal(like::CombinedLikelihood, δ::AbstractVector{<:Real})
+    return vcat([loglike_marginal(l, δ[rng]) for (l, rng) in zip(like.likelihoods, like.δ_ranges)]...)
+end
 function loglike_marginal(like::CombinedLikelihood, δ::AbstractVector{<:Real}, x::AbstractVector{<:Real})
     return vcat([loglike_marginal(l, δ[rng], x) for (l, rng) in zip(like.likelihoods, like.δ_ranges)]...)
 end
@@ -47,6 +57,9 @@ function log_marginal_likelihood_mean(like::CombinedLikelihood, model_post::BOSS
     return log_ml_mean
 end
 
+function loglike(like::CombinedLikelihood, δ::AbstractVector{<:Real})
+    return mapreduce((l, rng) -> loglike(l, δ[rng]), +, like.likelihoods, like.δ_ranges)
+end
 function loglike(like::CombinedLikelihood, δ::AbstractVector{<:Real}, x::AbstractVector{<:Real})
     return mapreduce((l, rng) -> loglike(l, δ[rng], x), +, like.likelihoods, like.δ_ranges)
 end
