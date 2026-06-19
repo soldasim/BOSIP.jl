@@ -1,4 +1,18 @@
 
+"""
+    OptimizationFitter(; algorithm, kwargs...)
+
+A [`DistributionFitter`](@ref) that fits the [`ProposalDistribution`](@ref) parameters by numerically
+maximizing the (weighted) sample log-likelihood via the Optimization.jl library.
+
+## Keywords
+- `algorithm`: The optimization algorithm passed to Optimization.jl.
+- `multistart::Int`: The number of optimization restarts.
+- `parallel::Bool`: If `true`, the restarts are run in parallel.
+- `static_schedule::Bool`: If `true`, the `:static` schedule is used for parallelization.
+- `autodiff`: The automatic differentiation type passed to the `OptimizationFunction`.
+- `kwargs...`: Additional keyword arguments passed to the optimization algorithm.
+"""
 struct OptimizationFitter{A} <: DistributionFitter
     algorithm::A
     multistart::Int64

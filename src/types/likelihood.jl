@@ -87,7 +87,6 @@ For [`Marginalizable`](@ref) likelihoods the vector methods fall back on summing
 implemented directly by the subtype, and the `x`-dependent one falls back on it. The matrix methods
 broadcast the vector methods over the columns (subtypes may override them for efficiency).
 """
-# vector methods are trait-dispatched
 loglike(l::Likelihood, δ::AbstractVector{<:Real}) = _loglike(likelihood_kind(l), l, δ)
 loglike(l::Likelihood, δ::AbstractVector{<:Real}, x::AbstractVector{<:Real}) = _loglike(likelihood_kind(l), l, δ, x)
 
