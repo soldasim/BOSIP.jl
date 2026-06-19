@@ -1,2 +1,3 @@
 [deps]
+BOSIP = "631834c2-07fe-4b6b-876a-15b6a4e37445"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"

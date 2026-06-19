@@ -1,4 +1,10 @@
 
+"""
+Abstract type for algorithms that fit a [`ProposalDistribution`](@ref)'s parameters to weighted samples.
+
+Used by the [`AMISSampler`](@ref) to adapt its proposal distribution each iteration.
+Subtypes implement `fit_distribution!`. See [`AnalyticalFitter`](@ref) and [`OptimizationFitter`](@ref).
+"""
 abstract type DistributionFitter end
 
 
