@@ -67,7 +67,18 @@ function loglike_marginal(like::NormalSumLikelihood, y::AbstractVector{<:Real})
     return logpdf.(Normal.(z, like.std_obs), like.z_obs)
 end
 
-function log_marginal_likelihood_mean(like::NormalSumLikelihood, model_post::ModelPosterior)
+function _warn_normal_sum_sampled_predictive()
+    @warn "`NormalSumLikelihood` does not implement exact `predictive_samples`-based support for " *
+        "`SampledPredictive` models (e.g. `WarpedGaussianProcess`) yet; falling back to a " *
+        "Gaussian-moment approximation via `mean_and_var`, which may be inaccurate for a " *
+        "non-Gaussian predictive distribution." maxlog=1
+end
+
+function log_marginal_likelihood_mean(::SampledPredictive, like::NormalSumLikelihood, model_post::ModelPosterior)
+    _warn_normal_sum_sampled_predictive()
+    return log_marginal_likelihood_mean(GaussianPredictive(), like, model_post)
+end
+function log_marginal_likelihood_mean(::GaussianPredictive, like::NormalSumLikelihood, model_post::ModelPosterior)
     z_obs = like.z_obs
     std_obs = like.std_obs
 
@@ -88,7 +99,11 @@ function log_marginal_likelihood_mean(like::NormalSumLikelihood, model_post::Mod
     return log_ml_mean
 end
 
-function log_sq_likelihood_mean(like::NormalSumLikelihood, model_post::ModelPosterior)
+function log_sq_likelihood_mean(::SampledPredictive, like::NormalSumLikelihood, model_post::ModelPosterior)
+    _warn_normal_sum_sampled_predictive()
+    return log_sq_likelihood_mean(GaussianPredictive(), like, model_post)
+end
+function log_sq_likelihood_mean(::GaussianPredictive, like::NormalSumLikelihood, model_post::ModelPosterior)
     z_obs = like.z_obs
     std_obs = like.std_obs
 

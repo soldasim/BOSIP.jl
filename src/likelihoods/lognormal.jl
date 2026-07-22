@@ -52,7 +52,7 @@ function loglike_marginal(like::LogNormalLikelihood, log_y::AbstractVector{<:Rea
     return logpdf.(LogNormal.(μ_log, like.σ_log), like.z_obs)
 end
 
-function log_marginal_likelihood_mean(like::LogNormalLikelihood, model_post::ModelPosterior)
+function log_marginal_likelihood_mean(::GaussianPredictive, like::LogNormalLikelihood, model_post::ModelPosterior)
     z_obs = like.z_obs
     σ_log = like.σ_log
 
@@ -74,7 +74,7 @@ function log_marginal_likelihood_mean(like::LogNormalLikelihood, model_post::Mod
 end
 
 # Almost identical to `sq_likelihood_mean(::GaussianLikelihood)`, just swapped `MvNormal` for `MvLogNormal`
-function log_sq_likelihood_mean(like::LogNormalLikelihood, model_post::ModelPosterior)
+function log_sq_likelihood_mean(::GaussianPredictive, like::LogNormalLikelihood, model_post::ModelPosterior)
     z_obs = like.z_obs
     σ_log = like.σ_log
 
