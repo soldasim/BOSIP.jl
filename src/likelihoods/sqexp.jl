@@ -19,7 +19,7 @@ function loglike(::SqExpLikelihood, Y::AbstractMatrix{<:Real})
     return Y[1,:] .^ 2
 end
 
-function log_likelihood_mean(::SqExpLikelihood, model_post::ModelPosterior)
+function log_likelihood_mean(::GaussianPredictive, ::SqExpLikelihood, model_post::ModelPosterior)
     function log_like_mean(x::AbstractVector{<:Real})
         μ_y, std_y = mean_and_std(model_post, x)
         @assert length(μ_y) == length(std_y) == 1
@@ -33,8 +33,18 @@ function log_likelihood_mean(::SqExpLikelihood, model_post::ModelPosterior)
     end
     return log_like_mean
 end
+function log_likelihood_mean(::SampledPredictive, ::SqExpLikelihood, model_post::ModelPosterior)
+    function log_like_mean(x::AbstractVector{<:Real})
+        ys, ws = only(per_dim_predictive_samples(model_post, x))
+        return logsumexp((ys .^ 2) .+ log.(ws))
+    end
+    function log_like_mean(X::AbstractMatrix{<:Real})
+        return log_like_mean.(eachcol(X))
+    end
+    return log_like_mean
+end
 
-function log_sq_likelihood_mean(::SqExpLikelihood, model_post::ModelPosterior)
+function log_sq_likelihood_mean(::GaussianPredictive, ::SqExpLikelihood, model_post::ModelPosterior)
     function log_sq_like_mean(x::AbstractVector{<:Real})
         μ_y, std_y = mean_and_std(model_post, x)
         @assert length(μ_y) == length(std_y) == 1
@@ -42,6 +52,16 @@ function log_sq_likelihood_mean(::SqExpLikelihood, model_post::ModelPosterior)
 
         # return log( (1 / sqrt(1 + 2 * σ^2)) * exp(-(1/2) * (μ^2 / (σ^2 * (1 + 2 * σ^2)))) )
         return (-(1/2) * log(1 + 2 * σ^2)) + (-(1/2) * (μ^2 / (σ^2 * (1 + 2 * σ^2))))
+    end
+    function log_sq_like_mean(X::AbstractMatrix{<:Real})
+        return log_sq_like_mean.(eachcol(X))
+    end
+    return log_sq_like_mean
+end
+function log_sq_likelihood_mean(::SampledPredictive, ::SqExpLikelihood, model_post::ModelPosterior)
+    function log_sq_like_mean(x::AbstractVector{<:Real})
+        ys, ws = only(per_dim_predictive_samples(model_post, x))
+        return logsumexp((2 .* ys .^ 2) .+ log.(ws))
     end
     function log_sq_like_mean(X::AbstractMatrix{<:Real})
         return log_sq_like_mean.(eachcol(X))

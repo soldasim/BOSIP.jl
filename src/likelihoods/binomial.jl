@@ -32,7 +32,7 @@ function loglike_marginal(like::BinomialLikelihood, y::AbstractVector{<:Real})
     return logpdf.(Binomial.(like.trials, y_), like.z_obs)
 end
 
-function log_marginal_likelihood_mean(like::BinomialLikelihood, model_post::ModelPosterior;
+function log_marginal_likelihood_mean(::GaussianPredictive, like::BinomialLikelihood, model_post::ModelPosterior;
     ϵs = nothing,
 )
     z_obs = like.z_obs
@@ -55,10 +55,28 @@ function log_marginal_likelihood_mean(like::BinomialLikelihood, model_post::Mode
     end
     return log_ml_mean
 end
+function log_marginal_likelihood_mean(::SampledPredictive, like::BinomialLikelihood, model_post::ModelPosterior;
+    ϵs = nothing,
+)
+    z_obs = like.z_obs
+    trials = like.trials
 
-# `log_likelihood_variance` shares `ϵs` with `log_sq_likelihood_mean` for noise cancellation.
-function log_sq_likelihood_mean(like::BinomialLikelihood, model_post::ModelPosterior;
-    ϵs = nothing,    
+    function log_ml_mean(x::AbstractVector{<:Real})
+        dims = per_dim_predictive_samples(model_post, x; lower=0., upper=1.)
+        return [_binomial_atom_log_mean(ys, ws, trials[i], z_obs[i]) for (i, (ys, ws)) in enumerate(dims)]
+    end
+    function log_ml_mean(X::AbstractMatrix{<:Real})
+        dims = per_dim_predictive_samples(model_post, X; lower=0., upper=1.)
+        rows = [[_binomial_atom_log_mean((@view ys[:, j]), (@view ws[:, j]), trials[i], z_obs[i])
+                 for j in axes(X, 2)]
+                for (i, (ys, ws)) in enumerate(dims)]
+        return reduce(vcat, [row' for row in rows])
+    end
+    return log_ml_mean
+end
+
+function log_sq_likelihood_mean(::GaussianPredictive, like::BinomialLikelihood, model_post::ModelPosterior;
+    ϵs = nothing,
 )
     z_obs = like.z_obs
     trials = like.trials
@@ -70,7 +88,7 @@ function log_sq_likelihood_mean(like::BinomialLikelihood, model_post::ModelPoste
     # TODO refactor
     function log_sq_like_mean(x::AbstractVector{<:Real})
         ps_dists = truncated.(Normal.(mean_and_std(model_post, x)...); lower=0., upper=1.)
-        
+
         ll = 0.
         for i in eachindex(z_obs)
             zs = quantile.(Ref(ps_dists[i]), ϵs)
@@ -84,10 +102,48 @@ function log_sq_likelihood_mean(like::BinomialLikelihood, model_post::ModelPoste
     end
     return log_sq_like_mean
 end
+function log_sq_likelihood_mean(::SampledPredictive, like::BinomialLikelihood, model_post::ModelPosterior;
+    ϵs = nothing,
+)
+    z_obs = like.z_obs
+    trials = like.trials
 
-# share the noise samples `ϵs`
-function log_likelihood_variance(like::BinomialLikelihood, model_post::ModelPosterior)
-    ϵs = rand(Uniform(0, 1), like.int_grid_size)
+    function log_sq_like_mean(x::AbstractVector{<:Real})
+        dims = per_dim_predictive_samples(model_post, x; lower=0., upper=1.)
+        return sum(_binomial_atom_log_mean(ys, ws, trials[i], z_obs[i]; square=true) for (i, (ys, ws)) in enumerate(dims))
+    end
+    function log_sq_like_mean(X::AbstractMatrix{<:Real})
+        dims = per_dim_predictive_samples(model_post, X; lower=0., upper=1.)
+        per_dim_logs = [[_binomial_atom_log_mean((@view ys[:, j]), (@view ws[:, j]), trials[i], z_obs[i]; square=true)
+                          for j in axes(X, 2)]
+                         for (i, (ys, ws)) in enumerate(dims)]
+        return reduce(+, per_dim_logs)
+    end
+    return log_sq_like_mean
+end
+
+function _binomial_atom_log_mean(ys::AbstractVector{<:Real}, ws::AbstractVector{<:Real}, trials::Int, z::Int; square::Bool=false)
+    in_range = 0. .<= ys .<= 1.
+    if any(in_range)
+        ys_in = ys[in_range]
+        ws_in = ws[in_range]
+        ws_in = ws_in ./ sum(ws_in)
+    else
+        ys_in = clamp.(ys, 0., 1.)
+        ws_in = ws
+    end
+    log_vals = logpdf.(Binomial.(trials, ys_in), z)
+    square && (log_vals = 2 .* log_vals)
+    return logsumexp(log_vals .+ log.(ws_in))
+end
+
+# Shares `ϵs` between `log_marginal_likelihood_mean`/`log_sq_likelihood_mean` for noise cancellation.
+function log_likelihood_variance(::GaussianPredictive, like::BinomialLikelihood, model_post::ModelPosterior;
+    ϵs = nothing,
+)
+    if isnothing(ϵs)
+        ϵs = rand(Uniform(0, 1), like.int_grid_size)
+    end
 
     log_ml_mean = log_marginal_likelihood_mean(like, model_post; ϵs)
     log_sq_like_mean = log_sq_likelihood_mean(like, model_post; ϵs)
@@ -96,7 +152,7 @@ function log_likelihood_variance(like::BinomialLikelihood, model_post::ModelPost
         # return sq_like_mean(x) - like_mean(x)^2
         log_lm = sum(log_ml_mean(x))
         log_sqlm = log_sq_like_mean(x)
-        
+
         # return log( exp(log_sqlm) - exp(2 * log_lm) )
         return log_sqlm + log1mexp(2 * log_lm - log_sqlm)
     end
