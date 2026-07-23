@@ -30,9 +30,14 @@ function (cb::MetricCallback)(problem::BosipProblem; first::Bool, options::BossO
         return
     end
 
-    score = _calc_score(cb.metric, cb, problem)
-    options.info && @show score
-    push!(cb.score_history, score)
+    try
+        score = _calc_score(cb.metric, cb, problem)
+        options.info && @show score
+        push!(cb.score_history, score)
+    catch e
+        @warn "MetricCallback failed: $(typeof(e)). Storing NaN for this iteration."
+        push!(cb.score_history, NaN)
+    end
 end
 
 function _calc_score(metric::SampleMetric, cb::MetricCallback, problem::BosipProblem)
