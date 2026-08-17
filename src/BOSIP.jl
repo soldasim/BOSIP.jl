@@ -70,6 +70,7 @@ using ForwardDiff
 using LazyArrays
 using Combinatorics
 using OptimizationPRIMA # only used in CairoExt
+using SciMLBase
 
 import BOSS.x_dim, BOSS.y_dim
 import BOSS.estimate_parameters!, BOSS.maximize_acquisition, BOSS.eval_objective!
