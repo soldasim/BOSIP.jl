@@ -18,7 +18,7 @@ struct OptimizationFitter{A} <: DistributionFitter
     multistart::Int64
     parallel::Bool
     static_schedule::Bool
-    autodiff::Optimization.AbstractADType
+    autodiff::AbstractADType
     kwargs::Base.Pairs{Symbol, <:Any}
 end
 function OptimizationFitter(;
