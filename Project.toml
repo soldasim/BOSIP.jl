@@ -4,6 +4,7 @@ version = "0.5.2"
 authors = ["Šimon Soldát"]
 
 [deps]
+ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
 BOSS = "15052f3f-a82a-4ca3-bbc4-f478a3bd1ae2"
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
 DifferentiationInterface = "a0c0ee7d-e4b9-4e03-894e-1c5f64a51d63"
@@ -28,6 +29,7 @@ CairoExt = "CairoMakie"
 TuringExt = "Turing"
 
 [compat]
+ADTypes = "1.24.0"
 BOSS = "0.6.1"
 CairoMakie = "0.12.18, 0.13, 0.14, 0.15"
 Combinatorics = "1.0.3"
