@@ -1,4 +1,18 @@
 
+"""
+    MetricCallback(; kwargs...)
+
+A [`BosipCallback`](@ref) that evaluates a [`DistributionMetric`](@ref) between the learned posterior
+and a reference once before the run and after every iteration, recording the scores in `score_history`.
+
+## Keywords
+- `reference`: The ground-truth log-posterior function, or a matrix of reference samples.
+- `logpost_estimator::Function`: Maps the `BosipProblem` to the log-posterior estimate to be scored.
+- `metric::DistributionMetric`: The metric used to compare the posteriors.
+- `sampler::DistributionSampler`: The sampler used to draw samples from the approximate posterior.
+- `sample_count::Int`: The number of samples drawn to estimate the metric.
+- `score_history::Vector{Float64}`: The recorded metric scores (populated during the run).
+"""
 @kwdef mutable struct MetricCallback <: BosipCallback
     reference::Any #::Union{Function, Matrix{Float64}} true logpost or reference samples
     logpost_estimator::Function = log_posterior_mean
@@ -16,9 +30,14 @@ function (cb::MetricCallback)(problem::BosipProblem; first::Bool, options::BossO
         return
     end
 
-    score = _calc_score(cb.metric, cb, problem)
-    options.info && @show score
-    push!(cb.score_history, score)
+    try
+        score = _calc_score(cb.metric, cb, problem)
+        options.info && @show score
+        push!(cb.score_history, score)
+    catch e
+        @warn "MetricCallback failed: $(typeof(e)). Storing NaN for this iteration."
+        push!(cb.score_history, NaN)
+    end
 end
 
 function _calc_score(metric::SampleMetric, cb::MetricCallback, problem::BosipProblem)

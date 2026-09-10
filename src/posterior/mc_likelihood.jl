@@ -1,20 +1,46 @@
 
-function log_likelihood_mean(like::MonteCarloLikelihood, model_post::ModelPosterior)
+function _warn_mc_likelihood_sampled_predictive(like::MonteCarloLikelihood)
+    @warn "`$(nameof(typeof(like)))` (a `MonteCarloLikelihood`) does not implement exact " *
+        "`predictive_samples`-based support for `SampledPredictive` models (e.g. " *
+        "`WarpedGaussianProcess`) yet; falling back to Monte Carlo integration over samples drawn " *
+        "from a Gaussian reparameterization of `mean_and_std`, which may be inaccurate for a " *
+        "non-Gaussian predictive distribution." maxlog=1
+end
+
+function log_likelihood_mean(::SampledPredictive, like::MonteCarloLikelihood, model_post::ModelPosterior)
+    _warn_mc_likelihood_sampled_predictive(like)
+    return log_likelihood_mean(GaussianPredictive(), like, model_post)
+end
+function log_likelihood_mean(::GaussianPredictive, like::MonteCarloLikelihood, model_post::ModelPosterior)
     E = _sample_E(δ_dim(like), mc_samples(like))
     return _integrate_over_delta(model_post, (δ, x) -> loglike(like, δ, x), E)
 end
-function log_marginal_likelihood_mean(like::MonteCarloLikelihood, model_post::ModelPosterior)
+
+function log_marginal_likelihood_mean(::SampledPredictive, like::MonteCarloLikelihood, model_post::ModelPosterior)
+    _warn_mc_likelihood_sampled_predictive(like)
+    return log_marginal_likelihood_mean(GaussianPredictive(), like, model_post)
+end
+function log_marginal_likelihood_mean(::GaussianPredictive, like::MonteCarloLikelihood, model_post::ModelPosterior)
     E = _sample_E(δ_dim(like), mc_samples(like))
     return _integrate_over_delta_marginal(model_post, (δ, x) -> loglike_marginal(like, δ, x), E)
 end
-function log_sq_likelihood_mean(like::MonteCarloLikelihood, model_post::ModelPosterior)
+
+function log_sq_likelihood_mean(::SampledPredictive, like::MonteCarloLikelihood, model_post::ModelPosterior)
+    _warn_mc_likelihood_sampled_predictive(like)
+    return log_sq_likelihood_mean(GaussianPredictive(), like, model_post)
+end
+function log_sq_likelihood_mean(::GaussianPredictive, like::MonteCarloLikelihood, model_post::ModelPosterior)
     E = _sample_E(δ_dim(like), mc_samples(like))
     return _integrate_over_delta(model_post, (δ, x) -> 2 * loglike(like, δ, x), E)
 end
 
-function log_likelihood_variance(like::MonteCarloLikelihood, model_post::ModelPosterior)
+function log_likelihood_variance(::SampledPredictive, like::MonteCarloLikelihood, model_post::ModelPosterior)
+    _warn_mc_likelihood_sampled_predictive(like)
+    return log_likelihood_variance(GaussianPredictive(), like, model_post)
+end
+function log_likelihood_variance(::GaussianPredictive, like::MonteCarloLikelihood, model_post::ModelPosterior)
     E = _sample_E(δ_dim(like), mc_samples(like))
-    
+
     function log_like_var(x::AbstractVector{<:Real})
         μ_δ, σ_δ = mean_and_std(model_post, x)
         

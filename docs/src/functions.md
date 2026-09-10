@@ -84,6 +84,17 @@ likelihood_variance
 log_likelihood_variance
 ```
 
+The `approx_marginal_likelihood` and `marginal_likelihood_mean` functions (and their `log_` variants)
+return the *per-dimension* likelihood contributions ``p(z_o^{(i)}|x)``, whose product recovers the
+corresponding full-likelihood quantity. They are only available for [`Marginalizable`](@ref) likelihoods.
+
+```@docs
+approx_marginal_likelihood
+log_approx_marginal_likelihood
+marginal_likelihood_mean
+log_marginal_likelihood_mean
+```
+
 The `evidence` function can be used to approximate the evidence ``p(z_o)``
 of a given posterior function by sampling. It is advisable to use this
 estimate only in low parameter dimensions, as it will require many samples
@@ -95,13 +106,27 @@ The `evidence` function is used to normalize the posterior if one calls
 
 ```@docs
 evidence
+log_evidence
 ```
 
-The functions `like` and `loglike` can be used to evaluate the likelihood value
+The `like` and `loglike` functions evaluate the likelihood ``p(z_o|δ)`` (and its log) for a given
+model output `δ`. The `like_marginal` and `loglike_marginal` functions return the per-dimension
+contributions (only for [`Marginalizable`](@ref) likelihoods).
+
+```@docs
+like
+like_marginal
+loglike
+loglike_marginal
+```
 
 ## Acquisition Function
 
 The function `construct_acquisition` can be used to obtain the acquisition function.
+
+```@docs
+construct_acquisition
+```
 
 ## Sampling from the Posterior
 
@@ -111,6 +136,7 @@ The `sample_approx_posterior`, `sample_expected_posterior`, and `sample_posterio
 sample_approx_posterior
 sample_expected_posterior
 sample_posterior
+sample_posterior_pure
 resample
 ```
 
@@ -139,6 +165,15 @@ value between two sets.
 
 ```@docs
 set_iou
+```
+
+# Evaluation Metrics
+
+The `calculate_metric` function evaluates a [`DistributionMetric`](@ref) between the learned posterior
+and a reference, to assess the quality of the inference.
+
+```@docs
+calculate_metric
 ```
 
 # Plotting Posterior Marginals
@@ -174,4 +209,14 @@ The function `approx_by_gauss_mix` together with the structure `GaussMixOptions`
 ```@docs
 approx_by_gauss_mix
 GaussMixOptions
+```
+
+The `x_dim` and `y_dim` functions return the input/output dimensions of a [`BosipProblem`](@ref).
+The `get_subset` function constructs the likelihood of a subset of the observation dimensions
+(used when `BosipProblem.y_sets` is set).
+
+```@docs
+x_dim
+y_dim
+get_subset
 ```

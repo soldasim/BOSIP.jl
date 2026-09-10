@@ -38,9 +38,8 @@ function approx_posterior(bosip::BosipProblem; normalize=false, xs=nothing, samp
     log_post = log_approx_posterior(bosip)
 
     if normalize
-        py = evidence(x -> exp(log_post(x)), x_prior; xs, samples)
-        log_py = log(py)
-        post = x -> exp.(log_post(x) .- log_py)
+        log_ev = log_evidence(log_post, x_prior; xs, samples)
+        post = x -> exp.(log_post(x) .- log_ev)
     
     else
         post = x -> exp.(log_post(x))
@@ -86,9 +85,8 @@ function posterior_mean(bosip::BosipProblem; normalize=false, xs=nothing, sample
     log_post_mean = log_posterior_mean(bosip)
 
     if normalize
-        py = evidence(x -> exp(log_post_mean(x)), x_prior; xs, samples)
-        log_py = log(py)
-        post_mean = x -> exp.(log_post_mean(x) .- log_py)
+        log_ev = log_evidence(log_post_mean, x_prior; xs, samples)
+        post_mean = x -> exp.(log_post_mean(x) .- log_ev)
 
     else
         post_mean = x -> exp.(log_post_mean(x))
@@ -132,10 +130,9 @@ function posterior_variance(bosip::BosipProblem; normalize=false, xs=nothing, sa
     log_post_var = log_posterior_variance(bosip)
 
     if normalize
-        post_mean = posterior_mean(bosip)
-        py = evidence(post_mean, x_prior; xs, samples)
-        log_py2 = 2 * log(py)
-        post_var = x -> exp.(log_post_var(x) .- log_py2)
+        log_post_mean = log_posterior_mean(bosip)
+        log_ev2 = 2 * log_evidence(log_post_mean, x_prior; xs, samples)
+        post_var = x -> exp.(log_post_var(x) .- log_ev2)
 
     else
         post_var = x -> exp.(log_post_var(x))

@@ -1,4 +1,5 @@
 struct MockSurrogate <: BOSS.SurrogateModel end
+BOSS.dimension_independent_given_parameters(::Type{<:MockSurrogate}) = true
 
 struct MockModelPosterior <: BOSS.ModelPosterior{MockSurrogate}
     mean_val::Vector{Float64}

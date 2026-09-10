@@ -4,6 +4,7 @@ version = "0.5.2"
 authors = ["Šimon Soldát"]
 
 [deps]
+ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
 BOSS = "15052f3f-a82a-4ca3-bbc4-f478a3bd1ae2"
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
 DifferentiationInterface = "a0c0ee7d-e4b9-4e03-894e-1c5f64a51d63"
@@ -16,6 +17,7 @@ Optimization = "7f7a1694-90dd-40f0-9382-eb1efda571ba"
 OptimizationPRIMA = "72f8369c-a2ea-4298-9126-56167ce9cbc2"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [weakdeps]
@@ -27,6 +29,7 @@ CairoExt = "CairoMakie"
 TuringExt = "Turing"
 
 [compat]
+ADTypes = "1.24.0"
 BOSS = "0.6.1"
 CairoMakie = "0.12.18, 0.13, 0.14, 0.15"
 Combinatorics = "1.0.3"
@@ -40,6 +43,7 @@ Optimization = "4.3.0, 5"
 OptimizationPRIMA = "0.3.8"
 ProgressMeter = "1.10.4"
 Random = "1.10"
+SciMLBase = "3.49.0"
 Statistics = "1.10"
-Turing = "0.45"
+Turing = "0.45, 0.46, 0.47, 0.48"
 julia = "1.10"
