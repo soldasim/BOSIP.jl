@@ -46,7 +46,7 @@ struct EIIQRFunc{
     ϵs_y::E
 end
 
-function (acq::EIV)(::Type{<:UniFittedParams}, bosip::BosipProblem{Nothing}, options::BosipOptions)
+function (acq::EIIQR)(::Type{<:UniFittedParams}, bosip::BosipProblem{Nothing}, options::BosipOptions)
     y_dim = BOSS.y_dim(bosip.problem)
     
     # Sample parameter values.

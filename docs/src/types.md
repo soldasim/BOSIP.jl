@@ -16,6 +16,15 @@ The abstract type `Likelihood` represents the likelihood distribution of the obs
 Likelihood
 ```
 
+Every `Likelihood` declares a [`LikelihoodKind`](@ref) trait via [`likelihood_kind`](@ref) — either [`Marginalizable`](@ref) (defined through `loglike_marginal`) or [`JointOnly`](@ref) (defined directly through `loglike`, e.g. a non-factorizable full-covariance likelihood). This determines which fallbacks the `loglike`/`loglike_marginal` interface provides.
+
+```@docs
+LikelihoodKind
+Marginalizable
+JointOnly
+likelihood_kind
+```
+
 To implement a custom likelihood, either subtype `Likelihood` directly and implement its full interface, or alternatively subtype `MonteCarloLikelihood`, which provides a simplified interface. The full `Likelihood` interface can be used to define closed-form solutions for the integrals required to calculate the expected likelihood and its variance with respect to the surrogate model uncertainty. If one subtypes the `MonteCarloLikelihood`, these integrals are automatically approximated using MC integration.
 
 ```@docs
@@ -60,6 +69,33 @@ The `ExpLikelihood` assumes that the function `f` of the [`BosipProblem`](@ref) 
 ExpLikelihood
 ```
 
+The `SqExpLikelihood` is similar to the `ExpLikelihood`, but assumes the surrogate models the square root of the log-likelihood (its output is squared and then exponentiated).
+
+```@docs
+SqExpLikelihood
+```
+
+The `MvNormalLikelihood` assumes the observation `z_o` was drawn from a multivariate normal distribution with a known (possibly non-diagonal) covariance matrix `Σ_obs`. The simulator is used to learn the mean function. (As it does not factorize over dimensions, it is a [`JointOnly`](@ref) likelihood.)
+
+```@docs
+MvNormalLikelihood
+```
+
+The `NormalSumLikelihood` and `LogNormalSumLikelihood` are variants of the `NormalLikelihood`/`LogNormalLikelihood` in which each observation dimension is compared against a *sum* of several modeled outputs.
+
+```@docs
+NormalSumLikelihood
+LogNormalSumLikelihood
+```
+
+The `NormalDiffLikelihood` models the discrepancy `δ` directly as a zero-mean normal deviation with known `std_obs`.
+
+```@docs
+NormalDiffLikelihood
+```
+
+`GaussianLikelihood` is provided as an alias for [`NormalLikelihood`](@ref).
+
 ## Acquisition Function
 
 The abstract type `BosipAcquisition` represents the acquisition function.
@@ -85,6 +121,14 @@ The `MWMV` can be used to solve LFSS problems. It maximizes the "mass-weighted m
 
 ```@docs
 MWMV
+```
+
+The `EIV` (Expected Integrated Variance) acquisition selects the point that minimizes the expected integrated posterior variance after the speculative evaluation. The `IMIQR` (Integrated Median Interquantile Range) acquisition is an alternative integrated-uncertainty criterion. The `VarDiff` acquisition selects the point maximizing the reduction in posterior variance caused by adding it to the dataset.
+
+```@docs
+EIV
+IMIQR
+VarDiff
 ```
 
 ## Termination Condition
@@ -120,6 +164,14 @@ For an example usage of this functionality, see the [example](https://github.com
 BosipCallback
 ```
 
+The following callbacks are provided: `NoCallback` (a no-op, the default), `MetricCallback` (evaluates a [`DistributionMetric`](@ref) each iteration), and `CombinedCallback` (chains multiple callbacks).
+
+```@docs
+NoCallback
+MetricCallback
+CombinedCallback
+```
+
 ## Samplers
 
 The subtypes of `DistributionSampler` can be used to draw samples from the trained parameter posterior distribution.
@@ -136,6 +188,22 @@ In particular, the following distribution samplers are currently provided.
 RejectionSampler
 TuringSampler
 AMISSampler
+```
+
+The `RejectionSampler` requires a `LogpdfMaximizer` to bound the target log-density.
+
+```@docs
+LogpdfMaximizer
+```
+
+The `AMISSampler` uses an adaptive `ProposalDistribution` (e.g. `NormalProposal`) which is refit each iteration by a `DistributionFitter` (`AnalyticalFitter` or `OptimizationFitter`).
+
+```@docs
+ProposalDistribution
+NormalProposal
+DistributionFitter
+AnalyticalFitter
+OptimizationFitter
 ```
 
 ## Evaluation Metric

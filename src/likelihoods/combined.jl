@@ -26,15 +26,23 @@ function CombinedLikelihood(likelihoods, δ_ranges)
     return CombinedLikelihood(likelihoods, δ_ranges)
 end
 
+likelihood_kind(like::CombinedLikelihood) =
+    all(isa.(likelihood_kind.(like.likelihoods), Marginalizable)) ? Marginalizable() : JointOnly()
+
+function loglike_marginal(like::CombinedLikelihood, δ::AbstractVector{<:Real})
+    return vcat([loglike_marginal(l, δ[rng]) for (l, rng) in zip(like.likelihoods, like.δ_ranges)]...)
+end
 function loglike_marginal(like::CombinedLikelihood, δ::AbstractVector{<:Real}, x::AbstractVector{<:Real})
     return vcat([loglike_marginal(l, δ[rng], x) for (l, rng) in zip(like.likelihoods, like.δ_ranges)]...)
 end
 
-function log_marginal_likelihood_mean(like::CombinedLikelihood, model_post::ModelPosterior)
+# Behavior doesn't depend on `predictive_kind`: each constituent likelihood handles its own kind
+# dispatch internally, so this recurses uniformly for both `GaussianPredictive`/`SampledPredictive`.
+function log_marginal_likelihood_mean(::PredictiveKind, like::CombinedLikelihood, model_post::ModelPosterior)
     @error "`CombinedLikelihood` only supports sliceable `SurrogateModel`s for now."
     throw(MethodError(log_marginal_likelihood_mean, (like, model_post)))
 end
-function log_marginal_likelihood_mean(like::CombinedLikelihood, model_post::BOSS.DefaultModelPosterior)
+function log_marginal_likelihood_mean(::PredictiveKind, like::CombinedLikelihood, model_post::BOSS.DefaultModelPosterior)
     model_posts = [BOSS.DefaultModelPosterior(model_post.slices[rng]) for rng in like.δ_ranges]
     ml_means = log_marginal_likelihood_mean.(like.likelihoods, model_posts)
 
@@ -47,15 +55,20 @@ function log_marginal_likelihood_mean(like::CombinedLikelihood, model_post::BOSS
     return log_ml_mean
 end
 
+function loglike(like::CombinedLikelihood, δ::AbstractVector{<:Real})
+    return mapreduce((l, rng) -> loglike(l, δ[rng]), +, like.likelihoods, like.δ_ranges)
+end
 function loglike(like::CombinedLikelihood, δ::AbstractVector{<:Real}, x::AbstractVector{<:Real})
     return mapreduce((l, rng) -> loglike(l, δ[rng], x), +, like.likelihoods, like.δ_ranges)
 end
 
-function log_likelihood_mean(like::CombinedLikelihood, model_post::ModelPosterior)
+# Behavior doesn't depend on `predictive_kind`: each constituent likelihood handles its own kind
+# dispatch internally, so this recurses uniformly for both `GaussianPredictive`/`SampledPredictive`.
+function log_likelihood_mean(::PredictiveKind, like::CombinedLikelihood, model_post::ModelPosterior)
     @error "`CombinedLikelihood` only supports sliceable `SurrogateModel`s for now."
     throw(MethodError(log_likelihood_mean, (like, model_post)))
 end
-function log_likelihood_mean(like::CombinedLikelihood, model_post::BOSS.DefaultModelPosterior)
+function log_likelihood_mean(::PredictiveKind, like::CombinedLikelihood, model_post::BOSS.DefaultModelPosterior)
     model_posts = [BOSS.DefaultModelPosterior(model_post.slices[rng]) for rng in like.δ_ranges]
     ll_means = log_likelihood_mean.(like.likelihoods, model_posts)
 
@@ -68,11 +81,11 @@ function log_likelihood_mean(like::CombinedLikelihood, model_post::BOSS.DefaultM
     return log_like_mean
 end
 
-function log_likelihood_variance(like::CombinedLikelihood, model_post::ModelPosterior)
+function log_likelihood_variance(::PredictiveKind, like::CombinedLikelihood, model_post::ModelPosterior)
     @error "`CombinedLikelihood` only supports sliceable `SurrogateModel`s for now."
     throw(MethodError(log_likelihood_variance, (like, model_post)))
 end
-function log_likelihood_variance(like::CombinedLikelihood, model_post::BOSS.DefaultModelPosterior)
+function log_likelihood_variance(::PredictiveKind, like::CombinedLikelihood, model_post::BOSS.DefaultModelPosterior)
     model_posts = [BOSS.DefaultModelPosterior(model_post.slices[rng]) for rng in like.δ_ranges]
     ll_means = log_likelihood_mean.(like.likelihoods, model_posts)
     ll_vars = log_likelihood_variance.(like.likelihoods, model_posts)

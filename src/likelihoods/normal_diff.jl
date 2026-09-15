@@ -19,13 +19,15 @@ This likelihood is just for showcasing how discarding the sign can decrease perf
     std_obs::Vector{Float64}
 end
 
+likelihood_kind(::NormalDiffLikelihood) = Marginalizable()
+
 function loglike_marginal(like::NormalDiffLikelihood, δ::AbstractVector{<:Real})
     return logpdf.(Normal.(zero(like.std_obs), like.std_obs), δ)
 end
 
 # (!) This is only an approximation. We ignore that the non-negative discrepancy δ is modeled by real-valued GP
 #     in order to maintain the analytical solution. The difference should be negligible as long as `std_obs` is small.
-function log_marginal_likelihood_mean(like::NormalDiffLikelihood, model_post::ModelPosterior)
+function log_marginal_likelihood_mean(::GaussianPredictive, like::NormalDiffLikelihood, model_post::ModelPosterior)
     zero_diff = zero(like.std_obs)
     std_obs = like.std_obs
 
@@ -46,7 +48,7 @@ end
 
 # (!) This is only an approximation. We ignore that the non-negative discrepancy δ is modeled by real-valued GP
 #     in order to maintain the analytical solution. The difference should be negligible as long as std_obs is small.
-function log_sq_likelihood_mean(like::NormalDiffLikelihood, model_post::ModelPosterior)
+function log_sq_likelihood_mean(::GaussianPredictive, like::NormalDiffLikelihood, model_post::ModelPosterior)
     zero_diff = zero(like.std_obs)
     std_obs = like.std_obs
 

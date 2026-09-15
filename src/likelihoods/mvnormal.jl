@@ -14,6 +14,10 @@ as `z_obs \\sim Normal(f(x), Σ_obs)`. We can use the simulator to query `y = f(
     Σ_obs::Matrix{Float64}
 end
 
+# `MvNormal` does not factorize over observation dimensions (full covariance `Σ_obs`),
+# so it is defined directly through `loglike` rather than `loglike_marginal`.
+likelihood_kind(::MvNormalLikelihood) = JointOnly()
+
 function loglike(like::MvNormalLikelihood, y::AbstractVector{<:Real})
     # return logpdf(MvNormal(y, like.Σ_obs), like.z_obs)
     return logpdf(MvNormal(like.z_obs, like.Σ_obs), y)
@@ -22,7 +26,19 @@ function loglike(like::MvNormalLikelihood, Y::AbstractMatrix{<:Real})
     return logpdf(MvNormal(like.z_obs, like.Σ_obs), Y)
 end
 
-function log_likelihood_mean(like::MvNormalLikelihood, model_post::ModelPosterior)
+function _warn_mvnormal_sampled_predictive()
+    @warn "`MvNormalLikelihood` does not implement exact `predictive_samples`-based support for " *
+        "`SampledPredictive` models (e.g. `WarpedGaussianProcess`) yet (this would require " *
+        "genuinely joint atoms across output dimensions); falling back to a Gaussian-moment " *
+        "approximation via `mean_and_std`, which may be inaccurate for a non-Gaussian predictive " *
+        "distribution." maxlog=1
+end
+
+function log_likelihood_mean(::SampledPredictive, like::MvNormalLikelihood, model_post::ModelPosterior)
+    _warn_mvnormal_sampled_predictive()
+    return log_likelihood_mean(GaussianPredictive(), like, model_post)
+end
+function log_likelihood_mean(::GaussianPredictive, like::MvNormalLikelihood, model_post::ModelPosterior)
     z_obs = like.z_obs
     Σ_obs = like.Σ_obs
 
@@ -38,7 +54,11 @@ function log_likelihood_mean(like::MvNormalLikelihood, model_post::ModelPosterio
     return log_like_mean
 end
 
-function log_sq_likelihood_mean(like::MvNormalLikelihood, model_post::ModelPosterior)
+function log_sq_likelihood_mean(::SampledPredictive, like::MvNormalLikelihood, model_post::ModelPosterior)
+    _warn_mvnormal_sampled_predictive()
+    return log_sq_likelihood_mean(GaussianPredictive(), like, model_post)
+end
+function log_sq_likelihood_mean(::GaussianPredictive, like::MvNormalLikelihood, model_post::ModelPosterior)
     z_obs = like.z_obs
     Σ_obs = like.Σ_obs
     y_dim = length(z_obs)
