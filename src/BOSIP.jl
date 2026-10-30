@@ -58,6 +58,7 @@ export PlotSettings, PlotData
 
 ### Dependencies
 using BOSS
+using DistributionMetrics
 using Distributions
 using LinearAlgebra
 using Random

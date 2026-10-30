@@ -8,6 +8,7 @@ ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
 BOSS = "15052f3f-a82a-4ca3-bbc4-f478a3bd1ae2"
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
 DifferentiationInterface = "a0c0ee7d-e4b9-4e03-894e-1c5f64a51d63"
+DistributionMetrics = "0ff914a2-51c0-446a-827d-cb53aa35d1db"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 KernelFunctions = "ec8451be-7e33-11e9-00cf-bbf324bd1392"
@@ -24,6 +25,9 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
+[sources]
+DistributionMetrics = {rev = "main", url = "https://github.com/soldasim/DistributionMetrics.jl"}
+
 [extensions]
 CairoExt = "CairoMakie"
 TuringExt = "Turing"
@@ -34,6 +38,7 @@ BOSS = "0.6.1, 0.7"
 CairoMakie = "0.12.18, 0.13, 0.14, 0.15"
 Combinatorics = "1.0.3"
 DifferentiationInterface = "0.7.3"
+DistributionMetrics = "0.1.0"
 Distributions = "0.25.112"
 ForwardDiff = "0.10.38, 1"
 KernelFunctions = "0.10.64"
