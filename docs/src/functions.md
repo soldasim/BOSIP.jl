@@ -169,12 +169,10 @@ set_iou
 
 # Evaluation Metrics
 
-The `calculate_metric` function evaluates a [`DistributionMetric`](@ref) between the learned posterior
+The `calculate_metric` function evaluates a `DistributionMetric` between the learned posterior
 and a reference, to assess the quality of the inference.
-
-```@docs
-calculate_metric
-```
+It is implemented and documented in the separate package [DistributionMetrics.jl](https://github.com/soldasim/DistributionMetrics.jl),
+and re-exported by BOSIP.
 
 # Plotting Posterior Marginals
 

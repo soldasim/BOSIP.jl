@@ -2,7 +2,7 @@
 """
     MetricCallback(; kwargs...)
 
-A [`BosipCallback`](@ref) that evaluates a [`DistributionMetric`](@ref) between the learned posterior
+A [`BosipCallback`](@ref) that evaluates a `DistributionMetric` (see DistributionMetrics.jl) between the learned posterior
 and a reference once before the run and after every iteration, recording the scores in `score_history`.
 
 ## Keywords

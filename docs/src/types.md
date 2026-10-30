@@ -164,7 +164,7 @@ For an example usage of this functionality, see the [example](https://github.com
 BosipCallback
 ```
 
-The following callbacks are provided: `NoCallback` (a no-op, the default), `MetricCallback` (evaluates a [`DistributionMetric`](@ref) each iteration), and `CombinedCallback` (chains multiple callbacks).
+The following callbacks are provided: `NoCallback` (a no-op, the default), `MetricCallback` (evaluates a `DistributionMetric` each iteration), and `CombinedCallback` (chains multiple callbacks).
 
 ```@docs
 NoCallback
@@ -210,19 +210,9 @@ OptimizationFitter
 
 The subtypes of `DistributionMetric` can be used to evaluate the quality of the learned parameter posterior distribution.
 
-```@docs
-DistributionMetric
-SampleMetric
-PDFMetric
-```
-
-In particular, the following metrics are currently provided.
-
-```@docs
-MMDMetric
-OptMMDMetric
-TVMetric
-```
+The metrics (`TVMetric`, `MMDMetric`, `OptMMDMetric`) are implemented and documented
+in the separate package [DistributionMetrics.jl](https://github.com/soldasim/DistributionMetrics.jl).
+BOSIP re-exports them, so `using BOSIP` is sufficient to use them.
 
 # References
 
