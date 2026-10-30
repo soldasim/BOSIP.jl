@@ -36,5 +36,16 @@ jobs:
         with:
           version: ${{ matrix.version }}
       - uses: julia-actions/cache@v3
+      # Julia 1.10 ignores `[sources]`, so the unregistered dependencies
+      # have to be added to the environment manually.
+      - name: Add unregistered dependencies (Julia 1.10)
+        if: matrix.version == 'lts'
+        shell: julia --project=. {0}
+        run: |
+          import Pkg
+          Pkg.add([
+              Pkg.PackageSpec(url="https://github.com/soldasim/DistributionMetrics.jl", rev="main"),
+              Pkg.PackageSpec(url="https://github.com/soldasim/DistributionSamplers.jl", rev="main"),
+          ]; preserve=Pkg.PRESERVE_ALL)
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
