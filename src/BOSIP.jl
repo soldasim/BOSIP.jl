@@ -59,6 +59,12 @@ export PlotSettings, PlotData
 ### Dependencies
 using BOSS
 using DistributionMetrics
+using DistributionSamplers: DistributionSampler, PureSampler, WeightedSampler
+using DistributionSamplers: RejectionSampler, LogpdfMaximizer, TuringSampler, AMISSampler
+using DistributionSamplers: ProposalDistribution, NormalProposal
+using DistributionSamplers: DistributionFitter, AnalyticalFitter, OptimizationFitter
+using DistributionSamplers: GaussMixOptions, resample
+import DistributionSamplers
 using Distributions
 using LinearAlgebra
 using Random

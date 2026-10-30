@@ -137,10 +137,11 @@ sample_approx_posterior
 sample_expected_posterior
 sample_posterior
 sample_posterior_pure
-resample
 ```
 
-The sampling is performed via the Turing.jl package. The Turing.jl package is a quite heavy dependency, so it is not loaded by default. To sample from the posterior, one has to first load Turing.jl as `using Turing`, which will also compile the `sample_posterior` function.
+The `sample_posterior` and `sample_posterior_pure` functions take a `Domain` and wrap the functions of the same name from [DistributionSamplers.jl](https://github.com/soldasim/DistributionSamplers.jl), which operate on box bounds `(lb, ub)`.
+The `resample` function (resampling weighted samples) is also provided by DistributionSamplers.jl and re-exported by BOSIP.
+The samplers are implemented in DistributionSamplers.jl. To use the `TuringSampler`, load Turing.jl by `using Turing`.
 
 ## Confidence Sets
 
@@ -206,8 +207,9 @@ The function `approx_by_gauss_mix` together with the structure `GaussMixOptions`
 
 ```@docs
 approx_by_gauss_mix
-GaussMixOptions
 ```
+
+The `GaussMixOptions` structure is implemented in [DistributionSamplers.jl](https://github.com/soldasim/DistributionSamplers.jl).
 
 The `x_dim` and `y_dim` functions return the input/output dimensions of a [`BosipProblem`](@ref).
 The `get_subset` function constructs the likelihood of a subset of the observation dimensions

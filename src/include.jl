@@ -14,7 +14,6 @@ include("subset_problem.jl")
 include("likelihoods/include.jl")
 include("acquisitions/include.jl")
 include("term_conds/include.jl")
-include("samplers/include.jl")
 include("callbacks/include.jl")
 
 # Other
