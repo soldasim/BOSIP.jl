@@ -164,7 +164,7 @@ For an example usage of this functionality, see the [example](https://github.com
 BosipCallback
 ```
 
-The following callbacks are provided: `NoCallback` (a no-op, the default), `MetricCallback` (evaluates a [`DistributionMetric`](@ref) each iteration), and `CombinedCallback` (chains multiple callbacks).
+The following callbacks are provided: `NoCallback` (a no-op, the default), `MetricCallback` (evaluates a `DistributionMetric` each iteration), and `CombinedCallback` (chains multiple callbacks).
 
 ```@docs
 NoCallback
@@ -176,53 +176,19 @@ CombinedCallback
 
 The subtypes of `DistributionSampler` can be used to draw samples from the trained parameter posterior distribution.
 
-```@docs
-DistributionSampler
-PureSampler
-WeightedSampler
-```
-
-In particular, the following distribution samplers are currently provided.
-
-```@docs
-RejectionSampler
-TuringSampler
-AMISSampler
-```
-
-The `RejectionSampler` requires a `LogpdfMaximizer` to bound the target log-density.
-
-```@docs
-LogpdfMaximizer
-```
-
-The `AMISSampler` uses an adaptive `ProposalDistribution` (e.g. `NormalProposal`) which is refit each iteration by a `DistributionFitter` (`AnalyticalFitter` or `OptimizationFitter`).
-
-```@docs
-ProposalDistribution
-NormalProposal
-DistributionFitter
-AnalyticalFitter
-OptimizationFitter
-```
+The samplers (`RejectionSampler`, `AMISSampler`, `TuringSampler`) and their components
+(`LogpdfMaximizer`, `ProposalDistribution`, `NormalProposal`, `DistributionFitter`, `AnalyticalFitter`, `OptimizationFitter`, `GaussMixOptions`)
+are implemented and documented in the separate package [DistributionSamplers.jl](https://github.com/soldasim/DistributionSamplers.jl).
+BOSIP re-exports them, so `using BOSIP` is sufficient to use them.
+The `TuringSampler` is available after loading Turing.jl (`using Turing`).
 
 ## Evaluation Metric
 
 The subtypes of `DistributionMetric` can be used to evaluate the quality of the learned parameter posterior distribution.
 
-```@docs
-DistributionMetric
-SampleMetric
-PDFMetric
-```
-
-In particular, the following metrics are currently provided.
-
-```@docs
-MMDMetric
-OptMMDMetric
-TVMetric
-```
+The metrics (`TVMetric`, `MMDMetric`, `OptMMDMetric`) are implemented and documented
+in the separate package [DistributionMetrics.jl](https://github.com/soldasim/DistributionMetrics.jl).
+BOSIP re-exports them, so `using BOSIP` is sufficient to use them.
 
 # References
 

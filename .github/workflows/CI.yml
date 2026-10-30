@@ -25,7 +25,9 @@ jobs:
       matrix:
         version:
           - '1'
-          - 'lts'
+          # Disabled: Julia 1.10 ignores `[sources]`, so the unregistered dependency
+          # DistributionMetrics cannot be resolved. Re-enable once it is registered.
+          # - 'lts'
         os:
           - ubuntu-latest
           - macOS-latest
