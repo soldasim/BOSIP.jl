@@ -2,6 +2,10 @@
     include("normal.jl")
 end
 
+@testset "heteroscedastic_normal.jl" begin
+    include("heteroscedastic_normal.jl")
+end
+
 @testset "lognormal.jl" begin
     include("lognormal.jl")
 end
