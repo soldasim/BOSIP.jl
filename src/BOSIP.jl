@@ -28,6 +28,7 @@ export LikelihoodKind, Marginalizable, JointOnly, likelihood_kind
 export CombinedLikelihood, CustomLikelihood
 export ExpLikelihood, SqExpLikelihood
 export NormalLikelihood, GaussianLikelihood
+export HeteroscedasticNormalLikelihood
 export LogNormalLikelihood
 export BinomialLikelihood
 export MvNormalLikelihood
