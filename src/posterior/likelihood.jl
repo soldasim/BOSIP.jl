@@ -118,15 +118,13 @@ end
 function _marginal_log_means(like::Likelihood, dims, x; square::Bool=false)
     D = length(dims)
     K = length(dims[1][1])
-    acc = zeros(D)
-    for k in 1:K
+    # no preallocated `Float64` accumulator, so that the element type can be a `ForwardDiff.Dual`
+    terms = map(1:K) do k
         δ = [dims[i][1][k] for i in 1:D]
         Lk = like_marginal(like, δ, x)
-        for i in 1:D
-            acc[i] += dims[i][2][k] * Lk[i]^(square ? 2 : 1)
-        end
+        [dims[i][2][k] * Lk[i]^(square ? 2 : 1) for i in 1:D]
     end
-    return log.(acc)
+    return log.(sum(terms))
 end
 
 function per_dim_predictive_samples(model_post::BOSS.DefaultModelPosterior, x::AbstractVector{<:Real}; kwargs...)
