@@ -5,12 +5,19 @@
 
 Combines multiple [`Likelihood`](@ref)s into a single likelihood by assuming independence.
 
+To make the combined likelihood robust against some of the individual likelihoods being
+completely wrong, provide the `ε` keyword or wrap them in [`RobustLikelihood`](@ref).
+See also [`make_robust`](@ref).
+
 ## Keywords
 - `likelihoods::Vector{Likelihood}`: A vector of likelihoods to be combined.
 - `δ_ranges::Vector{UnitRange{Int}}`: A vector of ranges specifying the indices
     of the proxy variable `δ` corresponding to each likelihood.
+- `ε::Union{Nothing, Real, AbstractVector{<:Real}}`: If provided, each individual likelihood is wrapped
+    in a [`RobustLikelihood`](@ref) with the additive parameter `ε` (shared, or one value per likelihood).
+    Defaults to `nothing`, in which case the likelihoods are not modified.
 """
-@kwdef struct CombinedLikelihood <: Likelihood
+struct CombinedLikelihood <: Likelihood
     likelihoods::Vector{Likelihood}
     δ_ranges::Vector{UnitRange{Int}}
 
@@ -24,6 +31,11 @@ function CombinedLikelihood(likelihoods, δ_ranges)
     likelihoods = convert(Vector{Likelihood}, likelihoods)
     δ_ranges = convert(Vector{UnitRange{Int}}, δ_ranges)
     return CombinedLikelihood(likelihoods, δ_ranges)
+end
+function CombinedLikelihood(; likelihoods, δ_ranges, ε=nothing)
+    like = CombinedLikelihood(likelihoods, δ_ranges)
+    isnothing(ε) || (like = make_robust(like, ε))
+    return like
 end
 
 likelihood_kind(like::CombinedLikelihood) =

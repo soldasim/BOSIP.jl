@@ -43,6 +43,18 @@ To combine multiple `Likelihood`s into one, use the `CombinedLikelihood`.
 CombinedLikelihood
 ```
 
+To make a `CombinedLikelihood` robust against some of its individual likelihoods being completely wrong, wrap them in the `RobustLikelihood`.
+
+```@docs
+RobustLikelihood
+```
+
+To wrap all individual likelihoods of a `CombinedLikelihood` at once, use `make_robust`.
+
+```@docs
+make_robust
+```
+
 A list of some predefined likelihoods follows;
 
 The `NormalLikelihood` assumes that the observation `z_o` has been drawn from a Gaussian distribution with a known diagonal covariance matrix with the `std_obs` values on the diagonal. The simulator is used to learn the mean function.

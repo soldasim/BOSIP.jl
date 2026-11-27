@@ -25,7 +25,7 @@ export approx_by_gauss_mix, GaussMixOptions
 ### Types
 export Likelihood, MonteCarloLikelihood
 export LikelihoodKind, Marginalizable, JointOnly, likelihood_kind
-export CombinedLikelihood, CustomLikelihood
+export CombinedLikelihood, RobustLikelihood, make_robust, CustomLikelihood
 export ExpLikelihood, SqExpLikelihood
 export NormalLikelihood, GaussianLikelihood
 export HeteroscedasticNormalLikelihood

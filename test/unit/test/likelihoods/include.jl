@@ -41,3 +41,7 @@ end
 @testset "combined.jl" begin
     include("combined.jl")
 end
+
+@testset "robust.jl" begin
+    include("robust.jl")
+end
