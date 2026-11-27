@@ -47,5 +47,19 @@ jobs:
               Pkg.PackageSpec(url="https://github.com/soldasim/DistributionMetrics.jl", rev="main"),
               Pkg.PackageSpec(url="https://github.com/soldasim/DistributionSamplers.jl", rev="main"),
           ]; preserve=Pkg.PRESERVE_ALL)
+      # PRIMA_jll ships libprimac.so with an executable-stack flag, which newer
+      # Linux runners refuse to load ("cannot enable executable stack").
+      # Download artifacts WITHOUT precompiling (precompiling loads PRIMA_jll and
+      # would fail), clear the flag, and only then build.
+      - name: Patch PRIMA libraries (executable stack)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get install -y patchelf
+          JULIA_PKG_PRECOMPILE_AUTO=0 julia --project=. -e 'import Pkg; Pkg.instantiate()'
+          for f in $(find ~/.julia/artifacts -name 'libprima*.so*'); do
+            chmod u+w "$(dirname "$f")" "$f"  # artifacts are read-only
+            patchelf --clear-execstack "$f"
+          done
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
