@@ -8,6 +8,24 @@ Similar approaches have been discussed in [1,2,3,4,5].
 
 See the [documentation](https://soldasim.github.io/BOSIP.jl/) for more information.
 
+# Installation
+
+On **Julia 1.11 and newer:**
+
+```julia
+using Pkg
+Pkg.add(url="https://github.com/soldasim/BOSIP.jl")
+```
+
+On **Julia 1.10**, unregistered dependencies ([DistributionMetrics.jl](https://github.com/soldasim/DistributionMetrics.jl) and [DistributionSamplers.jl](https://github.com/soldasim/DistributionSamplers.jl)) are not installed automatically and need to be added manually:
+
+```julia
+using Pkg
+Pkg.add(url="https://github.com/soldasim/DistributionMetrics.jl")
+Pkg.add(url="https://github.com/soldasim/DistributionSamplers.jl")
+Pkg.add(url="https://github.com/soldasim/BOSIP.jl")
+```
+
 # References
 
 [1] M. J¨arvenp¨a¨a, M. U. Gutmann, A. Vehtari, P. Marttinen, Parallel gaussian process surrogate bayesian inference
